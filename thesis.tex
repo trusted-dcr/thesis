@@ -7,8 +7,20 @@
 \title{DCR/TEE}
 \author{Mikkel Gaub \and Malthe Ettrup Kirkbro \and Mads Frederik Madsen}
 
-\begin{document}
+\makeatletter
+\def\old@comma{,}
+\catcode`\,=13
+\def,{%
+  \ifmmode%
+    \old@comma\discretionary{}{}{}%
+  \else%
+    \old@comma%
+  \fi%
+}
+\makeatother
 
+\begin{document}
+\sloppy
 \maketitle
 
 \newpage
@@ -102,46 +114,54 @@
 
 	% trade-off besked vs. låse vs. round-trips
 
-	\section{The algorithm}
-	Consider the activities $A$, $B$ and $C$, where $A$ has relation $AB$ to $B$, and $B$ has relation $BC$ to $C$.
-	We will describe the algorithm under the maximally distributed case where each activity is handled by a separate peer.
-	For simplicity i.e. $A$ will refer to both the activity and the peer responsible for it.
+	\section{The algorithm} %change name?
+	\subsection{Background}
+	For any algorithm to guarantee workflow correctness of a distributed DCR graph in an asynchronous setting, the algorithm must (1) push executions to effected neighbours and (2) synchronize the executions of non-independent events.  
+	This section provides the reasoning behind these requirements.
+
+	We will describe the algorithm under the maximally distributed case where each event is handled by a separate peer.
+	For simplicity e.g. $A$ will refer to both the event and the peer responsible for it.
 	% We will show that this workflow is enough to describe a general algorithm when $A$ is executed.
+	% Something with events only chaning state one degree forward and thereby enabledness two degrees forward. 
+	% Why?
 
 	% Effects must push execution state
+	Consider the events $A$, $B$ and $C$, where $A$ has relation $AB$ to $B$, and $B$ has relation $BC$ to $C$.
 	When $AB$ is an effect ($A\irel B$, $A\erel B$, $A\rrel B$), $B$ must be informed of any execution of $A$.
 	To see this is the case, consider the workflow $(\{D, E, F\}, \{D\erel F, E\irel F\})$.
 	As $F$ is not immediately informed about executions of $D$ and $E$, an execution attempt at $F$ must query $D$ and $E$ to determine the inclusion state of $F$.
 	Such a query would require an ordering of executions of $D$ and $E$, which is not generally possible in an asynchronous setting.
 
 	% AB effects must synchronize
-	Further, when $AB$ is an effect, some degree of synchronization must occur between a subset of peers.
-	To see this is the case, consider the workflow $(\{D, D', E, E'\}, \{D\irel E, D\erel E', D'\erel E, D'\irel E\})$.
+	When an execution happens on an event with an effect to another event, some degree of synchronization must occur between a subset of peers.
+	To see this is the case, consider the workflow $(\{D, D', E, E'\}, \{D\irel E, D\erel E', D'\erel E, D'\irel E'\})$.
 	We showed executions must be propagated along effects in an asynchronous setting.
 	Thus when executing $D$ and $D'$, messages $M_{D\irel E}$, $M_{D\erel E'}$, $M_{D'\erel E}$ and $M_{D'\irel E'}$ are required.
 	The ordering of these messages can not generally be guaranteed in an asynchronous setting.
 	To see why synchronization must occur, consider the message arrival sequence $(M_{D\irel E}, M_{D'\erel E}, M_{D'\irel E'}, M_{D\erel E'})$, resulting in an invalid workflow state where both $E$ and $E'$ are excluded.
 
+	To achieve the required synchronization the algorithm needs only to provide synchronization in the cases described in section \ref{sec:locking}.
+
 	% Execute A, lock B
 	% Execute B, lock A
 
 	% AB effects, BC constaints must synchronize
-	When $AB$ is an effect and $BC$ is a constraint ($B\crel C, B\mrel C$),
+	% When $AB$ is an effect and $BC$ is a constraint ($B\crel C, B\mrel C$),
 
 	% Forward locking
 	% Backward locking
 	% Foward-backward locking
 
-	When $A$ is executed:\\
-	$B$ must be locked if:\\
-	$AB$ is an effect (include, exclude, response)\\
-	$C$ must be locked if:\\
-	$AB$ is a constraining effect, and $BC$ is a constraint (condition, milestone), in the following configuration:\\
-	\begin{itemize}
-		\item $A \irel B \crel C$ (B is excluded)
-		\item $A \irel B \mrel C$ (B is excluded and pending)
-		\item $A \rrel B \mrel C$ (B is not pending)
-	\end{itemize}
+	% When $A$ is executed:\\
+	% $B$ must be locked if:\\
+	% $AB$ is an effect (include, exclude, response)\\
+	% $C$ must be locked if:\\
+	% $AB$ is a constraining effect, and $BC$ is a constraint (condition, milestone), in the following configuration:\\
+	% \begin{itemize}
+	% 	\item $A \irel B \crel C$ (B is excluded)
+	% 	\item $A \irel B \mrel C$ (B is excluded and pending)
+	% 	\item $A \rrel B \mrel C$ (B is not pending)
+	% \end{itemize}
 
 	\section{Consensus}:\\
 	N processes: $p_1, p_2 \dots, p_n$\\
@@ -156,7 +176,7 @@
 	
 	\noindent
 	\subsection{Distributed DCR (D-DCR)}:\\
-	Given the distributed DCR-graph $G$.
+	Given the distributed DCR graph $G$.
 	\begin{description}
 		\item[Consensus]:
 			\begin{description}
@@ -182,7 +202,7 @@
 
 	\noindent
 	\subsection{Reduction from consensus to D-DCR}:\\
-	For each $v$ in $D$ create an activity $a$ in a DCR-graph.\\
+	For each $v$ in $D$ create an activity $a$ in a DCR graph.\\
 	Let all activities exclude all other activities (no concurrency).\\
 	All actors can execute all activities.
 	When a peer chooses a $v_i$, model this as trying to execute the corresponding $a_i$.
