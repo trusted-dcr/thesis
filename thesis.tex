@@ -1,6 +1,8 @@
 \documentclass{article}
+
 \usepackage{textcomp}
 \usepackage{tikz}
+\usepackage{amsmath}
 
 \include{dcr-preamble}
 
@@ -91,6 +93,12 @@
 	\end{description}
 
 	\section{Locking}
+	\label{sec:locking}
+
+	Since the semantics of DCR only allows the execution of an activity to affect events in the neighbourhood and the second neighbourhood of the executing event, locking must be performed within this set.
+	In a graph, $G(E,V)$, we define the set of events that could be incident to locking, $L$, on the execution of an event, $v$, as $L(v)$.
+
+	Assuming that locking the entirety of $L(v)\ =\ N(N(v))\ \cup\ N(v)\ \cup\ v$ when executing $v$ is suboptimal, there are three intuitive methods of locking, here compared on three non-trivial graphs:
 
 	\begin{description}
 		\item[1: Exclude-include] $A \erel D, A \irel C, B \erel C, B \irel D$
@@ -98,15 +106,13 @@
 		\item[3: Non-modifying to condition] $A \irel C, C \crel B, B \irel D, D \crel A, E \erel C$ where $D$ is excluded.
 	\end{description}
 
-	\noindent There are three ways of locking when executing:
-
 	\begin{description}
-		\item[2 degrees back] has the disadvantage that notifications have to be pushed independently of locking. This locking does not work for graph 1, as A and B do not need to acquire locks on C and D. This means that the end state is subject to race conditions.
-		\item[All adjacent] notifications need to be pushed in the second degree ocasionally (graph 2).
-		\item[2 degrees forward] has the inherent advantage of notifying relevant activities on execution. In graph 3, an execution of $A$ would only require locking on C, as opposed to the \emph{All adjacent locking} scheme, which would require that D should be locked as well.
+		\item[Backwards locking] $L(v)\ =\ N(N(v))\ \cup\ N(v)\ \cup\ v$ where $N(v)$ is the in-neighbourhood of $v$. This locking does not work for graph 1, as A and B do not need to acquire locks on C and D. This means that the end-state of the workflow is subject to race conditions.
+		\item[All adjacent] $L(v)\ =\ N(v)\ \cup\ v$ where $N(v)$ is the neighbourhood of $v$. This solves the problem of \emph{backwards locking} for graph 1, as $C$ and $D$ would be incident to locking by both $A$ and $B$.
+		\item[Forwards locking] $L(v)\ =\ N(N(v))\ \cup\ N(v)\ \cup\ v$ where $N(v)$ is the out-neighbourhood of $v$. While there is no inherent problem with the \emph{all adjacent} locking rules, an exectution of event $A$ in graph 3 using \emph{all adjacent} would require two locks: on $C$ and $D$, while using \emph{forwards locking} would only incur locking on $C$ as the state-change incurred by the include relation on $C$ does not allow $B$ to be executed.
 	\end{description}
 
-	It seems that, given the state of all relevant nodes, the locking mechanism described as \emph{2 degrees forward} minimizes the amount of locks needed for any execution.
+	It seems that, given the state of all relevant nodes, the locking mechanism described as \emph{forward locking} minimizes the amount of locks needed for any execution.
 	This optimization is, however, only possible when the state of $C$ is known and since locking is only performed forwards, there is no implicit way to propogate executions backwards.
 	This means that $A$ does not know the state of $C$ on execution and would have to do one of two options when executing:
 	\begin{itemize}
@@ -115,8 +121,33 @@
 	\end{itemize}
 	Both options result in the minimum amount of locks, but the first option has fewer messages, as it only results in two messages.
 	However, the first option has the disadvantage of potentially taking twice as long, assuming that transporting a message between $A$ and $C$ takes the same amount of time as between $A$ and $B$.
+	These various advantages of different methods means that finding one optimal solution is not possible, as it is dependant on the specific workflow and the topology of the network at a given time. 
 
-	% trade-off besked vs. låse vs. round-trips
+	% SGX role regarding fault tolerance
+
+	\section{Network topology}
+	Due to the algorithm not requiring the executioner of an event to have the global state of the workflow at the time of execution, any state changes are only propogated to the relevant parties.
+	This means that any single crash could potentially make collecting the global state, or history of executions, impossible, as the localized state of the crashed peer would be lost.
+	To make the system more tolerant to crashes, the state of each event is tracked by a number of peers.
+	This means that all locks need to be made on a subsystem rather than a single peer.
+	As this lock needs to prevent others from locking simultaneously, $\dfrac{m}{2} +1$ locks are required for each peer, where $m$ is the number of peers tracking the state of that event.
+
+	\subsection{Peer distribution}
+	Given that the relations of a workflow are fixed at creation, the peers can be distributed efficiently by assigning events frequently locked simultaneously to the same peers.
+	This can be accomplished by the following steps:
+	\begin{itemize}
+		\item Each event is assigned a set of peers, called the primaries of that event, containing at least one peer.
+		\item The primaries of each event are added to each event on which the execution of the event tracked by the primaries could incur a lock. The peers added this way are called secondaries for that event.
+	\end{itemize}
+
+	The peer-to-peer network is then configured in such a way that each peer is a neighbour to any peer which tracks the same events.
+	This means that the execution of an event can be performed by a primary, by that primary attempting to lock all of its neighbours and checking whether or not the acquired locks are sufficient in order to perform the execution, meaning that the set of locked peers forms a quorum for each event requiring a lock.
+
+	\section{Global state collection}
+	% global state collection, snapshot?
+
+
+	% Crash recovery
 
 	\section{The algorithm} %change name?
 	\subsection{Background}
