@@ -6,7 +6,8 @@
 
 \include{dcr-preamble}
 
-\title{DCR/TEE}
+\title{DCR/TEE \\
+\large Working subtitle in a trusted execution environment}
 \author{Mikkel Gaub \and Malthe Ettrup Kirkbro \and Mads Frederik Madsen}
 
 % Allow line break at ',' in math mode:
@@ -25,9 +26,19 @@
 
 \begin{document}
 \sloppy
-\maketitle
 
-\newpage
+\begin{titlepage}
+	\maketitle
+	\thispagestyle{empty}
+
+	\vspace{\fill}
+	\begin{abstract}
+	Lorem ipsum...
+	\end{abstract}
+\end{titlepage}
+
+\clearpage
+\setcounter{page}{1}
 
 \tableofcontents
 
