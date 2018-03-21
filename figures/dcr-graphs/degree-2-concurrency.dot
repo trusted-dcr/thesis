@@ -1,0 +1,10 @@
+digraph {
+  A [shape=square]
+  B [shape=square,style=dashed]
+  C [shape=square]
+  D [shape=square,style=dashed]
+  A -> B [color=green]
+  B -> C [color=orange]
+  C -> D [color=green]
+  D -> A [color=orange]
+}
