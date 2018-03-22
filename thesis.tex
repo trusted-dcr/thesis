@@ -230,10 +230,27 @@
 	The peer-to-peer network is then configured in such a way that each peer is a neighbour to any peer which tracks the same events.
 	This means that the execution of an event can be performed by a primary, by that primary attempting to lock all of its neighbours and checking whether or not the acquired locks are sufficient in order to perform the execution, meaning that the set of locked peers forms a quorum for each event requiring a lock.
 
-	\section{Global state collection}
-	% global state collection, snapshot?
 	% Crash recovery
 
+	\section{Global state collection}
+	Because of the way that changes are propogated through the network, at no point can the state of the entire workflow be ascertained.
+	Both as documentation of the process at deprecation of the workflow and during the life cycle of the workflow, the global state is relevant.
+	This means that there needs to be some method of collecting the state at any given time.
+	Due to the locking portion of the algorithm and the assumed absence of byzantine failures, except for crashes, collecting the state is as simple as requesting it from every peer in the network.
+	As long as enough peers respond so that a quorum of states has been obtained for each event, all succesfull executions performed before the state collection algorithm was started, have been recorded.
+	There is however an issue in that each event will then have their individual percieved sequence of executions, which might be disimilar due to arbitrary message delays.
+
+	% Example of delayed messages
+
+	The ordering of these messages can therefore not be trivially achieved.
+	To solve this, each event attaches the value of a monotonic counter\footnote{starting at 0} to each execution of that specific event.
+	This makes multiple executions of an event indistinguishable from one another and means that the ordering can be deterministically achieved and that only executions performed during a global state collection can possibly be in the resulting collected state.
+
+	% Example of delayed messages (fixed)
+
+	Even though the executions can be ordered at any given time, there is the possibility of this ordering changing depending on which peer attempts to collect the global state.
+	This is possible due to the locking system regarding some events to be concurrent (as described in REF), as the execution of those events have no competing locks.
+	
 	\section{Algorithm}
 	\subsection{Background}
 	For any algorithm to guarantee workflow correctness of a distributed DCR graph in an asynchronous setting, the algorithm must (1) push executions to effected neighbours and (2) synchronize the executions of non-independent events.  
