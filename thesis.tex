@@ -212,47 +212,8 @@
 			Problem: Concurrency (expanded), not serially equivalent if $C$ is included and $D$ is excluded after $A$ and $B$ have executed concurrently.
 	\end{description}
 
-	\section{Network topology}
-	Due to the algorithm not requiring the executioner of an event to have the global state of the workflow at the time of execution, any state changes are only propogated to the relevant parties.
-	This means that any single crash could potentially make collecting the global state, or history of executions, impossible, as the localized state of the crashed peer would be lost.
-	To make the system more tolerant to crashes, the state of each event is tracked by a number of peers.
-	This means that all locks need to be made on a subsystem rather than a single peer.
-	As this lock needs to prevent others from locking simultaneously, $\dfrac{m}{2} +1$ locks are required for each peer, where $m$ is the number of peers tracking the state of that event.
-
-	\subsection{Peer distribution}
-	Given that the relations of a workflow are fixed at creation, the peers can be distributed efficiently by assigning events frequently locked simultaneously to the same peers.
-	This can be accomplished by the following steps:
-	\begin{itemize}
-		\item Each event is assigned a set of peers, called the primaries of that event, containing at least one peer.
-		\item The primaries of each event are added to each event on which the execution of the event tracked by the primaries could incur a lock. The peers added this way are called secondaries for that event.
-	\end{itemize}
-
-	The peer-to-peer network is then configured in such a way that each peer is a neighbour to any peer which tracks the same events.
-	This means that the execution of an event can be performed by a primary, by that primary attempting to lock all of its neighbours and checking whether or not the acquired locks are sufficient in order to perform the execution, meaning that the set of locked peers forms a quorum for each event requiring a lock.
-
-	% Crash recovery
-
-	\section{Global state collection}
-	Because of the way that changes are propogated through the network, at no point can the state of the entire workflow be ascertained.
-	Both as documentation of the process at deprecation of the workflow and during the life cycle of the workflow, the global state is relevant.
-	This means that there needs to be some method of collecting the state at any given time.
-	Due to the locking portion of the algorithm and the assumed absence of byzantine failures, except for crashes, collecting the state is as simple as requesting it from every peer in the network.
-	As long as enough peers respond so that a quorum of states has been obtained for each event, all succesfull executions performed before the state collection algorithm was started, have been recorded.
-	There is however an issue in that each event will then have their individual percieved sequence of executions, which might be disimilar due to arbitrary message delays.
-
-	% Example of delayed messages
-
-	The ordering of these messages can therefore not be trivially achieved.
-	To solve this, each event attaches the value of a monotonic counter\footnote{starting at 0} to each execution of that specific event.
-	This makes multiple executions of an event indistinguishable from one another and means that the ordering can be deterministically achieved and that only executions performed during a global state collection can possibly be in the resulting collected state.
-
-	% Example of delayed messages (fixed)
-
-	Even though the executions can be ordered at any given time, there is the possibility of this ordering changing depending on which peer attempts to collect the global state.
-	This is possible due to the locking system regarding some events to be concurrent (as described in REF), as the execution of those events have no competing locks.
-	
 	\section{Algorithm}
-	\subsection{Background}
+	% \subsection{Background}
 	For any algorithm to guarantee workflow correctness of a distributed DCR graph in an asynchronous setting, the algorithm must (1) push executions to effected neighbours and (2) synchronize the executions of non-independent events.  
 	This section provides the reasoning behind these requirements.
 
@@ -332,6 +293,47 @@
 	These various advantages of different methods means that finding one optimal solution is not possible, as it is dependant on the specific workflow and the topology of the network at a given time. 
 
 	% SGX role regarding fault tolerance
+
+
+	\subsection{Network topology}
+	Due to the algorithm not requiring the executioner of an event to have the global state of the workflow at the time of execution, any state changes are only propogated to the relevant parties.
+	This means that any single crash could potentially make collecting the global state, or history of executions, impossible, as the localized state of the crashed peer would be lost.
+	To make the system more tolerant to crashes, the state of each event is tracked by a number of peers.
+	This means that all locks need to be made on a subsystem rather than a single peer.
+	As this lock needs to prevent others from locking simultaneously, $\dfrac{m}{2} +1$ locks are required for each peer, where $m$ is the number of peers tracking the state of that event.
+
+	\subsubsection{Peer distribution}
+	Given that the relations of a workflow are fixed at creation, the peers can be distributed efficiently by assigning events frequently locked simultaneously to the same peers.
+	This can be accomplished by the following steps:
+	\begin{itemize}
+		\item Each event is assigned a set of peers, called the primaries of that event, containing at least one peer.
+		\item The primaries of each event are added to each event on which the execution of the event tracked by the primaries could incur a lock. The peers added this way are called secondaries for that event.
+	\end{itemize}
+
+	The peer-to-peer network is then configured in such a way that each peer is a neighbour to any peer which tracks the same events.
+	This means that the execution of an event can be performed by a primary, by that primary attempting to lock all of its neighbours and checking whether or not the acquired locks are sufficient in order to perform the execution, meaning that the set of locked peers forms a quorum for each event requiring a lock.
+
+	% Crash recovery
+
+	\subsection{Global state collection}
+	Because of the way that changes are propogated through the network, at no point can the state of the entire workflow be ascertained.
+	Both as documentation of the process at deprecation of the workflow and during the life cycle of the workflow, the global state is relevant.
+	This means that there needs to be some method of collecting the state at any given time.
+	Due to the locking portion of the algorithm and the assumed absence of byzantine failures, except for crashes, collecting the state is as simple as requesting it from every peer in the network.
+	As long as enough peers respond so that a quorum of states has been obtained for each event, all succesfull executions performed before the state collection algorithm was started, have been recorded.
+	There is however an issue in that each event will then have their individual percieved sequence of executions, which might be disimilar due to arbitrary message delays.
+
+	% Example of delayed messages
+
+	The ordering of these messages can therefore not be trivially achieved.
+	To solve this, each event attaches the value of a monotonic counter\footnote{starting at 0} to each execution of that specific event.
+	This makes multiple executions of an event indistinguishable from one another and means that the ordering can be deterministically achieved and that only executions performed during a global state collection can possibly be in the resulting collected state.
+
+	% Example of delayed messages (fixed)
+
+	Even though the executions can be ordered at any given time, there is the possibility of this ordering changing depending on which peer attempts to collect the global state.
+	This is possible due to the locking system regarding some events to be concurrent (as described in REF), as the execution of those events have no competing locks.
+	
 
 	\section{Consensus}
 	N processes: $p_1, p_2 \dots, p_n$\\
