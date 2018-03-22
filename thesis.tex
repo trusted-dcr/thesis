@@ -54,12 +54,12 @@
 
 \section{Related works}
 
-	An existing platform which partially provides a solution to the goal of this project is Ethereum \cite{ethereum-white-paper}.
+	An existing platform which partially provides a solution to the goal of this project is Ethereum \cite{_ethereum_2018}.
 	Ethereum is a distributed computing platform based on blockchain technologies, which does, however, also feature a currency, making computations disproportionately expensive, both monetarily and computationally due to the large amounts of computations required by proof-of-work based blockchains.
 	Even though SGX is a new technology, it has already been proposed to solve several issues in the blockchain concept. 
-	SGX has been used as an intermediate for faster consensus about transactions in \cite{improv-btc}, however it still relies on the underlying blockchain to prevent double-spending.
+	SGX has been used as an intermediate for faster consensus about transactions in \cite{gopinath_nirmala_improving_2017}, however it still relies on the underlying blockchain to prevent double-spending.
 
-	In \cite{fastbft} SGX has been utilized to implement a new Byzantine fault tolerance (BFT) consensus algorithm, called \textit{FastBFT}, which solves some of the scalability issues of blockchains.
+	In \cite{liu_scalable_2016} SGX has been utilized to implement a new Byzantine fault tolerance (BFT) consensus algorithm, called \textit{FastBFT}, which solves some of the scalability issues of blockchains.
 	This is done by using the \textit{strawman design} where a request is sent to a node, the \textit{primary}, who prepares a vote by distributing parts of a secret to all nodes.
 	The secret can be reconstructed given enough parts and then compared to the hash of the secret which is common knowledge.
 	This means that consensus can be achieved in only $O(n)$ messages, rather than the $O(n^2)$ messages achieved by other algorithms.
@@ -68,7 +68,7 @@
 	A further issue with the strawman design, is that the primary can change the orders of requests, thereby equivocate which request is being voted on.
 	This is once again solved by Intel SGX, by numbering requests with a trusted counter that can only be incremented.
 
-	In particular, the Hyperledger Sawtooth \cite{poet} project is interesting as it is closely related to the goals of our project.
+	In particular, the Hyperledger Sawtooth \cite{dhillon_hyperledger_2017} project is interesting as it is closely related to the goals of our project.
 	Hyperledger Sawtooth is an ongoing blockchain project, which replaces the need for mining by using a consensus algorithm called Proof of Elapsed Time (PoET).
 	In PoET a number of nodes who choose to participate as validators each create a timer using Intel SGX.
 	This timer is different per validator and contains a timestamp some time in the future, with a degree of randomness.
@@ -81,7 +81,7 @@
 \section{Intel SGX}
 
 	Intel SGX is a TEE technology which allows users to define protected areas of memory, so called \textit{enclaves}.
-	Intel guarantees \cite{sgx} that any code run and data loaded in the TEE is protected from access by any process running outside of the enclave.
+	Intel guarantees \cite{intel_sgx} that any code run and data loaded in the TEE is protected from access by any process running outside of the enclave.
 	More specifically, the guarantees encompass \textit{confidentiality}, i.e. no other process can read the data in the enclave, and \textit{integrity}, i.e. no other process can modify the data in the enclave. 
 	If the enclave contains secrets which the user wishes to keep, but still does not want to trust external processes with, the enclave can be sealed on disk, essentially encrypting it for later use.
 	This means that data can be stored and processed securely, with its security guaranteed by Intel, if done properly.
@@ -91,7 +91,7 @@
 	Some of these keys are known by Intel for the system to be recognized when contacting Intel servers.
 
 	In short, the major innovation in Intel SGX is the option of running hardware secured software, which enables tamper proof messages, where the sender can be verified as being a correct process.
-	This eases some of the inherent problems in consensus, as seen in \cite{fastbft} and \cite{poet}.
+	This eases some of the inherent problems in consensus, as seen in \cite{liu_scalable_2016} and \cite{dhillon_hyperledger_2017}.
 
 		\subsection{Enclave}
 		What allows SGX enabled CPUs to provide these strong guarantees builds on the following two hardware details:
@@ -103,17 +103,17 @@
 		An enclave is, as its name suggests, a software module isolated completely from the rest of the system.
 		Its memory is located solely in PRM, preventing access by other processes and enclaves running on the system. 
 		The PRM is protected from non-enclave processes by enclave mode. 
-		When a process is not in enclave mode and tries to access the PRM, the memory access is denied \cite{intel-sgx-explained}.      
+		When a process is not in enclave mode and tries to access the PRM, the memory access is denied \cite{costan_intel_2016}.      
 		The PRM of an enclave process is protected from accesses by other processes in enclave mode by the SGX Enclave Control Structure (SECS). 
 		The SECS holds meta data about the enclave processes, and among this is a virtual-to-physical memory mapping called the Enclave Page Cache (EPC). 
-		Through the EPC an enclave's access to physical PRM is restricted to what has been allocated for the enclave-process \cite{intel-sgx-explained}.
+		Through the EPC an enclave's access to physical PRM is restricted to what has been allocated for the enclave-process \cite{costan_intel_2016}.
 
 		While SGX provides powerful guarantees trough its enclave concept, it does not guarantee software correctness and will not protect against flawed software.
-		Instead SGX encourages developers to isolate a minimal piece of their software, the Trusted Computing Base (TCB), in a trusted enclave environment, and keep the remainder as traditional system processes \cite{sgx-dev-guide}.
-		By minimizing the size of the TCB, and thus the amount of code one must trust, common security principles indicate that the chance of security flaws decreases \cite{sgx-dev-guide}.
+		Instead SGX encourages developers to isolate a minimal piece of their software, the Trusted Computing Base (TCB), in a trusted enclave environment, and keep the remainder as traditional system processes \cite{intel_sgx_guide}.
+		By minimizing the size of the TCB, and thus the amount of code one must trust, common security principles indicate that the chance of security flaws decreases \cite{intel_sgx_guide}.
 
 		In order for an isolated enclave to be useful, communication between trusted and untrusted software is enabled through \textit{enclave calls} (ECALL) and \textit{out calls} (OCALL).
-		This interface must be defined at compile-time, specifying an API of ECALLs for the enclave as well as any untrusted services needed as OCALLs, in a \textit{EDL}-file \cite{sgx-dev-guide}.
+		This interface must be defined at compile-time, specifying an API of ECALLs for the enclave as well as any untrusted services needed as OCALLs, in a \textit{EDL}-file \cite{intel_sgx_guide}.
 
 		When built, an enclave module is a plain binary on the untrusted file system.
 		As an enclave under such circumstances would be vulnerable to tampering before initialization, SGX enforces a strict signature policy.
@@ -385,11 +385,11 @@
 
 		\subsection{SGX security}
 	    All aforementioned hardware guarantees are given by Intel, but since very little of the proprietary technology is documented, all security properties of SGX rely on the correctness of Intel's hardware implementation.
-	    Historically Intel has had vulnerabilities in similar hardware components, like the CVE-2017-5689 security incident exposed in \cite{silent-bob}, allowed unprivileged access to the Intel Active Management Technology.
+	    Historically Intel has had vulnerabilities in similar hardware components, like the CVE-2017-5689 security incident exposed in \cite{silent_bob}, allowed unprivileged access to the Intel Active Management Technology.
 
 	    SGX claims to provide confidentiality and integrity for running enclaves.
 	    This is ensured by preventing untrusted software access to the PRM and enclaves access to other regions of the PRM besides their exclusive region.
-	    However, while it is not possible to breach the integrity of PRM, \cite{intel-sgx-explained} shows several issues regarding confidentiality.
+	    However, while it is not possible to breach the integrity of PRM, \cite{costan_intel_2016} shows several issues regarding confidentiality.
 	    Because enclaves use the system page table even for data residing on PRM, it is possible for untrusted software to learn the page access order by manipulating the OS controlled page table.
 	    Another possible attack vector is to perform cache timing by cleverly choosing the physical memory position of enclave memory pages on set associative caches.
 	    By mapping snooping software to the same cache set as the enclave, the snooping software can evict the enclave's memory from the cache and use timing to figure out if it is accessed again.
@@ -399,10 +399,10 @@
 	    And since our system has very few confidentiality requirements, the known vulnerabilities do not seem problematic for the purposes of this project.
 
 	    As mentioned SGX does not protect against flawed software, so it is up to the developer to prevent side-channel attacks through OCALLs that might expose secret data.
-	    A noteworthy mention to illustrate the vigor needed is the common pitfall mentioned in \cite{sgx-dev-guide} when using ECALLs and OCALLs.
+	    A noteworthy mention to illustrate the vigor needed is the common pitfall mentioned in \cite{intel_sgx_guide} when using ECALLs and OCALLs.
 	    Because enclaves are compiled using a standard \cpp-compiler, structure padding is likely to happen.
 	    The SGX environment does not protect against leaking secret information through uninitialized structure padding when passing structures in ECALLs and OCALLs -- this, and other common security pitfalls, are not part of any SGX security guarantees.
-	    Intel recommends to always clear secrets from the enclave memory after use in \cite{sgx-dev-guide}, regardless of the guarantees given by the PRM, underlining the risk of unintended vulnerabilities.
+	    Intel recommends to always clear secrets from the enclave memory after use in \cite{intel_sgx_guide}, regardless of the guarantees given by the PRM, underlining the risk of unintended vulnerabilities.
 
 	\section{Conclusion}
 
