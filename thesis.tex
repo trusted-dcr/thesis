@@ -44,10 +44,14 @@
 
 \newpage
 
+\section{Introduction}
+
+\section{DCR}
+
+\section{Intel SGX}
+
 \section{Problem}
-	%Spurious cite to fix bibtex:
-	\cite{schneider_implementing_1990}\\
-	The system should support running a distributed DCR graph between multiple parties, under the assumption that any number of those parties will attempt to forge, collude, perjure or otherwise act maliciously, i. e. exhibiting byzantine failures.
+	The system \cite{schneider_implementing_1990} should support running a distributed DCR graph between multiple parties, under the assumption that any number of those parties will attempt to forge, collude, perjure or otherwise act maliciously, i. e. exhibiting byzantine failures.
 	These distributed DCR graphs should always be accessible by all parties, connectivity permitting, and transparency must be ensured for all parties, in that they should always be aware of whether or not activities controlled by that party can be executed at any given time.
 
 	% 1. There must be a happened-before relationship between the execution of an activity and the executions of its dependent activities % Studer Lamports FSM
@@ -156,11 +160,9 @@
 
 	\section{Global state collection}
 	% global state collection, snapshot?
-
-
 	% Crash recovery
 
-	\section{The algorithm} %change name?
+	\section{Algorithm}
 	\subsection{Background}
 	For any algorithm to guarantee workflow correctness of a distributed DCR graph in an asynchronous setting, the algorithm must (1) push executions to effected neighbours and (2) synchronize the executions of non-independent events.  
 	This section provides the reasoning behind these requirements.
@@ -209,7 +211,7 @@
 	% 	\item $A \rrel B \mrel C$ (B is not pending)
 	% \end{itemize}
 
-	\section{Consensus}:\\
+	\section{Consensus}
 	N processes: $p_1, p_2 \dots, p_n$\\
 	N proposed values: $\{v_1, v_2 \dots, v_n\}$, where each $v$ is a value from unspecified set $D$.
 	N decision variables: $\{d_1, d_2, \dots, d_n\}$
@@ -221,7 +223,7 @@
 	\end{description}
 	
 	\noindent
-	\subsection{Distributed DCR (D-DCR)}:\\
+	\subsection{Distributed DCR (D-DCR)}
 	Given the distributed DCR graph $G$.
 	\begin{description}
 		\item[Consensus]:
@@ -239,7 +241,7 @@
 	\end{description}
 
 	\noindent
-	\subsection{Reduction from D-DCR to consensus (no concurrency)}:\\
+	\subsection{Reduction from D-DCR to consensus (no concurrency)}
 	(Assume initial state is agreed upon)\\
 	Let $D$ be the set of possible decision vectors.\\
 	Any correct process will only choose a decision vector that is obtainable by executing an activity that is in an executable state in the last agreed upon decision vector. (Correctness)\\
@@ -247,7 +249,7 @@
 	Use consensus to decide on a possible execution.\\
 
 	\noindent
-	\subsection{Reduction from consensus to D-DCR}:\\
+	\subsection{Reduction from consensus to D-DCR}
 	For each $v$ in $D$ create an activity $a$ in a DCR graph.\\
 	Let all activities exclude all other activities (no concurrency).\\
 	All actors can execute all activities.
@@ -255,8 +257,19 @@
 	Run D-DCR.\\
 	When an execution is completed, set $d_i$ as the $v_i$ corresponding to the executed activity.
 
+	\section{Implementation}
 
+	\section{Discussion}
+
+	\section{Conclusion}
+
+	\newpage
 	\bibliography{bibliography}{}
 	\bibliographystyle{plain}
+
+	\newpage
+	
+	\appendix
+	% \section{Code}
 
 \end{document}
