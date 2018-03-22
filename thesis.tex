@@ -3,6 +3,10 @@
 \usepackage{textcomp}
 \usepackage{tikz}
 \usepackage{amsmath}
+\usepackage[hyphens]{url}
+\usepackage{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage{relsize}
 
 \include{dcr-preamble}
 
@@ -23,6 +27,8 @@
 }
 \makeatother
 
+% C++ command
+\newcommand\cpp{C\nolinebreak[4]\hspace{-.05em}\raisebox{.4ex}{\relsize{-1}{\textbf{++}}}}
 
 \begin{document}
 \sloppy
@@ -254,7 +260,7 @@
 	The ordering of these messages can not generally be guaranteed in an asynchronous setting.
 	To see why synchronization must occur, consider the message arrival sequence $(M_{D\irel E}, M_{D'\erel E}, M_{D'\irel E'}, M_{D\erel E'})$, resulting in an invalid workflow state where both $E$ and $E'$ are excluded.
 
-	To achieve the required synchronization the algorithm needs only to provide synchronization in the cases described in section \ref{subsec:locking}.
+	% To achieve the required synchronization the algorithm needs only to provide synchronization in the cases described in section \ref{subsec:locking}.
 
 	% Execute A, lock B
 	% Execute B, lock A
