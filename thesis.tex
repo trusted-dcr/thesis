@@ -87,7 +87,7 @@
 	In short, the major innovation in Intel SGX is the option of running hardware secured software, which enables tamper proof messages, where the sender can be verified as being a correct process.
 	This eases some of the inherent problems in consensus, as seen in \cite{fastbft} and \cite{poet}.
 
-		\subsubsection{Enclave}
+		\subsection{Enclave}
 		What allows SGX enabled CPUs to provide these strong guarantees builds on the following two hardware details:
 		\begin{description}
 		\item [Processor Reserved Memory (PRM)] is a sequential block of memory reserved for SGX, inaccessible from untrusted software and even hardware.
@@ -119,7 +119,7 @@
 		In SGX this process is known as \textit{sealing}.
 		Sealing allows encryption and decryption using a \textit{Seal Key}, which is confidential to the Enclave Signature.
 
-		\subsubsection{Attestation}
+		\subsection{Attestation}
 		Attestation, within the Intel SGX platform, is the action of verifying the existence of specific enclaves.
 		The applications of this are two-fold, in the case where there are multiple enclaves running locally on the same CPU and in the case where enclaves need to communicate to enclaves running on external CPUs.
 		These two situations are handled by two different processes, aptly named local and remote attestation.
@@ -142,7 +142,7 @@
 		The QE, now convinced of the client enclave's identify, strips the MAC off the report and instead signs it with the EPID Member Private Key, which the QE has special privileges to access\footnote{Enclaves signed by Intel have special privileges throughout SGX. This allows SGX to implement complicated SGX instructions in software.}.
 		The remote challenger can verify the signed report with the EPID Group Public Key and be sure that \textbf{(a)} the report is signed by an EPID Member Private Key, \textbf{(b)} EPID Member Private Keys are granted secret to QEs, and \textbf{(c)} QEs will not sign false reports.
 
-		\subsubsection{Monotonic counters}
+		\subsection{Monotonic counters}
 		One of the functions provided by Intel SGX, which is especially relevant for this project, is the access to \textit{trusted monotonic counters}.
 		As indicated by the name, monotonic counters are integer counters, that can only be incremented.
 		They are implemented as a block of non-volatile memory accessible only through SGX instructions, protecting against replay attacks.
