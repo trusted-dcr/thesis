@@ -106,28 +106,32 @@ The graph is made up of one or more activities with a number of relations betwee
 
 		\subsection{Relations}
 		There are five types of relations which define different types of relationships between activities in a workflow. 
-		These five are the \emph{condition}, \emph{response}, \emph{include}, \emph{exclude} and \emph{milestone} relations.
-		% TODO: Effects and constraints
+		The five can be divided into two categores:
+
+		\begin{description}
+			\item[Effects] which are relations that propogate an execution to other events, in the sense that they change the state of the targeted event. These are the \emph{response}, \emph{include} and \emph{exclude} relations.
+			\item[Constraint] which are relations that exclusively affect whether or not the targeted event can be executed. These are the \emph{condition} and \emph{milestone} relations.
+		\end{description}
 
 			\subsubsection{Condition relation}
-			If there is a condition relation from activity $A$ to activity $B$, then $B$ can only be executed if $A$'s executed attribute is true or $A$ is excluded.
-			This described situation can be shown as: \ev{A} \crel \ev{B}
+			If there is a condition relation from activity \texttt{A} to activity \texttt{B}, then \texttt{B} can only be executed if \texttt{A}'s executed attribute is true or \texttt{A} is excluded.
+			This described situation can be shown as: $\ev{A} \crel \ev{B}$
 
 			\subsubsection{Response relation}
-			If there is a response relation from activity $A$ to activity $B$, then $B$'s pending attribute will be set to true every time $A$ is executed.
-			This described situation can be shown as: \ev{A} \crel \ev{B}
+			If there is a response relation from activity \texttt{A} to activity \texttt{B}, then \texttt{B}'s pending attribute will be set to true every time \texttt{A} is executed.
+			This described situation can be shown as: $\ev{A} \crel \ev{B}$
 
 			\subsubsection{Include relation}
-			If there is an include relation from activity $A$ to activity $B$, then $B$'s included attribute will be set to true every time $A$ is executed.
-			This described situation can be shown as: \ev{A} \crel \ev{B}
+			If there is an include relation from activity \texttt{A} to activity \texttt{B}, then \texttt{B}'s included attribute will be set to true every time \texttt{A} is executed.
+			This described situation can be shown as: $\ev{A} \crel \ev{B}$
 
 			\subsubsection{Exclude relation}
-			If there is an exclude relation from activity $A$ to activity $B$, then $B$'s included attribute will be set to false every time $A$ is executed.
-			This described situation can be shown as: \ev{A} \crel \ev{B}
+			If there is an exclude relation from activity \texttt{A} to activity \texttt{B}, then \texttt{B}'s included attribute will be set to false every time \texttt{A} is executed.
+			This described situation can be shown as: $\ev{A} \crel \ev{B}$
 
 			\subsubsection{Milestone relation}
-			If there is a milestone relation from activity $A$ to activity $B$, then $B$ can only be executed if $A$'s pending attribute is false or $A$'s included attribute is false.
-			This described situation can be shown as: \ev{A} \crel \ev{B}
+			If there is a milestone relation from activity \texttt{A} to activity \texttt{B}, then \texttt{B} can only be executed if \texttt{A}'s pending attribute is false or \texttt{A}'s included attribute is false.
+			This described situation can be shown as: $\ev{A} \crel \ev{B}$
 
 		\subsection{Enabledness}
 
@@ -355,26 +359,26 @@ The graph is made up of one or more activities with a number of relations betwee
 	Assuming that locking the entirety of $L(v)\ =\ N(N(v))\ \cup\ N(v)\ \cup\ v$ when executing $v$ is suboptimal, there are three intuitive methods of locking, here compared on three non-trivial graphs:
 
 	\begin{description}
-		\item[1: Exclude-include] \ev{A} \erel \ev{D}, \ev{A} \irel \ev{C}, \ev{B} \erel \ev{C}, \ev{B} \irel \ev{D}
-		\item[2: Include condition] \ev{A} \irel \ev[000]{C}, \ev[000]{C} \crel \ev{B}, \ev{B} \irel \ev[000]{D}, \ev[000]{D} \crel \ev{A}
-		\item[3: Non-modifying to condition] \ev{A} \irel \ev{C}, \ev{C} \crel \ev{B}, \ev{B} \irel \ev[000]{D}, \ev[000]{D} \crel \ev{A}, \ev{E} \erel \ev{C}
+		\item[1: Exclude-include] $\ev{A} \erel \ev{D}, \ev{A} \irel \ev{C}, \ev{B} \erel \ev{C}, \ev{B} \irel \ev{D}$
+		\item[2: Include condition] $\ev{A} \irel \ev[000]{C}, \ev[000]{C} \crel \ev{B}, \ev{B} \irel \ev[000]{D}, \ev[000]{D} \crel \ev{A}$
+		\item[3: Non-modifying to condition] $\ev{A} \irel \ev{C}, \ev{C} \crel \ev{B}, \ev{B} \irel \ev[000]{D}, \ev[000]{D} \crel \ev{A}, \ev{E} \erel \ev{C}$
 	\end{description}
 
 	\begin{description}
-		\item[Backwards locking] $L(v)\ =\ N(N(v))\ \cup\ N(v)\ \cup\ v$ where $N(v)$ is the in-neighbourhood of $v$. This locking does not work for graph 1, as A and B do not need to acquire locks on C and D. This means that the end-state of the workflow is subject to race conditions.
-		\item[All adjacent] $L(v)\ =\ N(v)\ \cup\ v$ where $N(v)$ is the neighbourhood of $v$. This solves the problem of \emph{backwards locking} for graph 1, as $C$ and $D$ would be incident to locking by both $A$ and $B$.
-		\item[Forwards locking] $L(v)\ =\ N(N(v))\ \cup\ N(v)\ \cup\ v$ where $N(v)$ is the out-neighbourhood of $v$. While there is no inherent problem with the \emph{all adjacent} locking rules, an execution of event $A$ in graph 3 using \emph{all adjacent} would require two locks: on $C$ and $D$, while using \emph{forwards locking} would only incur locking on $C$ as the state-change incurred by the include relation on $C$ does not allow $B$ to be executed.
+		\item[Backwards locking] $L(v)\ =\ N(N(v))\ \cup\ N(v)\ \cup\ v$ where $N(v)$ is the in-neighbourhood of $v$. This locking does not work for graph 1, as executions on \texttt{A} and \texttt{B} does require locking \texttt{C} and \texttt{D}. This means that the end-state of the workflow is subject to race conditions.
+		\item[All adjacent] $L(v)\ =\ N(v)\ \cup\ v$ where $N(v)$ is the neighbourhood of $v$. This solves the problem of \emph{backwards locking} for graph 1, as \texttt{C} and \texttt{D} would be incident to locking by both \texttt{A} and \texttt{B}.
+		\item[Forwards locking] $L(v)\ =\ N(N(v))\ \cup\ N(v)\ \cup\ v$ where $N(v)$ is the out-neighbourhood of $v$. While there is no inherent problem with the \emph{all adjacent} locking rules, an execution of event \texttt{A} in graph 3 using \emph{all adjacent} would require two locks: on \texttt{C} and \texttt{D}, while using \emph{forwards locking} would only incur locking on \texttt{C} as the state-change incurred by the include relation on \texttt{C} does not allow \texttt{B} to be executed.
 	\end{description}
 
 	It seems that, given the state of all relevant nodes, the locking mechanism described as \emph{forward locking} minimizes the amount of locks needed for any execution.
-	This optimization is, however, only possible when the state of $C$ is known and since locking is only performed forwards, there is no implicit way to propogate executions backwards.
-	This means that $A$ does not know the state of $C$ on execution and would have to do one of two options when executing:
+	This optimization is, however, only possible when, in example graph 3, the state of \texttt{C} is known and since locking is only performed forwards, there is no implicit way to propogate executions backwards.
+	This means that \texttt{A} does not know the state of \texttt{C} on execution and would have to do one of two options when executing:
 	\begin{itemize}
-		\item $A$ sends a locking message to $C$, telling it to lock $B$ if necessary.
-		\item $A$ sends a locking message to $C$ and one to $B$, but gives $B$ the option to forego locking if the state of $C$ would be unchanged by the execution of $A$.
+		\item \texttt{A} sends a locking message to \texttt{C}, telling it to lock \texttt{B} if necessary.
+		\item \texttt{A} sends a locking message to \texttt{C} and one to \texttt{B}, but gives \texttt{B} the option to forego locking if the state of \texttt{C} would be unchanged by the execution of \texttt{A}.
 	\end{itemize}
 	Both options result in the minimum amount of locks, but the first option has fewer messages, as it only results in two messages.
-	However, the first option has the disadvantage of potentially taking twice as long, assuming that transporting a message between $A$ and $C$ takes the same amount of time as between $A$ and $B$.
+	However, the first option has the disadvantage of potentially taking twice as long, assuming that transporting a message between \texttt{A} and \texttt{C} takes the same amount of time as between \texttt{A} and \texttt{B}.
 	These various advantages of different methods means that finding one optimal solution is not possible, as it is dependant on the specific workflow and the topology of the network at a given time. 
 
 	% SGX role regarding fault tolerance
