@@ -346,8 +346,9 @@ The graph is made up of one or more activities with a number of relations betwee
 
 	\subsection{Locking}
 	\label{subsec:locking}
-	As shown in section \ref{sec:algorithm}, execution of an event must be pushed to effected neighbours (1), and executions of non-independent events must be synchronised. 
+	As shown in section \ref{sec:algorithm}, execution of an event must be pushed to effected neighbours (1), and executions of non-independent events must be synchronised (2). 
 	One way to achieve this is through locking of events.
+	
 	Since the semantics of DCR only allows the execution of an activity to affect events in the neighbourhood, (3), and the second neighbourhood, (4), of the executing event, locking need only be performed within this set.
 	In a graph, $G(E,V)$, we define the set of events that could be incident to locking, $L$, on the execution of an event, $v$, as $L(v)$.
 
