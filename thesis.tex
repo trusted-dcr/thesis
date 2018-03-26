@@ -107,6 +107,7 @@ The graph is made up of one or more activities with a number of relations betwee
 		\subsection{Relations}
 		There are five types of relations which define different types of relationships between activities in a workflow. 
 		These five are the \emph{condition}, \emph{response}, \emph{include}, \emph{exclude} and \emph{milestone} relations.
+		% TODO: Effects and constraints
 
 			\subsubsection{Condition relation}
 			If there is a condition relation from activity $A$ to activity $B$, then $B$ can only be executed if $A$'s executed attribute is true or $A$ is excluded.
@@ -127,6 +128,13 @@ The graph is made up of one or more activities with a number of relations betwee
 			\subsubsection{Milestone relation}
 			If there is a milestone relation from activity $A$ to activity $B$, then $B$ can only be executed if $A$'s pending attribute is false or $A$'s included attribute is false.
 			This described situation can be shown as: $\ev{A}{0}{0}{1} \mrel \ev{B}{0}{0}{1}$
+
+		\subsection{Enabledness}
+
+		\subsection{Concurrency}
+			\subsubsection{Event Independence}
+			\subsubsection{Static Independence}
+			\subsubsection{Dynamic Independence}
 
 \section{Intel SGX}
 
@@ -263,9 +271,19 @@ The graph is made up of one or more activities with a number of relations betwee
 	\end{description}
 
 	\section{Algorithm}
+	\label{sec:algorithm}
+	%This section uses the following terms, which must therefore be introduced before this section:
+	% - enabledness
+	% - constraints and effect
+	% - constraining and constrained event
+	% - effecting and effected event
+	% - closed neighbourhood
+	% - Second neighbourhood
+
 	% \subsection{Background}
-	For any algorithm to guarantee workflow correctness of a distributed DCR graph in an asynchronous setting, the algorithm must (1) push executions to effected neighbours and (2) synchronize the executions of non-independent events.  
+	For any algorithm to guarantee workflow correctness of a distributed DCR graph in an asynchronous setting, the algorithm must (1) push executions to effected neighbours and (2) synchronize the executions of non-independent events.
 	This section provides the reasoning behind these requirements.
+	Furthermore, this section will show (3) that an execution of an event can change the state of events only in the immediate neighbourhood, and (4) that an execution can change the enabledness of events only if the events are in the closed neighbourhood of the closed neighbourhood of the executing event.  
 
 	We will describe the algorithm under the most general case where each event is handled by a separate peer.
 	For simplicity e.g. $A$ will refer to both the event and the peer responsible for it.
@@ -273,25 +291,40 @@ The graph is made up of one or more activities with a number of relations betwee
 	% Something with events only chaning state one degree forward and thereby enabledness two degrees forward. 
 	% Why?
 
-	% Effects must push execution state
+	% Effects must push execution state (1)
 	Consider the events $A$, $B$ and $C$, where $A$ has relation $AB$ to $B$, and $B$ has relation $BC$ to $C$.
-	When $AB$ is an effect ($A\irel B$, $A\erel B$, $A\rrel B$), $B$ must be informed of any execution of $A$.
-	To see this is the case, consider the workflow $(\{D, E, F\}, \{D\erel F, E\irel F\})$.
+	When $AB$ is an effect ($A\irel B$, $A\erel B$ or $A\rrel B$), $B$ must be informed of any execution of $A$ (1).
+	To see this is the case, consider the workflow $(\{D, E, F\}, \{D\erel F, E\irel F\})$, where $D$ and $E$ has been executed.
 	As $F$ is not immediately informed about executions of $D$ and $E$, an execution attempt at $F$ must query $D$ and $E$ to determine the inclusion state of $F$.
 	Such a query would require an ordering of executions of $D$ and $E$, which is not generally possible in an asynchronous setting.
 
-	% AB effects must synchronize
-	When an execution happens on an event with an effect to another event, some degree of synchronization must occur between a subset of peers.
+	% AB effects must synchronize (2)
+	When an execution happens on an event with an effect to another event, some degree of synchronization must occur between a subset of peers (2).
 	To see this is the case, consider the workflow $(\{D, D', E, E'\}, \{D\irel E, D\erel E', D'\erel E, D'\irel E'\})$.
 	We showed executions must be propagated along effects in an asynchronous setting.
 	Thus when executing $D$ and $D'$, messages $M_{D\irel E}$, $M_{D\erel E'}$, $M_{D'\erel E}$ and $M_{D'\irel E'}$ are required.
 	The ordering of these messages can not generally be guaranteed in an asynchronous setting.
 	To see why synchronization must occur, consider the message arrival sequence $(M_{D\irel E}, M_{D'\erel E}, M_{D'\irel E'}, M_{D\erel E'})$, resulting in an invalid workflow state where both $E$ and $E'$ are excluded.
 
+	%Executions of events can only effect state in the immediate neighbourhood (3)
+	Executions of events can only effect state in the immediate neighbourhood (3).
+	When event A is executed, its \texttt{Executed} state will change, and all events that A has an effect relation to, has its appropriate state variable changed. 
+	In other words, one state change propagates to state changes along effect relations. 
+	However, the only state change that propagates to state changes in other events is the change of the \texttt{Executed} variable.
+	And since none of the effect relations change the \texttt{Executed} variable, the state change can at most propagate to the immediate neighbourhood of the executing event.
+	Notice that state change does not propagate along constraint relations, but the enabledness of events along these relations are still changed. 
+	However, enabledness cannot propagate, since no state change is induced by a change in enabledness, and enabledness itself is changed only by state changes in the constraining event. 
+
+	%Rewrite this?
+	From (3) we also gain (4), that enabledness is at most changed in the closed second neighbourhood of the executing event. 
+	Since enabledness of a constrained event is changed only by state changes in the constraining event, and state changes propagates at most to the neighbourhood of an executing event, it must follow that an execution can at most change enabledness in the closed second neighbourhood of the executing event.
+	%Example
+
+
 	% To achieve the required synchronization the algorithm needs only to provide synchronization in the cases described in section \ref{subsec:locking}.
 
 	% Execute A, lock B
-	% Execute B, lock A
+	% Execute B, lock AB
 
 	% AB effects, BC constaints must synchronize
 	% When $AB$ is an effect and $BC$ is a constraint ($B\crel C, B\mrel C$),
@@ -313,8 +346,9 @@ The graph is made up of one or more activities with a number of relations betwee
 
 	\subsection{Locking}
 	\label{subsec:locking}
-
-	Since the semantics of DCR only allows the execution of an activity to affect events in the neighbourhood and the second neighbourhood of the executing event, locking must be performed within this set.
+	As shown in section \ref{sec:algorithm}, execution of an event must be pushed to effected neighbours (1), and executions of non-independent events must be synchronised. 
+	One way to achieve this is through locking of events.
+	Since the semantics of DCR only allows the execution of an activity to affect events in the neighbourhood, (3), and the second neighbourhood, (4), of the executing event, locking need only be performed within this set.
 	In a graph, $G(E,V)$, we define the set of events that could be incident to locking, $L$, on the execution of an event, $v$, as $L(v)$.
 
 	Assuming that locking the entirety of $L(v)\ =\ N(N(v))\ \cup\ N(v)\ \cup\ v$ when executing $v$ is suboptimal, there are three intuitive methods of locking, here compared on three non-trivial graphs:
