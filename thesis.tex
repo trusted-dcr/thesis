@@ -8,6 +8,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{relsize}
 \usepackage{ifthen}
+\usepackage{xstring}
 
 \include{dcr-preamble}
 
@@ -85,24 +86,23 @@ The graph is made up of one or more activities with a number of relations betwee
 		\subsection{Activity}
 		The activities in a DCR graph have three binary attributes: included, executed and pending. 
 		Furthermore an activity can have role and actor specific execution rights.
-		This is an activity: $\ev{A}{0}{0}{1}$
-
+		This is an activity: \ev{A}
 
 			\subsubsection{Executed attribute}
 			If an activities executed attribute is false executing the activity will set its executed attribute to true.
 			Executing an already executed activity will have no effect on the executed attribute.
-			The executed attribute is shown as a tick mark: $\ev{A}{1}{0}{1}$
+			The executed attribute is shown as a tick mark: \ev[101]{A}
 
 			\subsubsection{Pending attribute}
 			If any activity in a workflow has a pending attribute that is true and the activity is included, the workflow is in an unfinished state.
 			Every time an activity is executed its pending attribute is set to false.
 			This means that setting the pending attribute of an included activity to true is specifying that this activity must be executed or excluded at some point to leave the workflow in a finished state.
-			The pending attribute is shown as an exclamation point: $\ev{A}{0}{1}{1}$
+			The pending attribute is shown as an exclamation point: \ev[011]{A}
 
 			\subsubsection{Included attribute}
 			If the include attribute of an activity is true, the activity is included and it can be executed. 
 			If the attribute is false, the activity is excluded and can no longer be executed.
-			The included attribute is denoted by the outline of the activity: $\ev{A}{0}{0}{1}$ when included and $\ev{A}{0}{0}{0}$ when excluded.
+			The included attribute is denoted by the outline of the activity: \ev{A} when included and \ev[000]{A} when excluded.
 
 		\subsection{Relations}
 		There are five types of relations which define different types of relationships between activities in a workflow. 
@@ -111,23 +111,23 @@ The graph is made up of one or more activities with a number of relations betwee
 
 			\subsubsection{Condition relation}
 			If there is a condition relation from activity $A$ to activity $B$, then $B$ can only be executed if $A$'s executed attribute is true or $A$ is excluded.
-			This described situation can be shown as: $\ev{A}{0}{0}{1} \crel \ev{B}{0}{0}{1}$
+			This described situation can be shown as: \ev{A} \crel \ev{B}
 
 			\subsubsection{Response relation}
 			If there is a response relation from activity $A$ to activity $B$, then $B$'s pending attribute will be set to true every time $A$ is executed.
-			This described situation can be shown as: $\ev{A}{0}{0}{1} \rrel \ev{B}{0}{0}{1}$
+			This described situation can be shown as: \ev{A} \crel \ev{B}
 
 			\subsubsection{Include relation}
 			If there is an include relation from activity $A$ to activity $B$, then $B$'s included attribute will be set to true every time $A$ is executed.
-			This described situation can be shown as: $\ev{A}{0}{0}{1} \irel \ev{B}{0}{0}{1}$
+			This described situation can be shown as: \ev{A} \crel \ev{B}
 
 			\subsubsection{Exclude relation}
 			If there is an exclude relation from activity $A$ to activity $B$, then $B$'s included attribute will be set to false every time $A$ is executed.
-			This described situation can be shown as: $\ev{A}{0}{0}{1} \erel \ev{B}{0}{0}{1}$
+			This described situation can be shown as: \ev{A} \crel \ev{B}
 
 			\subsubsection{Milestone relation}
 			If there is a milestone relation from activity $A$ to activity $B$, then $B$ can only be executed if $A$'s pending attribute is false or $A$'s included attribute is false.
-			This described situation can be shown as: $\ev{A}{0}{0}{1} \mrel \ev{B}{0}{0}{1}$
+			This described situation can be shown as: \ev{A} \crel \ev{B}
 
 		\subsection{Enabledness}
 
@@ -355,9 +355,9 @@ The graph is made up of one or more activities with a number of relations betwee
 	Assuming that locking the entirety of $L(v)\ =\ N(N(v))\ \cup\ N(v)\ \cup\ v$ when executing $v$ is suboptimal, there are three intuitive methods of locking, here compared on three non-trivial graphs:
 
 	\begin{description}
-		\item[1: Exclude-include] $\ev{A}{0}{0}{1} \erel \ev{D}{0}{0}{1}, \ev{A}{0}{0}{1} \irel \ev{C}{0}{0}{1}, \ev{B}{0}{0}{1} \erel \ev{C}{0}{0}{1}, \ev{B}{0}{0}{1} \irel \ev{D}{0}{0}{1}$
-		\item[2: Include condition] $\ev{A}{0}{0}{1} \irel \ev{C}{0}{0}{0}, \ev{C}{0}{0}{0} \crel \ev{B}{0}{0}{1}, \ev{B}{0}{0}{1} \irel \ev{D}{0}{0}{0}, \ev{D}{0}{0}{0} \crel \ev{A}{0}{0}{1}$
-		\item[3: Non-modifying to condition] $\ev{A}{0}{0}{1} \irel \ev{C}{0}{0}{1}, \ev{C}{0}{0}{1} \crel \ev{B}{0}{0}{1}, \ev{B}{0}{0}{1} \irel \ev{D}{0}{0}{0}, \ev{D}{0}{0}{0} \crel \ev{A}{0}{0}{1}, \ev{E}{0}{0}{1} \erel \ev{C}{0}{0}{1}$
+		\item[1: Exclude-include] \ev{A} \erel \ev{D}, \ev{A} \irel \ev{C}, \ev{B} \erel \ev{C}, \ev{B} \irel \ev{D}
+		\item[2: Include condition] \ev{A} \irel \ev[000]{C}, \ev[000]{C} \crel \ev{B}, \ev{B} \irel \ev[000]{D}, \ev[000]{D} \crel \ev{A}
+		\item[3: Non-modifying to condition] \ev{A} \irel \ev{C}, \ev{C} \crel \ev{B}, \ev{B} \irel \ev[000]{D}, \ev[000]{D} \crel \ev{A}, \ev{E} \erel \ev{C}
 	\end{description}
 
 	\begin{description}
