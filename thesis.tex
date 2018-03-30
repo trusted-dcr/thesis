@@ -41,7 +41,9 @@
 
 	\vspace{\fill}
 	\begin{abstract}
-	Lorem ipsum...
+		In this thesis the security and optimization options provided by Intel SGX are explored in relation to distributed decentralized systems.
+		An algorithm for running Dynamic Condition Response (DCR) graphs and the implementation of a distributed system utilizing that algorithm is then described.
+		Lastly that system is modified to support arbitrary Smart Contracts in a distributed system.
 	\end{abstract}
 \end{titlepage}
 
@@ -78,6 +80,41 @@
 	The first validator to distribute a valid and expired timer to the rest of the validators, is elected leader for the current round of decision-making.	
 	This is a strong indicator that Intel SGX can be used for efficiently attaining consensus.
 
+\section{Problem}
+	The system \cite{schneider_implementing_1990} should support running a distributed DCR graph between multiple parties, under the assumption that any number of those parties will attempt to forge, collude, perjure or otherwise act maliciously, i. e. exhibiting byzantine failures.
+	These distributed DCR graphs should always be accessible by all parties, connectivity permitting, and transparency must be ensured for all parties, in that they should always be aware of whether or not activities controlled by that party can be executed at any given time.
+
+	% 1. There must be a happened-before relationship between the execution of an activity and the executions of its dependent activities % Studer Lamports FSM
+	% 2. All serializations of the happened-before relationships must be valid execution sequences in DCR % Og opnå enighed om dem
+
+	\subsection{Definitions}
+	\noindent
+	Workflow: $G=(V,E)$ \\
+	Activities: $V=\{v_1,\ \dots, v_n\}$ \\
+	Activity States: $S=\{s_1,\ \dots, s_n\}$, where $s_i \subseteq \{Executed, Pending, Included\}$ corresponding to $V_i$.\\
+	Relation: $R=($condition, response, milestone, include, exclude$)$, $e=(v_x, v_y, r_i)$, $E=\{e_1,\ \dots, e_m\}$\\
+	Processes: $P =\{p_1,\ \dots, p_o\}$.\\
+	History, $H_p(t)$: Sequence of activity executions up to, and at time $t$, as perceived by given process.\\
+	Execution: $(v_i, t, p)$, where $v_i$ is the activity executed at time $t$, executed by process $p$.\\
+	Dependant activities: An activity, $v_1$ is said to be dependent on another activity, $v_2$, when the DCR rules allowing $v_1$ to be executed, depends on the state of $v_2$. \\
+	% Processor: $C$ is said to own a number of specific processes. Any process can only be owned by a single processor. \\
+	% Activity responsibility: ... \\
+
+	\subsection{Requirements}
+	\begin{description}
+		\item[Consensus]:
+			\begin{description}
+				\item[Termination] Eventually each correct process sets its decision value (single activity state)
+				\item[Partial agreement] % Decision vector = activity state
+								Bottom is allowed as substitute for any activity state, unless that activity is owned by process or dependent on one such process. % Hvad er agreement
+				\item[Integrity] If $p_i$ is correct, then all correct processes decide on $v_i$, or $\bot$ as the i'th component of their vector. % Omformuler. Kan ikke genbruge i på den her måde
+			\end{description}
+		% \item[Concurrency]: DCR-rules for concurrency (only independent activities can be concurrent) (Tie-breaking). Nødvendig? Argumentér hvorfor Agreement + integrity giver concurrency løsning
+		\item[Correctness]: Any state transition must be permitted by DCR logic or they will be rejected by correct nodes.
+		\item[Non-repudiation]: $v_i$ must be provably proposed by $p_i$, within the bounds specified by any applied cryptography.
+		% \item[Co-non-repudiation?]:
+	\end{description}
+
 \section{DCR}
 
 A DCR graph is a representation of a workflow, made up of one or more events with a number of relations between them. 
@@ -105,30 +142,36 @@ A DCR graph is a representation of a workflow, made up of one or more events wit
 
 		\subsection{Relations}
 		There are five types of relations which define different types of relationships between events in a workflow. 
+		All relations can be said to originate from an event and targeting an event.
+		The origin and the target of a relation can be the same event.
 		The five can be divided into two categories:
 
 		\begin{description}
-			\item[Effects] which are relations that propagate an execution to other events, in the sense that they change the state of the targeted event. These are the \emph{response}, \emph{include} and \emph{exclude} relations.
-			\item[Constraint] which are relations that exclusively affect whether or not the targeted event can be executed. These are the \emph{condition} and \emph{milestone} relations.
+			\item[Effects] which are relations that propagate an execution to other events, in the sense that they change the state of the targeted event. 
+			If an effect originating from an event, \texttt{A}, is targeting an event, \texttt{B}, then \texttt{A} is said to be the effecting event on the effected event \texttt{B}. % affected?
+			These are the \emph{response}, \emph{include} and \emph{exclude} relations. 
+			\item[Constraint] which are relations that exclusively affect whether or not the targeted event can be executed. 
+			If a constraint originating from an event, \texttt{A}, is targeting an event, \texttt{B}, then \texttt{A} is said to be the constraining event on the constrained event \texttt{B}.
+			These are the \emph{condition} and \emph{milestone} relations. 
 		\end{description}
 
-			\subsubsection{Condition relation}
+			\subsubsection*{Condition relation}
 			If there is a condition relation from event \texttt{A} to event \texttt{B}, then \texttt{B} can only be executed if \texttt{A}'s executed attribute is true or \texttt{A} is excluded.
 			This described situation can be shown as: $\ev{A} \crel \ev{B}$
 
-			\subsubsection{Response relation}
+			\subsubsection*{Response relation}
 			If there is a response relation from event \texttt{A} to event \texttt{B}, then \texttt{B}'s pending attribute will be set to true every time \texttt{A} is executed.
 			This described situation can be shown as: $\ev{A} \crel \ev{B}$
 
-			\subsubsection{Include relation}
+			\subsubsection*{Include relation}
 			If there is an include relation from event \texttt{A} to event \texttt{B}, then \texttt{B}'s included attribute will be set to true every time \texttt{A} is executed.
 			This described situation can be shown as: $\ev{A} \crel \ev{B}$
 
-			\subsubsection{Exclude relation}
+			\subsubsection*{Exclude relation}
 			If there is an exclude relation from event \texttt{A} to event \texttt{B}, then \texttt{B}'s included attribute will be set to false every time \texttt{A} is executed.
 			This described situation can be shown as: $\ev{A} \crel \ev{B}$
 
-			\subsubsection{Milestone relation}
+			\subsubsection*{Milestone relation}
 			If there is a milestone relation from event \texttt{A} to event \texttt{B}, then \texttt{B} can only be executed if \texttt{A}'s pending attribute is false or \texttt{A}'s included attribute is false.
 			This described situation can be shown as: $\ev{A} \crel \ev{B}$
 
@@ -227,76 +270,12 @@ A DCR graph is a representation of a workflow, made up of one or more events wit
 		As indicated by the name, monotonic counters are integer counters, that can only be incremented.
 		They are implemented as a block of non-volatile memory accessible only through SGX instructions, protecting against replay attacks.
 
-
-
-\section{Problem}
-	The system \cite{schneider_implementing_1990} should support running a distributed DCR graph between multiple parties, under the assumption that any number of those parties will attempt to forge, collude, perjure or otherwise act maliciously, i. e. exhibiting byzantine failures.
-	These distributed DCR graphs should always be accessible by all parties, connectivity permitting, and transparency must be ensured for all parties, in that they should always be aware of whether or not activities controlled by that party can be executed at any given time.
-
-	% 1. There must be a happened-before relationship between the execution of an activity and the executions of its dependent activities % Studer Lamports FSM
-	% 2. All serializations of the happened-before relationships must be valid execution sequences in DCR % Og opnå enighed om dem
-
-	\section{Definitions}
-	\noindent
-	Workflow: $G=(V,E)$ \\
-	Activities: $V=\{v_1,\ \dots, v_n\}$ \\
-	Activity States: $S=\{s_1,\ \dots, s_n\}$, where $s_i \subseteq \{Executed, Pending, Included\}$ corresponding to $V_i$.\\
-	Relation: $R=($condition, response, milestone, include, exclude$)$, $e=(v_x, v_y, r_i)$, $E=\{e_1,\ \dots, e_m\}$\\
-	Processes: $P =\{p_1,\ \dots, p_o\}$.\\
-	History, $H_p(t)$: Sequence of activity executions up to, and at time $t$, as perceived by given process.\\
-	Execution: $(v_i, t, p)$, where $v_i$ is the activity executed at time $t$, executed by process $p$.\\
-	Dependant activities: An activity, $v_1$ is said to be dependant on another activity, $v_2$, when the DCR rules allowing $v_1$ to be executed, depends on the state of $v_2$. \\
-	% Processor: $C$ is said to own a number of specific processes. Any process can only be owned by a single processor. \\
-	% Activity responsibility: ... \\
-
-	\section{Requirements}
-	\begin{description}
-		\item[Consensus]:
-			\begin{description}
-				\item[Termination] Eventually each correct process sets its decision value (single activity state)
-				\item[Partial agreement] % Decision vector = activity state
-								Bottom is allowed as substitute for any activity state, unless that activity is owned by process or dependant on one such process. % Hvad er agreement
-				\item[Integrity] If $p_i$ is correct, then all correct processes decide on $v_i$, or $\bot$ as the ith component of their vector. % Omformuler. Kan ikke genbruge i på den her måde
-			\end{description}
-		% \item[Concurrency]: DCR-rules for concurrency (only independent activities can be concurrent) (Tie-breaking). Nødvendig? Argumenter hvorfor Agreement + integrity giver concurrency løsning
-		\item[Correctness]: Any state transition must be permitted by DCR logic or they will be rejected by correct nodes.
-		\item[Non-repudiation]: $v_i$ must be provably proposed by $p_i$, within the bounds specified by any applied cryptography.
-		% \item[Co-non-repudiation?]:
-	\end{description}
-
-	% \section{Scenarios} % Omformuleres til at bruge definitions.
-	% \begin{description}
-	% 	\item[Scenario 1]
-	% 		$A\crel B$\\
-	% 		Alice must never decide $\bot$ for $A$. Bob must never decide $\bot$ for either $A$ or $B$.
-	% 	\item[Scenario 2]
-	% 		$A\crel B$, $A\crel C$\\
-	% 		Alice, Bob and Charlie must always decide the same value for $A$.\\
-	% 		Problem: Prevent Alice from telling Bob the state, but not Charlie. (Reduces to FLP.)
-	% 	\item[Scenario 3]
-	% 		$A\erel B$, $B\crel C$\\
-	% 		Alice and Bob must agree on the state of $A$, Bob and Charlie must agree on the state of $B$, only Charlie must agree on the value of $C$.
-	% 	\item[Scenario 4]
-	% 		$A\erel B$, $B\erel A$\\
-	% 		Both Alice and Bob must agree on both $A$ and $B$.\\
-	% 		Problem: Concurrency.
-	% 	\item[Scenario 5]
-	% 		$A\irel C$, $A\irel D$, $B\erel C$, $B\erel D$\\
-	% 		Both Alice and Bob must agree on only $A$ and $B$, respectively. Charlie must agree on everything except $D$, and Dahlia must agree on everything except $C$\\
-	% 		Problem: Concurrency (expanded), not serially equivalent if $C$ is included and $D$ is excluded after $A$ and $B$ have executed concurrently.
-	% \end{description}
-
 	\section{Algorithm}
 	\label{sec:algorithm}
 	%This section uses the following terms, which must therefore be introduced before this section:
-	% - enabledness
-	% - constraints and effect
-	% - constraining and constrained event
-	% - effecting and effected event
 	% - closed neighbourhood
 	% - Second neighbourhood
 
-	% \subsection{Background}
 	For any algorithm to guarantee workflow correctness of a distributed DCR graph in an asynchronous setting, the algorithm must (1) push executions to effected neighbours and (2) synchronize the executions of non-independent events.
 	This section provides the reasoning behind these requirements.
 	Furthermore, this section will show (3) that an execution of an event can change the state of events only in the immediate neighbourhood, and (4) that an execution can change the enabledness of events only if the events are in the closed neighbourhood of the closed neighbourhood of the executing event.  
@@ -304,7 +283,7 @@ A DCR graph is a representation of a workflow, made up of one or more events wit
 	We will describe the algorithm under the most general case where each event is handled by a separate peer.
 	For simplicity e.g. $A$ will refer to both the event and the peer responsible for it.
 	% We will show that this workflow is enough to describe a general algorithm when $A$ is executed.
-	% Something with events only chaning state one degree forward and thereby enabledness two degrees forward. 
+	% Something with events only chaining state one degree forward and thereby enabledness two degrees forward. 
 	% Why?
 
 	% Effects must push execution state (1)
@@ -336,30 +315,6 @@ A DCR graph is a representation of a workflow, made up of one or more events wit
 	Since enabledness of a constrained event is changed only by state changes in the constraining event, and state changes propagates at most to the neighbourhood of an executing event, it must follow that an execution can at most change enabledness in the closed second neighbourhood of the executing event.
 	%Example
 
-
-	% To achieve the required synchronization the algorithm needs only to provide synchronization in the cases described in section \ref{subsec:locking}.
-
-	% Execute A, lock B
-	% Execute B, lock AB
-
-	% AB effects, BC constaints must synchronize
-	% When $AB$ is an effect and $BC$ is a constraint ($B\crel C, B\mrel C$),
-
-	% Forward locking
-	% Backward locking
-	% Foward-backward locking
-
-	% When $A$ is executed:\\
-	% $B$ must be locked if:\\
-	% $AB$ is an effect (include, exclude, response)\\
-	% $C$ must be locked if:\\
-	% $AB$ is a constraining effect, and $BC$ is a constraint (condition, milestone), in the following configuration:\\
-	% \begin{itemize}
-	% 	\item $A \irel B \crel C$ (B is excluded)
-	% 	\item $A \irel B \mrel C$ (B is excluded and pending)
-	% 	\item $A \rrel B \mrel C$ (B is not pending)
-	% \end{itemize}
-
 	\subsection{Locking}
 	\label{subsec:locking}
 	As shown in section \ref{sec:algorithm}, execution of an event must be pushed to effected neighbours (1), and executions of non-independent events must be synchronised (2). 
@@ -387,17 +342,17 @@ A DCR graph is a representation of a workflow, made up of one or more events wit
 	This means that \texttt{A} does not know the state of \texttt{C} on execution and would have to do one of two options when executing:
 	\begin{itemize}
 		\item \texttt{A} sends a locking message to \texttt{C}, telling it to lock \texttt{B} if necessary.
-		\item \texttt{A} sends a locking message to \texttt{C} and one to \texttt{B}, but gives \texttt{B} the option to forego locking if the state of \texttt{C} would be unchanged by the execution of \texttt{A}.
+		\item \texttt{A} sends a locking message to \texttt{C} and one to \texttt{B}, but gives \texttt{B} the option to forgo locking if the state of \texttt{C} would be unchanged by the execution of \texttt{A}.
 	\end{itemize}
 	Both options result in the minimum amount of locks, but the first option has fewer messages, as it only results in two messages.
 	However, the first option has the disadvantage of potentially taking twice as long, assuming that transporting a message between \texttt{A} and \texttt{C} takes the same amount of time as between \texttt{A} and \texttt{B}.
-	These various advantages of different methods means that finding one optimal solution is not possible, as it is dependant on the specific workflow and the topology of the network at a given time. 
+	These various advantages of different methods means that finding one optimal solution is not possible, as it is dependent on the specific workflow and the topology of the network at a given time. 
 
 	% SGX role regarding fault tolerance
 
 
 	\subsection{Network topology}
-	Due to the algorithm not requiring the executioner of an event to have the global state of the workflow at the time of execution, any state changes are only propogated to the relevant parties.
+	Due to the algorithm not requiring the executioner of an event to have the global state of the workflow at the time of execution, any state changes are only propagated to the relevant parties.
 	This means that any single crash could potentially make collecting the global state, or history of executions, impossible, as the localized state of the crashed peer would be lost.
 	To make the system more tolerant to crashes, the state of each event is tracked by a number of peers.
 	This means that all locks need to be made on a subsystem rather than a single peer.
@@ -417,12 +372,12 @@ A DCR graph is a representation of a workflow, made up of one or more events wit
 	% Crash recovery
 
 	\subsection{Global state collection}
-	Because of the way that changes are propogated through the network, at no point can the state of the entire workflow be ascertained.
+	Because of the way that changes are propagated through the network, at no point can the state of the entire workflow be ascertained.
 	Both as documentation of the process at deprecation of the workflow and during the life cycle of the workflow, the global state is relevant.
 	This means that there needs to be some method of collecting the state at any given time.
 	Due to the locking portion of the algorithm and the assumed absence of byzantine failures, except for crashes, collecting the state is as simple as requesting it from every peer in the network.
-	As long as enough peers respond so that a quorum of states has been obtained for each event, all succesfull executions performed before the state collection algorithm was started, have been recorded.
-	There is however an issue in that each event will then have their individual percieved sequence of executions, which might be disimilar due to arbitrary message delays.
+	As long as enough peers respond so that a quorum of states has been obtained for each event, all successful executions performed before the state collection algorithm was started, have been recorded.
+	There is however an issue in that each event will then have their individual perceived sequence of executions, which might be dissimilar due to arbitrary message delays.
 
 	% Example of delayed messages
 
@@ -457,7 +412,7 @@ A DCR graph is a representation of a workflow, made up of one or more events wit
 				\item[Agreement] Decision vector = activity states
 								1. Eventual agreement: We can poll for an history, after which agreement on current state is reached.
 								2. Partial agreement: Bottom is allowed as substitute for any activity state (not if you're responsible for that activity)
-				\item[Integrity] If $p_i$ is correct, then all correct processes decide on $v_i$, or $\bot$ as the ith component of their vector.
+				\item[Integrity] If $p_i$ is correct, then all correct processes decide on $v_i$, or $\bot$ as the i'th component of their vector.
 			\end{description}
 		\item[Concurrency]: DCR-rules for concurrency (only independent activities can be concurrent) (Tie-breaking)
 		\item[Correctness]: For a correct peer to propose a changed activity state, the new activity state must be the result of a valid activity execution in the last decided decision vector. We assume an agreed upon genesis state.
@@ -482,7 +437,15 @@ A DCR graph is a representation of a workflow, made up of one or more events wit
 	Run D-DCR.\\
 	When an execution is completed, set $d_i$ as the $v_i$ corresponding to the executed activity.
 
-	\section{Implementation}
+	\section{DCR-TEE Implementation}
+
+	\section{Distributed Smart Contract Engine}
+
+		\subsection{Reduction to LATS}
+
+		\subsection{Algorithm}
+
+		\subsection{Implementation}
 
 	\section{Discussion}
 
