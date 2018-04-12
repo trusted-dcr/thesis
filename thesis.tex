@@ -120,6 +120,7 @@
 		% \item[Co-non-repudiation?]:
 	\end{description}
 
+
 \section{DCR}
 
 A DCR graph is a representation of a workflow, made up of one or more events with a number of relations between them. 
@@ -216,6 +217,7 @@ A DCR graph is a representation of a workflow, made up of one or more events wit
 	This eases some of the inherent problems in consensus, as seen in \cite{liu_scalable_2016} and \cite{dhillon_hyperledger_2017}.
 
 		\subsection{Enclave}
+		\label{subsec:enclave}
 		What allows SGX enabled CPUs to provide these strong guarantees builds on the following two hardware details:
 		\begin{description}
 		\item [Processor Reserved Memory (PRM)] is a sequential block of memory reserved for SGX, inaccessible from untrusted software and even hardware.
@@ -248,6 +250,7 @@ A DCR graph is a representation of a workflow, made up of one or more events wit
 		Sealing allows encryption and decryption using a \textit{Seal Key}, which is confidential to the Enclave Signature.
 
 		\subsection{Attestation}
+		\label{subsec:attestation}
 		Attestation, within the Intel SGX platform, is the action of verifying the existence of specific enclaves.
 		The applications of this are two-fold, in the case where there are multiple enclaves running locally on the same CPU and in the case where enclaves need to communicate to enclaves running on external CPUs.
 		These two situations are handled by two different processes, aptly named local and remote attestation.
@@ -274,6 +277,66 @@ A DCR graph is a representation of a workflow, made up of one or more events wit
 		One of the functions provided by Intel SGX, which is especially relevant for this project, is the access to \textit{trusted monotonic counters}.
 		As indicated by the name, monotonic counters are integer counters, that can only be incremented.
 		They are implemented as a block of non-volatile memory accessible only through SGX instructions, protecting against replay attacks.
+
+		\subsection{Transforming byzantine faults to crashes}
+		We conjecture that the correct use of Intel SGX can transform all byzantine faults in a distributed system with unreliable channels to crashes.
+		To be precise, we define a byzantine fault to be "a fault presenting different symptoms to different observers" \cite{driscoll_byzantine_2003}, and an unreliable channel to be a channel in which messages can be lost, delayed, duplicated and reordered.
+		We assume that processes that exhibit byzantine faults will not be able to guess the secrets of a byzantine-resistant subsystem.
+		We will show that Intel SGX can remove these faults in three steps: 
+		First we will show that Intel SGX is in itself a byzantine-resistant subsystem, i.e. a subsystem that cannot exhibit byzantine faults.
+		Then we will show that sending messages from a byzantine-resistant subsystem through a component exhibiting byzantine faults (such as the host OS) is equivalent to sending a message over an unreliable channel if the message is integrity-protected.
+		And lastly, we will show that using these two properties, any distributed system can be transformed from exhibiting byzantine faults to exhibiting at most crashes, given that all messages can be verified to be produced by a byzantine-resistant subsystem.
+
+		Intel SGX has guaranteed \textit{integrity} by Intel \cite{intel_sgx}.
+		That is, enclave memory written by an Intel SGX process is guaranteed tamper proof.
+		Intel achieves this using two mechanisms: Processor Reserved Memory (PRM) and cryptographic integrity checks.
+		PRM prevents access to enclave memory at hardware-level, which means that only the appropriate Intel SGX process is able to access the memory, see section \ref{subsec:enclave} for a detailed explanation.
+		However, this does not alone prevent byzantine faults, as byzantine faults are not only produced by other processes.
+		For instance, the infamous Single Upset Event (also knowns as cosmic ray bit flips) \cite{normand_single_1996}, is a byzantine error where bits in memory are flipped due to background radiation. 
+		Intel SGX protects against such hardware errors by using cryptographic integrity checks \cite{gueron_memory_2016}.
+		When loading enclave memory, Intel SGX's Memory Encryption Engine (MEE) decrypts the memory, and then performs an integrity check on the loaded memory.
+		If the integrity check does not pass, the processor drops the memory, and eventually locks itself for further operations (the \textit{drop-and-lock policy}), requiring a physical reset before new operations can be completed \cite{jang_sgx-bomb_2017}.
+
+		In short, the integrity checks is implemented as a Merkle-Tree of Message Authentication Codes (MACs), with the root node of the tree stored on processor-internal memory \cite{jang_sgx-bomb_2017}. 
+		Under the assumption that AES128 is a random permutation, this method provides the guarantee that an active adversary with the capability of observing the MACs has a negligible probability of forgery \cite{gueron_memory_2016}.
+
+		A practical example of the effectiveness of this integrity check is the \textit{SGX bomb} attack \cite{jang_sgx-bomb_2017}. 
+		The SGX bomb, is a denial-of-service attack on Intel SGX. 
+		It utilises a Row hammer attack to flip arbitrary bits in the EPC, thus triggering the drop-and-lock policy when memory is loaded.
+		But this just demonstrates that even given the power to flip arbitrary enclave bits, the worst attack an adversary can mount is a processor crash.
+
+		\begin{table}
+			\centering
+			\begin{tabular}{l|l}
+				\textbf{Adversary action} & \textbf{Channel failure equivalence} \\\hline
+				Delete $m$                  	& Losing $m$                     \\\hline
+				Withhold $m$                	& Losing $m$                     \\\hline
+				Resend $m$                  	& Duplicate $m$                  \\\hline
+				Withhold $m$, ..., resend $m$ 	& Reorder of $m$                
+			\end{tabular}
+			\caption{Adversary action/Channel failure equivalency\label{tab:adversary-failure-equivalency}}
+		\end{table}
+
+		Given that Intel SGX is byzantine-resistant, we will now show that sending messages from a byzantine-resistant subsystem through a process that can exhibit byzantine faults, is equivalent to sending the message over an unreliable channel, if the message is integrity protected.
+		In this terminology, an unreliable channel is a channel in which messages can be lost, delayed, duplicated and reordered.
+		Given a message, a byzantine man-in-the-middle adversary can either delete it, withhold it, resend it, tamper with it or any combination thereof\footnote{Some of the combinations of actions are equivalent with just one action, for instance deleting a message and then resending is exactly equivalent of resending it -- we will not take these combinations into account}.
+		From the point of view of the sender and recipient each of the adversary's methods is exactly equivalent to a channel failure as specified by table \ref{tab:adversary-failure-equivalency}.
+		The only thing that the adversary can do, that has no equivalence in channel failures, is to tamper with the message.
+		But if the message is integrity protected, any tampering will be evident to the recipient, and thus the recipient can discard the message. 
+		Thereby the adversary tampering with a message becomes equivalent to the channel failure of losing the message. 
+
+		In practice, the integrity protection of the message can be implemented in Intel SGX, by sharing a cryptographic key during remote attestation, and then MACing messages with this key when sending messages between enclaves. See section \ref{subsec:attestation} for more information. %Attestation is missing something about key exchange
+
+		Given that communication between byzantine-resistant subsystems over a layer exhibiting byzantine faults is reduced to unreliable channels if the messages are integrity protected, we can now show how to reduce all byzantine failures to crashes in a system unreliable channels, if all messages can be verified to have been produced by byzantine-resistant subsystems:
+
+		To remove byzantine faults, each process must simply run a byzantine-resistant subsystem, responsible for running the protocol.
+		The subsystems must be attested, and during this attestation exchange a secret key for producing MACs.  
+		All communication might have to pass through the byzantine processes, but given message integrity from the MACs, this simply reduces to unreliable channels. 
+		If a process tries to participate in the protocol without such a subsystem, recipients of that process' messages will know that it was not produced by a byzantine-resistant subsystem, and can simply discard the message.
+
+		In practice, the MACing of the message also serves as proof that it was produced by an Intel SGX process, as the MAC key was exchanged during attestation, thereby guaranteeing that the key is stored in an enclave. 
+
+
 
 	\section{Algorithm}
 	\label{sec:algorithm}
@@ -375,6 +438,9 @@ A DCR graph is a representation of a workflow, made up of one or more events wit
 	This means that the execution of an event can be performed by a primary, by that primary attempting to lock all of its neighbours and checking whether or not the acquired locks are sufficient in order to perform the execution, meaning that the set of locked peers forms a quorum for each event requiring a lock.
 
 	% Crash recovery
+
+	% \subsection{Message composition}
+	% In order to reduce the amount of messages needed in the system, the locking of an event can incorporate. 
 
 	\subsection{Global state collection}
 	Because of the way that changes are propagated through the network, at no point can the state of the entire workflow be ascertained.

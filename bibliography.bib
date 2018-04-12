@@ -243,4 +243,74 @@
   file = {C:\\Users\\Frederik\\Zotero\\storage\\KJZYYDHW\\Hildebrandt et al. - 2011 - Safe distribution of declarative processes.pdf;C:\\Users\\Frederik\\Zotero\\storage\\9ACR8P6S\\10.html}
 }
 
+@inproceedings{skeen_nonblocking_1981,
+  address = {New York, NY, USA},
+  series = {SIGMOD '81},
+  title = {Nonblocking {{Commit Protocols}}},
+  isbn = {978-0-89791-040-8},
+  doi = {10.1145/582318.582339},
+  abstract = {Protocols that allow operational sites to continue transaction processing even though site failures have occurred are called nonblocking. Many applications require nonblocking protocols. This paper investigates the properties of nonblocking protocols. Necessary and sufficient conditions for a protocol to be nonblocking are presented and from these conditions a method for designing them is derived. Both a central site nonblocking protocol and a decentralized nonblocking protocol are presented.},
+  booktitle = {Proceedings of the 1981 {{ACM SIGMOD International Conference}} on {{Management}} of {{Data}}},
+  publisher = {{ACM}},
+  author = {Skeen, Dale},
+  year = {1981},
+  pages = {133--142},
+  file = {C:\\Users\\Frederik\\Zotero\\storage\\I5KBV5C4\\10.1.1.86.3.pdf}
+}
+
+@article{veronese_efficient_2013,
+  title = {Efficient Byzantine Fault-Tolerance},
+  volume = {62},
+  number = {1},
+  journal = {IEEE Transactions on Computers},
+  author = {Veronese, Giuliana Santos and Correia, Miguel and Bessani, Alysson Neves and Lung, Lau Cheuk and Verissimo, Paulo},
+  year = {2013},
+  pages = {16--30},
+  file = {C:\\Users\\Frederik\\Zotero\\storage\\ZAIYNNB3\\Veronese et al. - 2013 - Efficient byzantine fault-tolerance.pdf;C:\\Users\\Frederik\\Zotero\\storage\\EXFIG2JJ\\6081855.html}
+}
+
+@inproceedings{driscoll_byzantine_2003,
+  title = {Byzantine Fault Tolerance, from Theory to Reality},
+  booktitle = {International {{Conference}} on {{Computer Safety}}, {{Reliability}}, and {{Security}}},
+  publisher = {{Springer}},
+  author = {Driscoll, Kevin and Hall, Brendan and akan Sivencrona, H$\backslash$a and Zumsteg, Phil},
+  year = {2003},
+  pages = {235--248},
+  file = {C:\\Users\\Frederik\\Zotero\\storage\\HP95GIDT\\Driscoll et al. - 2003 - Byzantine fault tolerance, from theory to reality.pdf;C:\\Users\\Frederik\\Zotero\\storage\\ZWZVWGKE\\978-3-540-39878-3_19.html}
+}
+
+@techreport{gueron_memory_2016,
+  title = {A {{Memory Encryption Engine Suitable}} for {{General Purpose Processors}}},
+  abstract = {Cryptographic protection of memory is an essential ingredient for any technology that allows a closed computing system to run software in a trustworthy manner and handle secrets, while its external memory is susceptible to eavesdropping and tampering. An example for such a technology is Intel's emerging Software Guard Extensions technology (Intel SGX) that appears in the latest processor generation, Architecture Codename Skylake. This technology operates under the assumption that the security perimeter includes only the internals of the CPU package, and in particular, leaves the DRAM untrusted. It is supported by an autonomous hardware unit called the Memory Encryption Engine (MEE), whose role is to protect the confidentiality, integrity, and freshness of the CPU-DRAM traffic over some memory range. To succeed in adding this unit to the micro architecture of a general purpose processor product, it must be designed under very strict engineering constraints. This requires a careful combination of cryptographic primitives operating over a customized integrity tree that mostly resides on the DRAM while relying only on a small internally stored root. The purpose of this paper is to explain how this hardware component of SGX works, and the rationale behind some of its design choices. To this end, we formalize the MEE threat model and security objectives, describe the MEE design, cryptographic properties, security margins, and report some concrete performance results.},
+  number = {204},
+  author = {Gueron, Shay},
+  year = {2016},
+  keywords = {implementation},
+  file = {C:\\Users\\Frederik\\Zotero\\storage\\CT5FU3TD\\Gueron - 2016 - A Memory Encryption Engine Suitable for General Pu.pdf;C:\\Users\\Frederik\\Zotero\\storage\\6F39FJ57\\204.html}
+}
+
+@inproceedings{jang_sgx-bomb_2017,
+  title = {{{SGX}}-{{Bomb}}: {{Locking Down}} the {{Processor}} via {{Rowhammer Attack}}},
+  isbn = {978-1-4503-5097-6},
+  shorttitle = {{{SGX}}-{{Bomb}}},
+  doi = {10.1145/3152701.3152709},
+  abstract = {Intel Software Guard Extensions (SGX) provides a strongly isolated memory space, known as an enclave, for a user process, ensuring confidentiality and integrity against software and hardware attacks. Even the operating system and hypervisor cannot access the enclave because of the hardware-level isolation. Further, hardware attacks are neither able to disclose plaintext data from the enclave because its memory is always encrypted nor modify it because its integrity is always verified using an integrity tree. When the processor detects any integrity violation, it locks itself to prevent further damages; that is, a system reboot is necessary. The processor lock seems a reasonable solution against such a powerful hardware attacker; however, if a software attacker has a way to trigger integrity violation, the lock could result in a severe denial-of-service (DoS) attack.},
+  language = {en},
+  publisher = {{ACM Press}},
+  author = {Jang, Yeongjin and Lee, Jaehyuk and Lee, Sangho and Kim, Taesoo},
+  year = {2017},
+  pages = {1--6},
+  file = {C:\\Users\\Frederik\\Zotero\\storage\\WE3LJZK4\\Jang et al. - 2017 - SGX-Bomb Locking Down the Processor via Rowhammer.pdf}
+}
+
+@article{normand_single_1996,
+  title = {Single Event Upset at Ground Level},
+  volume = {43},
+  number = {6},
+  journal = {IEEE transactions on Nuclear Science},
+  author = {Normand, Eugene},
+  year = {1996},
+  pages = {2742--2750}
+}
+
 
