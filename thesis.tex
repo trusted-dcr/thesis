@@ -454,13 +454,10 @@ A DCR graph is a representation of a workflow, made up of one or more events wit
 	If a global state collection is started, originating at \texttt{A} after which \texttt{A} and then \texttt{B} is executed, the collection of the global state would return an empty sequence from \texttt{A} and a sequence of $\{\texttt{A}, \texttt{B}\}$ from \texttt{B}.
 	This means that the global state collected by this would be the sum of returned sequences: $\{\texttt{A}, \texttt{B}\}$
 
-	% Multiples
 	There are however situations where this is insufficient, as it is not always clear how to aggregate the returned sequences.
 	Consider the graph: $\ev{A} \erel \ev{B}, \ev{B} \crel \ev{C}, \ev{D} \irel \ev{B}$
 	On the first execution of \texttt{A}, \texttt{C} is notified, but since subsequent executions do not need to lock \texttt{C} due to \texttt{B} being unaffected by them, \texttt{C} will only be notified once.
-	
-	On collecting the global state of this graph, \texttt{A} might return a number of executions of itself, while \texttt{C} will return a sequence of a single \texttt{A} execution followed by a number of \texttt{C} executions
-
+	If \texttt{D} is also executed after \textt{A} has been executed, then it is unclear how a combined history of executions would look like, as there are multiple valid points in the sequence for the execution of \texttt{C}.
 
 	The ordering of these messages can therefore not be trivially achieved.
 	To solve this, each event attaches the value of a monotonic counter\footnote{starting at 0} to each execution of that specific event.
@@ -468,7 +465,6 @@ A DCR graph is a representation of a workflow, made up of one or more events wit
 
 	Even though the executions can be ordered at any given time, there is the possibility of this ordering changing depending on which peer attempts to collect the global state.
 	This is possible due to the locking system regarding some events to be concurrent (as described in REF), as the execution of those events have no competing locks.
-	
 
 	\section{Consensus}
 	N processes: $p_1, p_2 \dots, p_n$\\
