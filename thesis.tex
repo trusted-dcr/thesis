@@ -457,7 +457,7 @@ A DCR graph is a representation of a workflow, made up of one or more events wit
 	There are however situations where this is insufficient, as it is not always clear how to aggregate the returned sequences.
 	Consider the graph: $\ev{A} \erel \ev{B}, \ev{B} \crel \ev{C}, \ev{D} \irel \ev{B}$
 	On the first execution of \texttt{A}, \texttt{C} is notified, but since subsequent executions do not need to lock \texttt{C} due to \texttt{B} being unaffected by them, \texttt{C} will only be notified once.
-	If \texttt{D} is also executed after \textt{A} has been executed, then it is unclear how a combined history of executions would look like, as there are multiple valid points in the sequence for the execution of \texttt{C}.
+	If \texttt{D} is also executed after \texttt{A} has been executed, then it is unclear how a combined history of executions would look like, as there are multiple valid points in the sequence for the execution of \texttt{C}.
 
 	The ordering of these messages can therefore not be trivially achieved.
 	To solve this, each event attaches the value of a monotonic counter\footnote{starting at 0} to each execution of that specific event.
@@ -519,8 +519,6 @@ A DCR graph is a representation of a workflow, made up of one or more events wit
 		\subsection{Reduction to LATS}
 
 		\subsection{Algorithm}
-
-		\subsection{Implementation}
 
 	\section{Discussion}
 
