@@ -147,79 +147,80 @@
 A DCR graph is a representation of a workflow, made up of one or more events with a number of relations between them. 
 
 		\subsection{Event State}
-		The events in a DCR graph have three binary attributes: included, executed and pending. 
-		Furthermore an event can have role and actor specific execution rights.
+		The events in a DCR graph have three binary attributes: \textit{included}, \textit{executed} and \textit{pending}. 
 		This is an event: \ev{A}
 
 			\subsubsection*{Executed attribute}
-			If an events executed attribute is false executing the event will set its executed attribute to true.
-			Executing an already executed event will have no effect on the executed attribute.
-			The executed attribute is shown as a tick mark: \ev[101]{A}
+			If an events \textit{executed} attribute is false executing the event will set its \textit{executed} attribute to true.
+			Executing an already executed event will have no effect on the \textit{executed} attribute.
+			The \textit{executed} attribute is shown as a tick mark: \ev[101]{A}
 
 			\subsubsection*{Pending attribute}
-			If any event in a workflow has a pending attribute that is true and the event is included, the workflow is in an unfinished state.
-			Every time an event is executed its pending attribute is set to false.
-			This means that setting the pending attribute of an included event to true is specifying that this event must be executed or excluded at some point to leave the workflow in a finished state.
-			The pending attribute is shown as an exclamation point: \ev[011]{A}
+			If any event in a workflow has a \textit{pending} attribute that is true and the event is included, the workflow is in an unfinished state.
+			Every time an event is executed its \textit{pending} attribute is set to false.
+			This means that setting the \textit{pending} attribute of an included event to true is specifying that this event must be executed or excluded at some point to leave the workflow in a finished state.
+			The \textit{pending} attribute is shown as an exclamation point: \ev[011]{A}
 
 			\subsubsection*{Included attribute}
-			If the include attribute of an event is true, the event is included and it can be executed. 
-			If the attribute is false, the event is excluded and can no longer be executed.
-			The included attribute is denoted by the outline of the event: \ev{A} when included and \ev[000]{A} when excluded.
+			If the \textit{include} attribute of an event is false, the event is said to be excluded and it can not be executed.
+			The \textit{included} attribute is denoted by the outline of the event: \ev{A} when included and \ev[000]{A} when excluded.
 
 		\subsection{Relations}
-		There are five types of relations which define different types of relationships between events in a workflow. 
-		All relations can be said to originate from an event and targeting an event.
+		There are five types of relations which define different types of relationships between events in a workflow.
 		The origin and the target of a relation can be the same event.
 		The five can be divided into two categories:
 
 		\begin{description}
-			\item[Effects] which are relations that propagate an execution to other events, in the sense that they change the state of the targeted event. 
-			If an effect originating from an event, \texttt{A}, is targeting an event, \texttt{B}, then \texttt{A} is said to be the effecting event on the effected event \texttt{B}. % affected?
-			These are the \emph{response}, \emph{include} and \emph{exclude} relations. 
-			\item[Constraint] which are relations that exclusively affect whether or not the targeted event can be executed. 
+			\item[Effects] are relations that change the state of the targeted event. 
+			If an effect originating from an event, \texttt{A}, is targeting an event, \texttt{B}, then \texttt{A} is said to be the effecting event on the effected event \texttt{B}.
+			Effects are the \emph{response}, \emph{include} and \emph{exclude} relations. 
+			\item[Constraint] are relations that exclusively affect whether or not the targeted event can be executed. 
 			If a constraint originating from an event, \texttt{A}, is targeting an event, \texttt{B}, then \texttt{A} is said to be the constraining event on the constrained event \texttt{B}.
-			These are the \emph{condition} and \emph{milestone} relations. 
+			Constraints are the \emph{condition} and \emph{milestone} relations. 
 		\end{description}
 
-			\subsubsection*{Condition relation}
-			If there is a condition relation from event \texttt{A} to event \texttt{B}, then \texttt{B} can only be executed if \texttt{A}'s executed attribute is true or \texttt{A} is excluded.
-			This described situation can be shown as: $\ev{A} \crel \ev{B}$
-
 			\subsubsection*{Response relation}
-			If there is a response relation from event \texttt{A} to event \texttt{B}, then \texttt{B}'s pending attribute will be set to true every time \texttt{A} is executed.
-			This described situation can be shown as: $\ev{A} \crel \ev{B}$
+			If there is a response relation from event \texttt{A} to event \texttt{B}, then the \textit{pending} attribute of \texttt{B} will be set to true every time \texttt{A} is executed.
+			The response relation is represented as: $\ev{A} \rrel \ev{B}$
 
 			\subsubsection*{Include relation}
-			If there is an include relation from event \texttt{A} to event \texttt{B}, then \texttt{B}'s included attribute will be set to true every time \texttt{A} is executed.
-			This described situation can be shown as: $\ev{A} \crel \ev{B}$
+			If there is an include relation from event \texttt{A} to event \texttt{B}, then the \textit{included} attribute of \texttt{B} will be set to true every time \texttt{A} is executed.
+			The include relation is represented as: $\ev{A} \irel \ev{B}$
 
 			\subsubsection*{Exclude relation}
-			If there is an exclude relation from event \texttt{A} to event \texttt{B}, then \texttt{B}'s included attribute will be set to false every time \texttt{A} is executed.
-			This described situation can be shown as: $\ev{A} \crel \ev{B}$
+			If there is an exclude relation from event \texttt{A} to event \texttt{B}, then the \textit{included} attribute of \texttt{B} will be set to false every time \texttt{A} is executed.
+			The exclude relation is represented as: $\ev{A} \erel \ev{B}$
+
+			\subsubsection*{Condition relation}
+			If there is a condition relation from event \texttt{A} to event \texttt{B}, then \texttt{B} can only be executed if the \textit{executed} attribute of \texttt{A} is true or the \textit{included} attribute of \texttt{A} is false.
+			The condition relation is represented as: $\ev{A} \crel \ev{B}$
 
 			\subsubsection*{Milestone relation}
-			If there is a milestone relation from event \texttt{A} to event \texttt{B}, then \texttt{B} can only be executed if \texttt{A}'s pending attribute is false or \texttt{A}'s included attribute is false.
-			This described situation can be shown as: $\ev{A} \crel \ev{B}$
+			If there is a milestone relation from event \texttt{A} to event \texttt{B}, then \texttt{B} can only be executed if the \textit{pending} attribute of \texttt{A} is false or the \textit{included} attribute of \texttt{A} is false.
+			The milestone relation is represented as: $\ev{A} \mrel \ev{B}$
 
 		\subsection{Enabledness}
 
-		Since the properties of DCR graphs described so far, all affect whether or not a given event can be executed or not, we use the notion of enabledness to describe the sum of these properties.
+		Since the properties of DCR graphs described so far all affect whether or not a given event can be executed or not, we use the notion of enabledness to describe the sum of these properties.
 		An event which can be executed, meaning it is included and any milestones or conditions targeting it are rendered invalid by the state of the relevant events, it is said to be enabled.
 		If an event cannot be executed, due to the inverse of the aforementioned prerequisites, it is said to be disabled.
 		If an event changes from being enabled to disabled or from disabled to enabled, its enabledness is said to have changed.
 
+		\subsection{Execution rights}
+		For DCR graphs to have a meaningful application, each event is typically assigned a number of actors who are allowed to execute that event.
+		Rights to execute can also be assigned based on role.
+
 		\subsection{Concurrency}
 		Concurrency can be achieved to a degree in a given DCR graph, depending on the exact construction of that graph, due to the fact that event executions have a limited reach with regards to what states they can modify. 
-		Events which can be executed concurrently are said to be independent of one another.
-		For example, given the graph: $\ev{A} \erel \ev{B}, \ev{C} \irel \ev{B}$, \texttt{A} and \texttt{C} are not independent, as they both have an effect on the state of \texttt{B}.
+		Events which do not have competing read and write locks, as described in \cite{} can be executed concurrently are said to be independent of one another.
+		For example, given the graph: $\ev{A} \erel \ev{B}, \ev{C} \irel \ev{B}$, \texttt{A} and \texttt{C} are not independent, as they both require a write lock on \texttt{B} in order to execute.
 		Whereas in the graph: $\ev{A} \crel \ev{B}, \ev{C} \crel \ev{B}$ \texttt{A} and \texttt{C} are concurrent, as they have no effect on each other or on a shared event.
 
 			\subsubsection{Event Independence}
 			There are two types of independence analyses relevant for this paper:
 			\begin{description}
-				\item[Static independence] means that for two event and the state of them, are they independent.
-				\item[Dynamic independence] means that for two events, are they independent in every state they could be in. This problem belongs to NP and an approximation will have to be used instead.
+				\item[Dynamic independence] means that for two event and the state of them, are they independent.
+				\item[Static independence] means that for two events, are they independent in every state they could be in. This problem belongs to NP and an approximation will have to be used instead.
 			\end{description}
 
 \section{Intel SGX}
