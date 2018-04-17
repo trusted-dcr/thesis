@@ -57,17 +57,17 @@
 \section{Introduction}
 
 	Replication of data in decentralized and arbitrarily large networks, is not a new problem, and is a core challenge for many distributed systems.
-	Existing solutions to this problem are expensive, in that they require a large number of messages to be exchanged and slow in that they provide a low degree of concurrency.
+	Existing solutions to this problem are expensive, in the sense that they require a large number of messages to be exchanged and slow in that they provide a low degree of concurrency.
 	The tools afforded to us by recent technological advances, provide strong guarantees and advantages which could potentially be leveraged to improve existing solutions to the problem of decentralized replication.
 	Trusted execution environments, such as Intel Software Guard Extensions (SGX), provides a verifiable trusted subsystem to each participant, which is especially interesting in a decentralized system of mutually untrusting nodes.
 
 	In a time where collaboration between companies, small and large, occurs daily across vast physical distances, a trusted means of coordination is key.
-	An example of this are Dynamic Condition Response (DCR), which is a declarative workflow management system.
+	An example of this are Dynamic Condition Response (DCR) graphs, which is a declarative workflow management system.
 	A core neccesity of DCR is the agreement of all parties on what has transpired in the workflow and what the state of the workflow is at any given point.
-	Depending on how a specific DCR graph is constructed, it can potentially allow for a very high degree of concurrency, as each node can only affect the states of neighbouring nodes.
+	Depending on how a specific DCR graph is constructed, it can potentially allow for a very high degree of concurrency, as each node in a DCR graph can only affect the states of neighbouring nodes.
 	DCR graphs will serve as the subject of the replication for this project.
 
-	The goal is therefore a decentralized DCR engine distributed among \textit{p} participants, which for a DCR graph, \textit{g}, ensures that all \text{p} adhere to the semantics of \textit{g}.
+	The goal is therefore a decentralized DCR engine distributed among \textit{p} participants, which for a DCR graph, \textit{g}, ensures that all \textit{p} adhere to the semantics of \textit{g}.
 	Any \textit{p} should at any time be allowed to request a state change, provided that \textit{p} is verifiably allowed to perform this state change and that this state change is not incompatible with any simultaneous state change.
 	A state change is only required to be propogated to the nodes which that state change matters to, with respect to \textit{g}.
 	Collection of a global state, \textit{s}, should be possible at any time, by any \textit{p}.
