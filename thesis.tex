@@ -114,221 +114,234 @@
 	The first validator to distribute a valid and expired timer to the rest of the validators, is elected leader for the current round of decision-making.	
 	This is a strong indicator that Intel SGX can be used for efficiently attaining consensus.
 
-\section{DCR}
+\section{Background}
 
-A DCR graph is a representation of a workflow, made up of one or more events with a number of relations between them. 
+	\subsection{DCR}
 
-		\subsection{Event State}
-		The events in a DCR graph have three binary attributes: \textit{included}, \textit{executed} and \textit{pending}. 
-		This is an event: \ev{A}
+	A DCR graph is a representation of a workflow, made up of one or more events with a number of relations between them. 
 
-			\subsubsection*{Executed attribute}
-			If an events \textit{executed} attribute is false executing the event will set its \textit{executed} attribute to true.
-			Executing an already executed event will have no effect on the \textit{executed} attribute.
-			The \textit{executed} attribute is shown as a tick mark: \ev[101]{A}
+			\subsubsection{Event State}
+			The events in a DCR graph have three binary attributes: \textit{included}, \textit{executed} and \textit{pending}. 
+			This is an event: \ev{A}
 
-			\subsubsection*{Pending attribute}
-			If any event in a workflow has a \textit{pending} attribute that is true and the event is included, the workflow is in an unfinished state.
-			Every time an event is executed its \textit{pending} attribute is set to false.
-			This means that setting the \textit{pending} attribute of an included event to true is specifying that this event must be executed or excluded at some point to leave the workflow in a finished state.
-			The \textit{pending} attribute is shown as an exclamation point: \ev[011]{A}
+			\begin{description}
+				\item[Executed attribute] If an events \textit{executed} attribute is false executing the event will set its \textit{executed} attribute to true.
+				Executing an already executed event will have no effect on the \textit{executed} attribute.
+				The \textit{executed} attribute is shown as a tick mark: \ev[101]{A}
+				\item[Pending attribute] If any event in a workflow has a \textit{pending} attribute that is true and the event is included, the workflow is in an unfinished state.
+				Every time an event is executed its \textit{pending} attribute is set to false.
+				This means that setting the \textit{pending} attribute of an included event to true is specifying that this event must be executed or excluded at some point to leave the workflow in a finished state.
+				The \textit{pending} attribute is shown as an exclamation point: \ev[011]{A}
+				\item[Included attribute] If the \textit{include} attribute of an event is false, the event is said to be excluded and it can not be executed.
+				The \textit{included} attribute is denoted by the outline of the event: \ev{A} when included and \ev[000]{A} when excluded.
+			\end{description}
 
-			\subsubsection*{Included attribute}
-			If the \textit{include} attribute of an event is false, the event is said to be excluded and it can not be executed.
-			The \textit{included} attribute is denoted by the outline of the event: \ev{A} when included and \ev[000]{A} when excluded.
+			\subsubsection{Relations}
+			There are five types of relations which define different types of relationships between events in a workflow.
+			The origin and the target of a relation can be the same event.
+			The five can be divided into two categories:
 
-		\subsection{Relations}
-		There are five types of relations which define different types of relationships between events in a workflow.
-		The origin and the target of a relation can be the same event.
-		The five can be divided into two categories:
+			\begin{description}
+				\item[Effects] are relations that change the state of the targeted event. 
+				If an effect originating from an event, \texttt{A}, is targeting an event, \texttt{B}, then \texttt{A} is said to be the effecting event on the effected event \texttt{B}.
+				Effects are the \emph{response}, \emph{include} and \emph{exclude} relations. 
+				\begin{description}
+					\item[Response relation] If there is a response relation from event \texttt{A} to event \texttt{B}, then the \textit{pending} attribute of \texttt{B} will be set to true every time \texttt{A} is executed.
+				The response relation is represented as: $\ev{A} \rrel \ev{B}$
+					\item[Include relation] If there is an include relation from event \texttt{A} to event \texttt{B}, then the \textit{included} attribute of \texttt{B} will be set to true every time \texttt{A} is executed.
+				The include relation is represented as: $\ev{A} \irel \ev{B}$
+					\item[Exclude relation] If there is an exclude relation from event \texttt{A} to event \texttt{B}, then the \textit{included} attribute of \texttt{B} will be set to false every time \texttt{A} is executed.
+				The exclude relation is represented as: $\ev{A} \erel \ev{B}$
+				\end{description}
+				\item[Constraint] are relations that exclusively affect whether or not the targeted event can be executed. 
+				If a constraint originating from an event, \texttt{A}, is targeting an event, \texttt{B}, then \texttt{A} is said to be the constraining event on the constrained event \texttt{B}.
+				Constraints are the \emph{condition} and \emph{milestone} relations. 
+				\begin{description}
+					\item[Condition relation] If there is a condition relation from event \texttt{A} to event \texttt{B}, then \texttt{B} can only be executed if the \textit{executed} attribute of \texttt{A} is true or the \textit{included} attribute of \texttt{A} is false.
+				The condition relation is represented as: $\ev{A} \crel \ev{B}$
+					\item[Milestone relation] If there is a milestone relation from event \texttt{A} to event \texttt{B}, then \texttt{B} can only be executed if the \textit{pending} attribute of \texttt{A} is false or the \textit{included} attribute of \texttt{A} is false.
+				The milestone relation is represented as: $\ev{A} \mrel \ev{B}$
+				\end{description}
+			\end{description}
 
-		\begin{description}
-			\item[Effects] are relations that change the state of the targeted event. 
-			If an effect originating from an event, \texttt{A}, is targeting an event, \texttt{B}, then \texttt{A} is said to be the effecting event on the effected event \texttt{B}.
-			Effects are the \emph{response}, \emph{include} and \emph{exclude} relations. 
-			\item[Constraint] are relations that exclusively affect whether or not the targeted event can be executed. 
-			If a constraint originating from an event, \texttt{A}, is targeting an event, \texttt{B}, then \texttt{A} is said to be the constraining event on the constrained event \texttt{B}.
-			Constraints are the \emph{condition} and \emph{milestone} relations. 
-		\end{description}
+				% \subsubsection*{Response relation}
+				% If there is a response relation from event \texttt{A} to event \texttt{B}, then the \textit{pending} attribute of \texttt{B} will be set to true every time \texttt{A} is executed.
+				% The response relation is represented as: $\ev{A} \rrel \ev{B}$
 
-			\subsubsection*{Response relation}
-			If there is a response relation from event \texttt{A} to event \texttt{B}, then the \textit{pending} attribute of \texttt{B} will be set to true every time \texttt{A} is executed.
-			The response relation is represented as: $\ev{A} \rrel \ev{B}$
+				% \subsubsection*{Include relation}
+				% If there is an include relation from event \texttt{A} to event \texttt{B}, then the \textit{included} attribute of \texttt{B} will be set to true every time \texttt{A} is executed.
+				% The include relation is represented as: $\ev{A} \irel \ev{B}$
 
-			\subsubsection*{Include relation}
-			If there is an include relation from event \texttt{A} to event \texttt{B}, then the \textit{included} attribute of \texttt{B} will be set to true every time \texttt{A} is executed.
-			The include relation is represented as: $\ev{A} \irel \ev{B}$
+				% \subsubsection*{Exclude relation}
+				% If there is an exclude relation from event \texttt{A} to event \texttt{B}, then the \textit{included} attribute of \texttt{B} will be set to false every time \texttt{A} is executed.
+				% The exclude relation is represented as: $\ev{A} \erel \ev{B}$
 
-			\subsubsection*{Exclude relation}
-			If there is an exclude relation from event \texttt{A} to event \texttt{B}, then the \textit{included} attribute of \texttt{B} will be set to false every time \texttt{A} is executed.
-			The exclude relation is represented as: $\ev{A} \erel \ev{B}$
+				% \subsubsection*{Condition relation}
+				% If there is a condition relation from event \texttt{A} to event \texttt{B}, then \texttt{B} can only be executed if the \textit{executed} attribute of \texttt{A} is true or the \textit{included} attribute of \texttt{A} is false.
+				% The condition relation is represented as: $\ev{A} \crel \ev{B}$
 
-			\subsubsection*{Condition relation}
-			If there is a condition relation from event \texttt{A} to event \texttt{B}, then \texttt{B} can only be executed if the \textit{executed} attribute of \texttt{A} is true or the \textit{included} attribute of \texttt{A} is false.
-			The condition relation is represented as: $\ev{A} \crel \ev{B}$
+				% \subsubsection*{Milestone relation}
+				% If there is a milestone relation from event \texttt{A} to event \texttt{B}, then \texttt{B} can only be executed if the \textit{pending} attribute of \texttt{A} is false or the \textit{included} attribute of \texttt{A} is false.
+				% The milestone relation is represented as: $\ev{A} \mrel \ev{B}$
 
-			\subsubsection*{Milestone relation}
-			If there is a milestone relation from event \texttt{A} to event \texttt{B}, then \texttt{B} can only be executed if the \textit{pending} attribute of \texttt{A} is false or the \textit{included} attribute of \texttt{A} is false.
-			The milestone relation is represented as: $\ev{A} \mrel \ev{B}$
+			\subsubsection{Enabledness}
 
-		\subsection{Enabledness}
+			Since the properties of DCR graphs described so far all affect whether or not a given event can be executed or not, we use the notion of enabledness to describe the sum of these properties.
+			An event which can be executed, meaning it is included and any milestones or conditions targeting it are rendered invalid by the state of the relevant events, it is said to be enabled.
+			If an event cannot be executed, due to the inverse of the aforementioned prerequisites, it is said to be disabled.
+			If an event changes from being enabled to disabled or from disabled to enabled, its enabledness is said to have changed.
 
-		Since the properties of DCR graphs described so far all affect whether or not a given event can be executed or not, we use the notion of enabledness to describe the sum of these properties.
-		An event which can be executed, meaning it is included and any milestones or conditions targeting it are rendered invalid by the state of the relevant events, it is said to be enabled.
-		If an event cannot be executed, due to the inverse of the aforementioned prerequisites, it is said to be disabled.
-		If an event changes from being enabled to disabled or from disabled to enabled, its enabledness is said to have changed.
+			\subsubsection{Execution rights}
+			For DCR graphs to have a meaningful application, each event is typically assigned a number of actors who are allowed to execute that event.
+			Rights to execute can also be assigned based on role.
 
-		\subsection{Execution rights}
-		For DCR graphs to have a meaningful application, each event is typically assigned a number of actors who are allowed to execute that event.
-		Rights to execute can also be assigned based on role.
+			\subsubsection{Concurrency}
+			Concurrency can be achieved to a degree in a given DCR graph, depending on the exact construction of that graph, due to the fact that event executions have a limited reach with regards to what states they can modify. 
+			Events which do not have competing read and write locks, as described in \cite{} can be executed concurrently are said to be independent of one another.
+			For example, given the graph: $\ev{A} \erel \ev{B}, \ev{C} \irel \ev{B}$, \texttt{A} and \texttt{C} are not independent, as they both require a write lock on \texttt{B} in order to execute.
+			Whereas in the graph: $\ev{A} \crel \ev{B}, \ev{C} \crel \ev{B}$ \texttt{A} and \texttt{C} are concurrent, as they have no effect on each other or on a shared event.
 
-		\subsection{Concurrency}
-		Concurrency can be achieved to a degree in a given DCR graph, depending on the exact construction of that graph, due to the fact that event executions have a limited reach with regards to what states they can modify. 
-		Events which do not have competing read and write locks, as described in \cite{} can be executed concurrently are said to be independent of one another.
-		For example, given the graph: $\ev{A} \erel \ev{B}, \ev{C} \irel \ev{B}$, \texttt{A} and \texttt{C} are not independent, as they both require a write lock on \texttt{B} in order to execute.
-		Whereas in the graph: $\ev{A} \crel \ev{B}, \ev{C} \crel \ev{B}$ \texttt{A} and \texttt{C} are concurrent, as they have no effect on each other or on a shared event.
-
-			\subsubsection{Event Independence}
+				% \subsubsection{Event Independence}
 			There are two types of independence analyses relevant for this paper:
 			\begin{description}
 				\item[Dynamic independence] means that for two event and the state of them, are they independent.
 				\item[Static independence] means that for two events, are they independent in every state they could be in. This problem belongs to NP and an approximation will have to be used instead.
 			\end{description}
 
-\section{Intel SGX}
+	\subsection{Intel SGX}
 
-	Intel SGX is a TEE technology which allows users to define protected areas of memory, so called \textit{enclaves}.
-	Intel guarantees \cite{intel_sgx} that any code run and data loaded in the TEE is protected from access by any process running outside of the enclave.
-	More specifically, the guarantees encompass \textit{confidentiality}, i.e. no other process can read the data in the enclave, and \textit{integrity}, i.e. no other process can modify the data in the enclave. 
-	If the enclave contains secrets which the user wishes to keep, but still does not want to trust external processes with, the enclave can be sealed on disk, essentially encrypting it for later use.
-	This means that data can be stored and processed securely, with its security guaranteed by Intel, if done properly.
-	An additional feature of Intel SGX is that the result of any code run using Intel SGX can be verified by other users, given the code and the output.
+		Intel SGX is a TEE technology which allows users to define protected areas of memory, so called \textit{enclaves}.
+		Intel guarantees \cite{intel_sgx} that any code run and data loaded in the TEE is protected from access by any process running outside of the enclave.
+		More specifically, the guarantees encompass \textit{confidentiality}, i.e. no other process can read the data in the enclave, and \textit{integrity}, i.e. no other process can modify the data in the enclave. 
+		If the enclave contains secrets which the user wishes to keep, but still does not want to trust external processes with, the enclave can be sealed on disk, essentially encrypting it for later use.
+		This means that data can be stored and processed securely, with its security guaranteed by Intel, if done properly.
+		An additional feature of Intel SGX is that the result of any code run using Intel SGX can be verified by other users, given the code and the output.
 
-	This is all made possible by unique keys generated during manufacturing and permanently stored inside the fuse array of the processor.
-	Some of these keys are known by Intel for the system to be recognized when contacting Intel servers.
+		This is all made possible by unique keys generated during manufacturing and permanently stored inside the fuse array of the processor.
+		Some of these keys are known by Intel for the system to be recognized when contacting Intel servers.
 
-	In short, the major innovation in Intel SGX is the option of running hardware secured software, which enables tamper proof messages, where the sender can be verified as being a correct process.
-	This eases some of the inherent problems in consensus, as seen in \cite{liu_scalable_2016} and \cite{dhillon_hyperledger_2017}.
+		In short, the major innovation in Intel SGX is the option of running hardware secured software, which enables tamper proof messages, where the sender can be verified as being a correct process.
+		This eases some of the inherent problems in consensus, as seen in \cite{liu_scalable_2016} and \cite{dhillon_hyperledger_2017}.
 
-		\subsection{Enclave}
-		\label{subsec:enclave}
-		What allows SGX enabled CPUs to provide these strong guarantees builds on the following two hardware details:
-		\begin{description}
-		\item [Processor Reserved Memory (PRM)] is a sequential block of memory reserved for SGX, inaccessible from untrusted software and even hardware.
-		\item [Enclave mode] is a mode under which a logical processor gains access to the PRM.
-		\end{description}
-		Using these hardware facilities SGX defines the concept of an enclave.
-		An enclave is, as its name suggests, a software module isolated completely from the rest of the system.
-		Its memory is located solely in PRM, preventing access by other processes and enclaves running on the system. 
-		The PRM is protected from non-enclave processes by enclave mode. 
-		When a process is not in enclave mode and tries to access the PRM, the memory access is denied \cite{costan_intel_2016}.      
-		The PRM of an enclave process is protected from accesses by other processes in enclave mode by the SGX Enclave Control Structure (SECS). 
-		The SECS holds meta data about the enclave processes, and among this is a virtual-to-physical memory mapping called the Enclave Page Cache (EPC). 
-		Through the EPC an enclave's access to physical PRM is restricted to what has been allocated for the enclave-process \cite{costan_intel_2016}.
+			\subsubsection{Enclave}
+			\label{subsec:enclave}
+			What allows SGX enabled CPUs to provide these strong guarantees builds on the following two hardware details:
+			\begin{description}
+			\item [Processor Reserved Memory (PRM)] is a sequential block of memory reserved for SGX, inaccessible from untrusted software and even hardware.
+			\item [Enclave mode] is a mode under which a logical processor gains access to the PRM.
+			\end{description}
+			Using these hardware facilities SGX defines the concept of an enclave.
+			An enclave is, as its name suggests, a software module isolated completely from the rest of the system.
+			Its memory is located solely in PRM, preventing access by other processes and enclaves running on the system. 
+			The PRM is protected from non-enclave processes by enclave mode. 
+			When a process is not in enclave mode and tries to access the PRM, the memory access is denied \cite{costan_intel_2016}.      
+			The PRM of an enclave process is protected from accesses by other processes in enclave mode by the SGX Enclave Control Structure (SECS). 
+			The SECS holds meta data about the enclave processes, and among this is a virtual-to-physical memory mapping called the Enclave Page Cache (EPC). 
+			Through the EPC an enclave's access to physical PRM is restricted to what has been allocated for the enclave-process \cite{costan_intel_2016}.
 
-		While SGX provides powerful guarantees trough its enclave concept, it does not guarantee software correctness and will not protect against flawed software.
-		Instead SGX encourages developers to isolate a minimal piece of their software, the Trusted Computing Base (TCB), in a trusted enclave environment, and keep the remainder as traditional system processes \cite{intel_sgx_guide}.
-		By minimizing the size of the TCB, and thus the amount of code one must trust, common security principles indicate that the chance of security flaws decreases \cite{intel_sgx_guide}.
+			While SGX provides powerful guarantees trough its enclave concept, it does not guarantee software correctness and will not protect against flawed software.
+			Instead SGX encourages developers to isolate a minimal piece of their software, the Trusted Computing Base (TCB), in a trusted enclave environment, and keep the remainder as traditional system processes \cite{intel_sgx_guide}.
+			By minimizing the size of the TCB, and thus the amount of code one must trust, common security principles indicate that the chance of security flaws decreases \cite{intel_sgx_guide}.
 
-		In order for an isolated enclave to be useful, communication between trusted and untrusted software is enabled through \textit{enclave calls} (ECALL) and \textit{out calls} (OCALL).
-		This interface must be defined at compile-time, specifying an API of ECALLs for the enclave as well as any untrusted services needed as OCALLs, in a \textit{EDL}-file \cite{intel_sgx_guide}.
+			In order for an isolated enclave to be useful, communication between trusted and untrusted software is enabled through \textit{enclave calls} (ECALL) and \textit{out calls} (OCALL).
+			This interface must be defined at compile-time, specifying an API of ECALLs for the enclave as well as any untrusted services needed as OCALLs, in a \textit{EDL}-file \cite{intel_sgx_guide}.
 
-		When built, an enclave module is a plain binary on the untrusted file system.
-		As an enclave under such circumstances would be vulnerable to tampering before initialization, SGX enforces a strict signature policy.
-		An enclave must include an \textit{Enclave Signature} containing \textbf{(a)} a hash of the code and initialization data of the enclave, \textbf{(b)} the author's public key and \textbf{(c)} an enclave version/product number.
-		During enclave initialization a hardware check is performed, ensuring the Enclave Signature matches the enclave binary loaded from the file system.
+			When built, an enclave module is a plain binary on the untrusted file system.
+			As an enclave under such circumstances would be vulnerable to tampering before initialization, SGX enforces a strict signature policy.
+			An enclave must include an \textit{Enclave Signature} containing \textbf{(a)} a hash of the code and initialization data of the enclave, \textbf{(b)} the author's public key and \textbf{(c)} an enclave version/product number.
+			During enclave initialization a hardware check is performed, ensuring the Enclave Signature matches the enclave binary loaded from the file system.
 
-		Another powerful tool of an SGX enclave is the ability to read from and write data to an untrusted storage medium while ensuring confidentiality of its contents.
-		Such capabilities are needed as the PRM is volatile and will not persist after shutdown.
-		In SGX this process is known as \textit{sealing}.
-		Sealing allows encryption and decryption using a \textit{Seal Key}, which is confidential to the Enclave Signature.
+			Another powerful tool of an SGX enclave is the ability to read from and write data to an untrusted storage medium while ensuring confidentiality of its contents.
+			Such capabilities are needed as the PRM is volatile and will not persist after shutdown.
+			In SGX this process is known as \textit{sealing}.
+			Sealing allows encryption and decryption using a \textit{Seal Key}, which is confidential to the Enclave Signature.
 
-		\subsection{Attestation}
-		\label{subsec:attestation}
-		Attestation, within the Intel SGX platform, is the action of verifying the existence of specific enclaves.
-		The applications of this are two-fold, in the case where there are multiple enclaves running locally on the same CPU and in the case where enclaves need to communicate to enclaves running on external CPUs.
-		These two situations are handled by two different processes, aptly named local and remote attestation.
-  
-		Local attestation builds on a secret fused into the CPU.
-		An enclave can use an SGX instruction to generate a report uniquely identifying the enclave.
-		This report is MACed with a key derived from the fused secret and enclave identifier.
-		It is not possible to fake such a MACed report, as the MACing happens in hardware components that ensure that the report corresponds to the caller enclave.
-		The fused secret is not directly accessible by software components, but can only be used by certain hardware instructions that protect against malicious use.
-		An attestation challenger will ask for a MACed report from the client enclave, and after receiving it derive the same key to verify the MAC.
-		Because a report can only be created by the enclave it describes, the challenger can be certain of which enclave the client is running if the MAC is valid.
-		To prevent replays the MACed report is allowed to contain a block of arbitrary data, in which the challenger can require a nonce.
+			\subsubsection{Attestation}
+			\label{subsec:attestation}
+			Attestation, within the Intel SGX platform, is the action of verifying the existence of specific enclaves.
+			The applications of this are two-fold, in the case where there are multiple enclaves running locally on the same CPU and in the case where enclaves need to communicate to enclaves running on external CPUs.
+			These two situations are handled by two different processes, aptly named local and remote attestation.
+	  
+			Local attestation builds on a secret fused into the CPU.
+			An enclave can use an SGX instruction to generate a report uniquely identifying the enclave.
+			This report is MACed with a key derived from the fused secret and enclave identifier.
+			It is not possible to fake such a MACed report, as the MACing happens in hardware components that ensure that the report corresponds to the caller enclave.
+			The fused secret is not directly accessible by software components, but can only be used by certain hardware instructions that protect against malicious use.
+			An attestation challenger will ask for a MACed report from the client enclave, and after receiving it derive the same key to verify the MAC.
+			Because a report can only be created by the enclave it describes, the challenger can be certain of which enclave the client is running if the MAC is valid.
+			To prevent replays the MACed report is allowed to contain a block of arbitrary data, in which the challenger can require a nonce.
 
-		Remote attestations build on the same concept of a report, but as challenger and client are now on different CPUs, they no longer hold the same fused secret.
-		Instead remote attestation relies on the group signature scheme Enhanced Privacy ID (EPID) and a third party issuer.
-		Each SGX enabled CPU is granted an EPID Member Private Key by the third party issuer some time after manufacturing.
-		Like the fused secret, this private key is not directly accessible to an enclave.
-		Under the EPID scheme, all issuer generated private keys share the same public key (EPID Group Public Key).
-		When remote attestation takes place, the client enclave generates a report and attests locally with the Quoting Enclave (QE).
-		The QE, now convinced of the client enclave's identify, strips the MAC off the report and instead signs it with the EPID Member Private Key, which the QE has special privileges to access\footnote{Enclaves signed by Intel have special privileges throughout SGX. This allows SGX to implement complicated SGX instructions in software.}.
-		The remote challenger can verify the signed report with the EPID Group Public Key and be sure that \textbf{(a)} the report is signed by an EPID Member Private Key, \textbf{(b)} EPID Member Private Keys are granted secret to QEs, and \textbf{(c)} QEs will not sign false reports.
+			Remote attestations build on the same concept of a report, but as challenger and client are now on different CPUs, they no longer hold the same fused secret.
+			Instead remote attestation relies on the group signature scheme Enhanced Privacy ID (EPID) and a third party issuer.
+			Each SGX enabled CPU is granted an EPID Member Private Key by the third party issuer some time after manufacturing.
+			Like the fused secret, this private key is not directly accessible to an enclave.
+			Under the EPID scheme, all issuer generated private keys share the same public key (EPID Group Public Key).
+			When remote attestation takes place, the client enclave generates a report and attests locally with the Quoting Enclave (QE).
+			The QE, now convinced of the client enclave's identify, strips the MAC off the report and instead signs it with the EPID Member Private Key, which the QE has special privileges to access\footnote{Enclaves signed by Intel have special privileges throughout SGX. This allows SGX to implement complicated SGX instructions in software.}.
+			The remote challenger can verify the signed report with the EPID Group Public Key and be sure that \textbf{(a)} the report is signed by an EPID Member Private Key, \textbf{(b)} EPID Member Private Keys are granted secret to QEs, and \textbf{(c)} QEs will not sign false reports.
 
-		\subsection{Monotonic counters}
-		One of the functions provided by Intel SGX, which is especially relevant for this project, is the access to \textit{trusted monotonic counters}.
-		As indicated by the name, monotonic counters are integer counters, that can only be incremented.
-		They are implemented as a block of non-volatile memory accessible only through SGX instructions, protecting against replay attacks.
+			\subsubsection{Monotonic counters}
+			One of the functions provided by Intel SGX, which is especially relevant for this project, is the access to \textit{trusted monotonic counters}.
+			As indicated by the name, monotonic counters are integer counters, that can only be incremented.
+			They are implemented as a block of non-volatile memory accessible only through SGX instructions, protecting against replay attacks.
 
-		\subsection{Transforming byzantine faults to crashes}
-		We conjecture that the correct use of Intel SGX can transform all byzantine faults in a distributed system with unreliable channels to crashes.
-		To be precise, we define a byzantine fault to be "a fault presenting different symptoms to different observers" \cite{driscoll_byzantine_2003}, and an unreliable channel to be a channel in which messages can be lost, delayed, duplicated and reordered.
-		We assume that processes that exhibit byzantine faults will not be able to guess the secrets of a byzantine-resistant subsystem.
-		We will show that Intel SGX can remove these faults in three steps: 
-		First we will show that Intel SGX is in itself a byzantine-resistant subsystem, i.e. a subsystem that cannot exhibit byzantine faults.
-		Then we will show that sending messages from a byzantine-resistant subsystem through a component exhibiting byzantine faults (such as the host OS) is equivalent to sending a message over an unreliable channel if the message is integrity-protected.
-		And lastly, we will show that using these two properties, any distributed system can be transformed from exhibiting byzantine faults to exhibiting at most crashes, given that all messages can be verified to be produced by a byzantine-resistant subsystem.
+			\subsubsection{Transforming byzantine faults to crashes}
+			We conjecture that the correct use of Intel SGX can transform all byzantine faults in a distributed system with unreliable channels to crashes.
+			To be precise, we define a byzantine fault to be "a fault presenting different symptoms to different observers" \cite{driscoll_byzantine_2003}, and an unreliable channel to be a channel in which messages can be lost, delayed, duplicated and reordered.
+			We assume that processes that exhibit byzantine faults will not be able to guess the secrets of a byzantine-resistant subsystem.
+			We will show that Intel SGX can remove these faults in three steps: 
+			First we will show that Intel SGX is in itself a byzantine-resistant subsystem, i.e. a subsystem that cannot exhibit byzantine faults.
+			Then we will show that sending messages from a byzantine-resistant subsystem through a component exhibiting byzantine faults (such as the host OS) is equivalent to sending a message over an unreliable channel if the message is integrity-protected.
+			And lastly, we will show that using these two properties, any distributed system can be transformed from exhibiting byzantine faults to exhibiting at most crashes, given that all messages can be verified to be produced by a byzantine-resistant subsystem.
 
-		Intel SGX has guaranteed \textit{integrity} by Intel \cite{intel_sgx}.
-		That is, enclave memory written by an Intel SGX process is guaranteed tamper proof.
-		Intel achieves this using two mechanisms: Processor Reserved Memory (PRM) and cryptographic integrity checks.
-		PRM prevents access to enclave memory at hardware-level, which means that only the appropriate Intel SGX process is able to access the memory, see section \ref{subsec:enclave} for a detailed explanation.
-		However, this does not alone prevent byzantine faults, as byzantine faults are not only produced by other processes.
-		For instance, the infamous Single Upset Event (also knowns as cosmic ray bit flips) \cite{normand_single_1996}, is a byzantine error where bits in memory are flipped due to background radiation. 
-		Intel SGX protects against such hardware errors by using cryptographic integrity checks \cite{gueron_memory_2016}.
-		When loading enclave memory, Intel SGX's Memory Encryption Engine (MEE) decrypts the memory, and then performs an integrity check on the loaded memory.
-		If the integrity check does not pass, the processor drops the memory, and eventually locks itself for further operations (the \textit{drop-and-lock policy}), requiring a physical reset before new operations can be completed \cite{jang_sgx-bomb_2017}.
+			Intel SGX has guaranteed \textit{integrity} by Intel \cite{intel_sgx}.
+			That is, enclave memory written by an Intel SGX process is guaranteed tamper proof.
+			Intel achieves this using two mechanisms: Processor Reserved Memory (PRM) and cryptographic integrity checks.
+			PRM prevents access to enclave memory at hardware-level, which means that only the appropriate Intel SGX process is able to access the memory, see section \ref{subsec:enclave} for a detailed explanation.
+			However, this does not alone prevent byzantine faults, as byzantine faults are not only produced by other processes.
+			For instance, the infamous Single Upset Event (also knowns as cosmic ray bit flips) \cite{normand_single_1996}, is a byzantine error where bits in memory are flipped due to background radiation. 
+			Intel SGX protects against such hardware errors by using cryptographic integrity checks \cite{gueron_memory_2016}.
+			When loading enclave memory, Intel SGX's Memory Encryption Engine (MEE) decrypts the memory, and then performs an integrity check on the loaded memory.
+			If the integrity check does not pass, the processor drops the memory, and eventually locks itself for further operations (the \textit{drop-and-lock policy}), requiring a physical reset before new operations can be completed \cite{jang_sgx-bomb_2017}.
 
-		In short, the integrity checks is implemented as a Merkle-Tree of Message Authentication Codes (MACs), with the root node of the tree stored on processor-internal memory \cite{jang_sgx-bomb_2017}. 
-		Under the assumption that AES128 is a random permutation, this method provides the guarantee that an active adversary with the capability of observing the MACs has a negligible probability of forgery \cite{gueron_memory_2016}.
+			In short, the integrity checks is implemented as a Merkle-Tree of Message Authentication Codes (MACs), with the root node of the tree stored on processor-internal memory \cite{jang_sgx-bomb_2017}. 
+			Under the assumption that AES128 is a random permutation, this method provides the guarantee that an active adversary with the capability of observing the MACs has a negligible probability of forgery \cite{gueron_memory_2016}.
 
-		A practical example of the effectiveness of this integrity check is the \textit{SGX bomb} attack \cite{jang_sgx-bomb_2017}. 
-		The SGX bomb, is a denial-of-service attack on Intel SGX. 
-		It utilises a Row hammer attack to flip arbitrary bits in the EPC, thus triggering the drop-and-lock policy when memory is loaded.
-		But this just demonstrates that even given the power to flip arbitrary enclave bits, the worst attack an adversary can mount is a processor crash.
+			A practical example of the effectiveness of this integrity check is the \textit{SGX bomb} attack \cite{jang_sgx-bomb_2017}. 
+			The SGX bomb, is a denial-of-service attack on Intel SGX. 
+			It utilises a Row hammer attack to flip arbitrary bits in the EPC, thus triggering the drop-and-lock policy when memory is loaded.
+			But this just demonstrates that even given the power to flip arbitrary enclave bits, the worst attack an adversary can mount is a processor crash.
 
-		\begin{table}
-			\centering
-			\begin{tabular}{l|l}
-				\textbf{Adversary action} & \textbf{Channel failure equivalence} \\\hline
-				Delete $m$                  	& Losing $m$                     \\\hline
-				Withhold $m$                	& Losing $m$                     \\\hline
-				Resend $m$                  	& Duplicate $m$                  \\\hline
-				Withhold $m$, ..., resend $m$ 	& Reorder of $m$                
-			\end{tabular}
-			\caption{Adversary action/Channel failure equivalency\label{tab:adversary-failure-equivalency}}
-		\end{table}
+			\begin{table}
+				\centering
+				\begin{tabular}{l|l}
+					\textbf{Adversary action} & \textbf{Channel failure equivalence} \\\hline
+					Delete $m$                  	& Losing $m$                     \\\hline
+					Withhold $m$                	& Losing $m$                     \\\hline
+					Resend $m$                  	& Duplicate $m$                  \\\hline
+					Withhold $m$, ..., resend $m$ 	& Reorder of $m$                
+				\end{tabular}
+				\caption{Adversary action/Channel failure equivalency\label{tab:adversary-failure-equivalency}}
+			\end{table}
 
-		Given that Intel SGX is byzantine-resistant, we will now show that sending messages from a byzantine-resistant subsystem through a process that can exhibit byzantine faults, is equivalent to sending the message over an unreliable channel, if the message is integrity protected.
-		In this terminology, an unreliable channel is a channel in which messages can be lost, delayed, duplicated and reordered.
-		Given a message, a byzantine man-in-the-middle adversary can either delete it, withhold it, resend it, tamper with it or any combination thereof\footnote{Some of the combinations of actions are equivalent with just one action, for instance deleting a message and then resending is exactly equivalent of resending it -- we will not take these combinations into account}.
-		From the point of view of the sender and recipient each of the adversary's methods is exactly equivalent to a channel failure as specified by table \ref{tab:adversary-failure-equivalency}.
-		The only thing that the adversary can do, that has no equivalence in channel failures, is to tamper with the message.
-		But if the message is integrity protected, any tampering will be evident to the recipient, and thus the recipient can discard the message. 
-		Thereby the adversary tampering with a message becomes equivalent to the channel failure of losing the message. 
+			Given that Intel SGX is byzantine-resistant, we will now show that sending messages from a byzantine-resistant subsystem through a process that can exhibit byzantine faults, is equivalent to sending the message over an unreliable channel, if the message is integrity protected.
+			In this terminology, an unreliable channel is a channel in which messages can be lost, delayed, duplicated and reordered.
+			Given a message, a byzantine man-in-the-middle adversary can either delete it, withhold it, resend it, tamper with it or any combination thereof\footnote{Some of the combinations of actions are equivalent with just one action, for instance deleting a message and then resending is exactly equivalent of resending it -- we will not take these combinations into account}.
+			From the point of view of the sender and recipient each of the adversary's methods is exactly equivalent to a channel failure as specified by table \ref{tab:adversary-failure-equivalency}.
+			The only thing that the adversary can do, that has no equivalence in channel failures, is to tamper with the message.
+			But if the message is integrity protected, any tampering will be evident to the recipient, and thus the recipient can discard the message. 
+			Thereby the adversary tampering with a message becomes equivalent to the channel failure of losing the message. 
 
-		In practice, the integrity protection of the message can be implemented in Intel SGX, by sharing a cryptographic key during remote attestation, and then MACing messages with this key when sending messages between enclaves. See section \ref{subsec:attestation} for more information. %Attestation is missing something about key exchange
+			In practice, the integrity protection of the message can be implemented in Intel SGX, by sharing a cryptographic key during remote attestation, and then MACing messages with this key when sending messages between enclaves. See section \ref{subsec:attestation} for more information. %Attestation is missing something about key exchange
 
-		Given that communication between byzantine-resistant subsystems over a layer exhibiting byzantine faults is reduced to unreliable channels if the messages are integrity protected, we can now show how to reduce all byzantine failures to crashes in a system unreliable channels, if all messages can be verified to have been produced by byzantine-resistant subsystems:
+			Given that communication between byzantine-resistant subsystems over a layer exhibiting byzantine faults is reduced to unreliable channels if the messages are integrity protected, we can now show how to reduce all byzantine failures to crashes in a system unreliable channels, if all messages can be verified to have been produced by byzantine-resistant subsystems:
 
-		To remove byzantine faults, each process must simply run a byzantine-resistant subsystem, responsible for running the protocol.
-		The subsystems must be attested, and during this attestation exchange a secret key for producing MACs.  
-		All communication might have to pass through the byzantine processes, but given message integrity from the MACs, this simply reduces to unreliable channels. 
-		If a process tries to participate in the protocol without such a subsystem, recipients of that process' messages will know that it was not produced by a byzantine-resistant subsystem, and can simply discard the message.
+			To remove byzantine faults, each process must simply run a byzantine-resistant subsystem, responsible for running the protocol.
+			The subsystems must be attested, and during this attestation exchange a secret key for producing MACs.  
+			All communication might have to pass through the byzantine processes, but given message integrity from the MACs, this simply reduces to unreliable channels. 
+			If a process tries to participate in the protocol without such a subsystem, recipients of that process' messages will know that it was not produced by a byzantine-resistant subsystem, and can simply discard the message.
 
-		In practice, the MACing of the message also serves as proof that it was produced by an Intel SGX process, as the MAC key was exchanged during attestation, thereby guaranteeing that the key is stored in an enclave. 
+			In practice, the MACing of the message also serves as proof that it was produced by an Intel SGX process, as the MAC key was exchanged during attestation, thereby guaranteeing that the key is stored in an enclave. 
 
 	\section{Requirements}
 	\begin{description}
