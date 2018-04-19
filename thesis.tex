@@ -9,6 +9,7 @@
 \usepackage{relsize}
 \usepackage{ifthen}
 \usepackage{xstring}
+\usepackage{cite}
 
 \include{dcr-preamble}
 
@@ -69,7 +70,7 @@
 
 	The goal is therefore a decentralized DCR engine distributed among \textit{p} participants, which for a DCR graph, \textit{g}, ensures that all \textit{p} adhere to the semantics of \textit{g}.
 	Any \textit{p} should at any time be allowed to request a state change, provided that \textit{p} is verifiably allowed to perform this state change and that this state change is not incompatible with any simultaneous state change.
-	A state change is only required to be propogated to the nodes which that state change matters to, with respect to \textit{g}.
+	A state change is only required to be propagated to the nodes which that state change matters to, with respect to \textit{g}.
 	Collection of a global state, \textit{s}, should be possible at any time, by any \textit{p}.
 	A global state should always be compatible with any other global state for the same graph.
 
@@ -92,12 +93,12 @@
 
 	\subsection{Related works}
 
-	An existing platform which partially provides a solution to the goal of this project is Ethereum \cite{_ethereum_2018}.
+	An existing platform which partially provides a solution to the goal of this project is Ethereum~\cite{_ethereum_2018}.
 	Ethereum is a distributed computing platform based on blockchain technologies, which does, however, also feature a currency, making computations disproportionately expensive, both monetarily and computationally due to the large amounts of computations required by proof-of-work based blockchains.
 	Even though SGX is a new technology, it has already been proposed to solve several issues in the blockchain concept. 
-	SGX has been used as an intermediate for faster consensus about transactions in \cite{gopinath_nirmala_improving_2017}, however it still relies on the underlying blockchain to prevent double-spending.
+	SGX has been used as an intermediate for faster consensus about transactions in~\cite{gopinath_nirmala_improving_2017}, however it still relies on the underlying blockchain to prevent double-spending.
 
-	In \cite{liu_scalable_2016} SGX has been utilized to implement a new Byzantine fault tolerance (BFT) consensus algorithm, called \textit{FastBFT}, which solves some of the scalability issues of blockchains.
+	In~\cite{liu_scalable_2016} SGX has been utilized to implement a new Byzantine fault tolerance (BFT) consensus algorithm, called \textit{FastBFT}, which solves some of the scalability issues of blockchains.
 	This is done by using the \textit{strawman design} where a request is sent to a node, the \textit{primary}, who prepares a vote by distributing parts of a secret to all nodes.
 	The secret can be reconstructed given enough parts and then compared to the hash of the secret which is common knowledge.
 	This means that consensus can be achieved in only $O(n)$ messages, rather than the $O(n^2)$ messages achieved by other algorithms.
@@ -106,7 +107,7 @@
 	A further issue with the strawman design, is that the primary can change the orders of requests, thereby equivocate which request is being voted on.
 	This is once again solved by Intel SGX, by numbering requests with a trusted counter that can only be incremented.
 
-	In particular, the Hyperledger Sawtooth \cite{dhillon_hyperledger_2017} project is interesting as it is closely related to the goals of our project.
+	In particular, the Hyperledger Sawtooth~\cite{dhillon_hyperledger_2017} project is interesting as it is closely related to the goals of our project.
 	Hyperledger Sawtooth is an ongoing blockchain project, which replaces the need for mining by using a consensus algorithm called Proof of Elapsed Time (PoET).
 	In PoET a number of nodes who choose to participate as validators each create a timer using Intel SGX.
 	This timer is different per validator and contains a timestamp some time in the future, with a degree of randomness.
@@ -197,7 +198,7 @@
 
 			\subsubsection{Concurrency}
 			Concurrency can be achieved to a degree in a given DCR graph, depending on the exact construction of that graph, due to the fact that event executions have a limited reach with regards to what states they can modify. 
-			Events which do not have competing read and write locks, as described in \cite{} can be executed concurrently are said to be independent of one another.
+			Events which do not have competing read and write locks, as described in~\cite{} can be executed concurrently are said to be independent of one another.
 			For example, given the graph: $\ev{A} \erel \ev{B}, \ev{C} \irel \ev{B}$, \texttt{A} and \texttt{C} are not independent, as they both require a write lock on \texttt{B} in order to execute.
 			Whereas in the graph: $\ev{A} \crel \ev{B}, \ev{C} \crel \ev{B}$ \texttt{A} and \texttt{C} are concurrent, as they have no effect on each other or on a shared event.
 
@@ -208,10 +209,62 @@
 				\item[Static independence] means that for two events, are they independent in every state they could be in. This problem belongs to NP and an approximation will have to be used instead.
 			\end{description}
 
-	\subsection{Intel SGX}
+		\subsection{Consensus}
+		Consensus is the problem of achieving agreement between the processes in a distributed system. 
+		It is central to the the problem of distributed DCR, as agreement on the states of event must be achieved to ensure that all correct peers adhere to the semantics of the DCR graph. 
+		Take the simple graph $\ev{A} \crel \ev{B}$, and let a subset of peers $p_1$ be responsible for the state of $\ev{A}$, and a subset of peer $p_2$ be responsible for the state of $\ev{B}$.
+		If agreement on the state of $\ev{A}$ is not guaranteed, then $p_2$ might, in the belief that $\ev{A}$ is executed, execute $\ev{B}$ even though $p_1$ has never executed $\ev{A}$. 
+
+		A consensus protocol is formally as a protocol with $N$ processes ($p_0, p_1, \dots, p_{N-1}$), where each process $p_i$ begins in an undecided state, and proposes a single value $v_i$ from a set of values $D$. The processes then communicate their values to each other, and each process sets a decision variable $d_i$ and enters a decided state. For the protocol to solve the consensus problem, the following requirements should hold for every execution:
+		\begin{description}
+			\item[Termination]: every process eventually sets its decision variable.
+			\item[Agreement]: the decision variable of all correct processes are the same.
+			\item[Validity]: if a correct process decides $d$, then some correct process has proposed a value $v$, where $v = d$.
+		\end{description}
+
+		It's easy to see that distributed DCR reduces to consensus.
+		The reduction without any concurrency goes like this:\\
+		\noindent
+		We assume that the correct graph has been distributed to all peers, and initial state is agreed upon.
+		\begin{itemize}
+			\item Let $D$ be the set of enabled events.
+			\item Let $v_i$ be an identifier an event. 
+			\item A correct process will only propose $v_i$ if the event identified by $v_i$ is enabled.
+			\item We can now use a consensus subprocess to decide on a $v$, which will then be executed.
+			\item Each process recalculates $D$ to reflect the new global state, and repeats the protocol until the workflow has been completed.
+		\end{itemize}
+
+		In the famous FLP impossibility result from 1985~\cite{fischer_impossibility_1985}, it was shown that non-termination was possible in all consensus protocol systems with asynchronous communication channels and at least one (crash)faulty process.
+		In order to circumvent this impossibility, the guarantees of a fault-tolerant system that utilises a consensus protocol are relaxed, for instance by guaranteeing Termination only when no faults are present, as is the case in  the Paxos protocol~\cite{lamport_part-time_1998}. 
+
+		\subsubsection{State Machine Replication}
+		One problem that relates directly to consensus, is \textit{state machine replication} (SMR).
+		SMR is the problem of replicating the state of a system on several nodes, called \textit{replicas}.
+		Replicas are modelled as state machine.
+		In SMR systems, \textit{clients} send requests to replicas who must then guarantee:
+		\begin{description}
+			\item[Safety]: all non-faulty replicas execute the requests in the same order.
+			\item[Liveness]: clients eventually receive replies to their requests.
+		\end{description}
+		The state machine replication problem is equivalent to the consensus problem and essentially provides the same guarantees~\cite{schneider_implementing_1990}. 
+		This is evident in the fact that the safety requirement is essentially an aggregation of the agreement and validity requirements in consensus, while the liveness property is equivalent to termination.  
+		Equivalent to consensus. 
+		As such, FLP impossibility entails that one of the requirements must be relaxed in fault tolerant SMR systems.
+		This is often done by only guaranteeing liveness when no failures are present.
+
+		A version of SMR deals with byzantine faults, instead of crash failures.
+		These systems are knowns as \textit{byzantine fault tolerance} (BFT) systems.
+		These systems deals with arbitrary faults, that is arbitrary behaviour of faulty processes and channels, including changing messages, creating new messages and changing local state. 
+		It has been shown that $2f+1$ processes are necessary and sufficient to solve SMR with relaxed liveness if faulty processes only exhibit crashes~\cite{bracha_asynchronous_1985}. 
+		Similarly it has been shown that $3f+1$ processes are necessary and sufficient to solve SMR with relaxed liveness if faulty processes can exhibit byzantine faults~\cite{bracha_asynchronous_1985,pease_reaching_1980}.
+		Recent advances have been made in BFT-algorithms, which increase fault tolerance from $3f+1$ to $2f+1$ by utilizing TEE features~\cite{liu_scalable_2016,kapitza_cheapbft_2012,veronese_efficient_2013}.
+		When we take the proofs of sufficient and necessary amounts of processes in BFT systems into account, these advanced strongly indicates that TEEs might be able to reduce byzantine faults to crash faults, a statement we will explore further in section \ref{subsubsec:transforming-byzantine-faults}.
+
+
+		\subsection{Intel SGX}
 
 		Intel SGX is a TEE technology which allows users to define protected areas of memory, so called \textit{enclaves}.
-		Intel guarantees \cite{intel_sgx} that any code run and data loaded in the TEE is protected from access by any process running outside of the enclave.
+		Intel guarantees~\cite{intel_sgx} that any code run and data loaded in the TEE is protected from access by any process running outside of the enclave.
 		More specifically, the guarantees encompass \textit{confidentiality}, i.e. no other process can read the data in the enclave, and \textit{integrity}, i.e. no other process can modify the data in the enclave. 
 		If the enclave contains secrets which the user wishes to keep, but still does not want to trust external processes with, the enclave can be sealed on disk, essentially encrypting it for later use.
 		This means that data can be stored and processed securely, with its security guaranteed by Intel, if done properly.
@@ -221,7 +274,7 @@
 		Some of these keys are known by Intel for the system to be recognized when contacting Intel servers.
 
 		In short, the major innovation in Intel SGX is the option of running hardware secured software, which enables tamper proof messages, where the sender can be verified as being a correct process.
-		This eases some of the inherent problems in consensus, as seen in \cite{liu_scalable_2016} and \cite{dhillon_hyperledger_2017}.
+		This eases some of the inherent problems in consensus, as seen in~\cite{liu_scalable_2016} and~\cite{dhillon_hyperledger_2017}.
 
 			\subsubsection{Enclave}
 			\label{subsec:enclave}
@@ -234,17 +287,17 @@
 			An enclave is, as its name suggests, a software module isolated completely from the rest of the system.
 			Its memory is located solely in PRM, preventing access by other processes and enclaves running on the system. 
 			The PRM is protected from non-enclave processes by enclave mode. 
-			When a process is not in enclave mode and tries to access the PRM, the memory access is denied \cite{costan_intel_2016}.      
+			When a process is not in enclave mode and tries to access the PRM, the memory access is denied~\cite{costan_intel_2016}.      
 			The PRM of an enclave process is protected from accesses by other processes in enclave mode by the SGX Enclave Control Structure (SECS). 
 			The SECS holds meta data about the enclave processes, and among this is a virtual-to-physical memory mapping called the Enclave Page Cache (EPC). 
-			Through the EPC an enclave's access to physical PRM is restricted to what has been allocated for the enclave-process \cite{costan_intel_2016}.
+			Through the EPC an enclave's access to physical PRM is restricted to what has been allocated for the enclave-process~\cite{costan_intel_2016}.
 
 			While SGX provides powerful guarantees trough its enclave concept, it does not guarantee software correctness and will not protect against flawed software.
-			Instead SGX encourages developers to isolate a minimal piece of their software, the Trusted Computing Base (TCB), in a trusted enclave environment, and keep the remainder as traditional system processes \cite{intel_sgx_guide}.
-			By minimizing the size of the TCB, and thus the amount of code one must trust, common security principles indicate that the chance of security flaws decreases \cite{intel_sgx_guide}.
+			Instead SGX encourages developers to isolate a minimal piece of their software, the Trusted Computing Base (TCB), in a trusted enclave environment, and keep the remainder as traditional system processes~\cite{intel_sgx_guide}.
+			By minimizing the size of the TCB, and thus the amount of code one must trust, common security principles indicate that the chance of security flaws decreases~\cite{intel_sgx_guide}.
 
 			In order for an isolated enclave to be useful, communication between trusted and untrusted software is enabled through \textit{enclave calls} (ECALL) and \textit{out calls} (OCALL).
-			This interface must be defined at compile-time, specifying an API of ECALLs for the enclave as well as any untrusted services needed as OCALLs, in a \textit{EDL}-file \cite{intel_sgx_guide}.
+			This interface must be defined at compile-time, specifying an API of ECALLs for the enclave as well as any untrusted services needed as OCALLs, in a \textit{EDL}-file~\cite{intel_sgx_guide}.
 
 			When built, an enclave module is a plain binary on the untrusted file system.
 			As an enclave under such circumstances would be vulnerable to tampering before initialization, SGX enforces a strict signature policy.
@@ -286,28 +339,29 @@
 			They are implemented as a block of non-volatile memory accessible only through SGX instructions, protecting against replay attacks.
 
 			\subsubsection{Transforming byzantine faults to crashes}
+			\label{subsubsec:transforming-byzantine-faults}
 			We conjecture that the correct use of Intel SGX can transform all byzantine faults in a distributed system with unreliable channels to crashes.
-			To be precise, we define a byzantine fault to be "a fault presenting different symptoms to different observers" \cite{driscoll_byzantine_2003}, and an unreliable channel to be a channel in which messages can be lost, delayed, duplicated and reordered.
+			To be precise, we define a byzantine fault to be "a fault presenting different symptoms to different observers"~\cite{driscoll_byzantine_2003}, and an unreliable channel to be a channel in which messages can be lost, delayed, duplicated and reordered.
 			We assume that processes that exhibit byzantine faults will not be able to guess the secrets of a byzantine-resistant subsystem.
 			We will show that Intel SGX can remove these faults in three steps: 
 			First we will show that Intel SGX is in itself a byzantine-resistant subsystem, i.e. a subsystem that cannot exhibit byzantine faults.
 			Then we will show that sending messages from a byzantine-resistant subsystem through a component exhibiting byzantine faults (such as the host OS) is equivalent to sending a message over an unreliable channel if the message is integrity-protected.
 			And lastly, we will show that using these two properties, any distributed system can be transformed from exhibiting byzantine faults to exhibiting at most crashes, given that all messages can be verified to be produced by a byzantine-resistant subsystem.
 
-			Intel SGX has guaranteed \textit{integrity} by Intel \cite{intel_sgx}.
+			Intel SGX has guaranteed \textit{integrity} by Intel~\cite{intel_sgx}.
 			That is, enclave memory written by an Intel SGX process is guaranteed tamper proof.
 			Intel achieves this using two mechanisms: Processor Reserved Memory (PRM) and cryptographic integrity checks.
 			PRM prevents access to enclave memory at hardware-level, which means that only the appropriate Intel SGX process is able to access the memory, see section \ref{subsec:enclave} for a detailed explanation.
 			However, this does not alone prevent byzantine faults, as byzantine faults are not only produced by other processes.
-			For instance, the infamous Single Upset Event (also knowns as cosmic ray bit flips) \cite{normand_single_1996}, is a byzantine error where bits in memory are flipped due to background radiation. 
-			Intel SGX protects against such hardware errors by using cryptographic integrity checks \cite{gueron_memory_2016}.
+			For instance, the infamous Single Upset Event (also knowns as cosmic ray bit flips)~\cite{normand_single_1996}, is a byzantine error where bits in memory are flipped due to background radiation. 
+			Intel SGX protects against such hardware errors by using cryptographic integrity checks~\cite{gueron_memory_2016}.
 			When loading enclave memory, Intel SGX's Memory Encryption Engine (MEE) decrypts the memory, and then performs an integrity check on the loaded memory.
-			If the integrity check does not pass, the processor drops the memory, and eventually locks itself for further operations (the \textit{drop-and-lock policy}), requiring a physical reset before new operations can be completed \cite{jang_sgx-bomb_2017}.
+			If the integrity check does not pass, the processor drops the memory, and eventually locks itself for further operations (the \textit{drop-and-lock policy}), requiring a physical reset before new operations can be completed~\cite{jang_sgx-bomb_2017}.
 
-			In short, the integrity checks is implemented as a Merkle-Tree of Message Authentication Codes (MACs), with the root node of the tree stored on processor-internal memory \cite{jang_sgx-bomb_2017}. 
-			Under the assumption that AES128 is a random permutation, this method provides the guarantee that an active adversary with the capability of observing the MACs has a negligible probability of forgery \cite{gueron_memory_2016}.
+			In short, the integrity checks is implemented as a Merkle-Tree of Message Authentication Codes (MACs), with the root node of the tree stored on processor-internal memory~\cite{jang_sgx-bomb_2017}. 
+			Under the assumption that AES128 is a random permutation, this method provides the guarantee that an active adversary with the capability of observing the MACs has a negligible probability of forgery~\cite{gueron_memory_2016}.
 
-			A practical example of the effectiveness of this integrity check is the \textit{SGX bomb} attack \cite{jang_sgx-bomb_2017}. 
+			A practical example of the effectiveness of this integrity check is the \textit{SGX bomb} attack~\cite{jang_sgx-bomb_2017}. 
 			The SGX bomb, is a denial-of-service attack on Intel SGX. 
 			It utilises a Row hammer attack to flip arbitrary bits in the EPC, thus triggering the drop-and-lock policy when memory is loaded.
 			But this just demonstrates that even given the power to flip arbitrary enclave bits, the worst attack an adversary can mount is a processor crash.
@@ -426,7 +480,7 @@
 	\end{description}
 
 	It seems that, given the state of all relevant nodes, the locking mechanism described as \emph{forward locking} minimizes the amount of locks needed for any execution.
-	This optimization is, however, only possible when, in example graph 3, the state of \texttt{C} is known and since locking is only performed forwards, there is no implicit way to propogate executions backwards.
+	This optimization is, however, only possible when, in example graph 3, the state of \texttt{C} is known and since locking is only performed forwards, there is no implicit way to propagate executions backwards.
 	This means that \texttt{A} does not know the state of \texttt{C} on execution and would have to do one of two options when executing:
 	\begin{itemize}
 		\item \texttt{A} sends a locking message to \texttt{C}, telling it to lock \texttt{B} if necessary.
@@ -515,13 +569,6 @@
 		% \item[Co-non-repudiation?]:
 	\end{description}
 
-	\noindent
-	\subsection{Reduction from D-DCR to consensus (no concurrency)}
-	(Assume initial state is agreed upon)\\
-	Let $D$ be the set of possible decision vectors.\\
-	Any correct process will only choose a decision vector that is obtainable by executing an activity that is in an executable state in the last agreed upon decision vector. (Correctness)\\
-	% The decision vector must be proposed by an actor with execution rights of the 
-	Use consensus to decide on a possible execution.\\
 
 	\noindent
 	\subsection{Reduction from consensus to D-DCR}
@@ -544,11 +591,11 @@
 
 		\subsection{SGX security}
 	    All aforementioned hardware guarantees are given by Intel, but since very little of the proprietary technology is documented, all security properties of SGX rely on the correctness of Intel's hardware implementation.
-	    Historically Intel has had vulnerabilities in similar hardware components, like the CVE-2017-5689 security incident exposed in \cite{silent_bob}, allowed unprivileged access to the Intel Active Management Technology.
+	    Historically Intel has had vulnerabilities in similar hardware components, like the CVE-2017-5689 security incident exposed in~\cite{silent_bob}, allowed unprivileged access to the Intel Active Management Technology.
 
 	    SGX claims to provide confidentiality and integrity for running enclaves.
 	    This is ensured by preventing untrusted software access to the PRM and enclaves access to other regions of the PRM besides their exclusive region.
-	    However, while it is not possible to breach the integrity of PRM, \cite{costan_intel_2016} shows several issues regarding confidentiality.
+	    However, while it is not possible to breach the integrity of PRM,~\cite{costan_intel_2016} shows several issues regarding confidentiality.
 	    Because enclaves use the system page table even for data residing on PRM, it is possible for untrusted software to learn the page access order by manipulating the OS controlled page table.
 	    Another possible attack vector is to perform cache timing by cleverly choosing the physical memory position of enclave memory pages on set associative caches.
 	    By mapping snooping software to the same cache set as the enclave, the snooping software can evict the enclave's memory from the cache and use timing to figure out if it is accessed again.
@@ -558,10 +605,10 @@
 	    And since our system has very few confidentiality requirements, the known vulnerabilities do not seem problematic for the purposes of this project.
 
 	    As mentioned SGX does not protect against flawed software, so it is up to the developer to prevent side-channel attacks through OCALLs that might expose secret data.
-	    A noteworthy mention to illustrate the vigor needed is the common pitfall mentioned in \cite{intel_sgx_guide} when using ECALLs and OCALLs.
+	    A noteworthy mention to illustrate the vigor needed is the common pitfall mentioned in~\cite{intel_sgx_guide} when using ECALLs and OCALLs.
 	    Because enclaves are compiled using a standard \cpp-compiler, structure padding is likely to happen.
 	    The SGX environment does not protect against leaking secret information through uninitialized structure padding when passing structures in ECALLs and OCALLs -- this, and other common security pitfalls, are not part of any SGX security guarantees.
-	    Intel recommends to always clear secrets from the enclave memory after use in \cite{intel_sgx_guide}, regardless of the guarantees given by the PRM, underlining the risk of unintended vulnerabilities.
+	    Intel recommends to always clear secrets from the enclave memory after use in~\cite{intel_sgx_guide}, regardless of the guarantees given by the PRM, underlining the risk of unintended vulnerabilities.
 
 	\section{Conclusion}
 
