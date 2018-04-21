@@ -165,26 +165,6 @@
 				\end{description}
 			\end{description}
 
-				% \subsubsection*{Response relation}
-				% If there is a response relation from event \texttt{A} to event \texttt{B}, then the \textit{pending} attribute of \texttt{B} will be set to true every time \texttt{A} is executed.
-				% The response relation is represented as: $\ev{A} \rrel \ev{B}$
-
-				% \subsubsection*{Include relation}
-				% If there is an include relation from event \texttt{A} to event \texttt{B}, then the \textit{included} attribute of \texttt{B} will be set to true every time \texttt{A} is executed.
-				% The include relation is represented as: $\ev{A} \irel \ev{B}$
-
-				% \subsubsection*{Exclude relation}
-				% If there is an exclude relation from event \texttt{A} to event \texttt{B}, then the \textit{included} attribute of \texttt{B} will be set to false every time \texttt{A} is executed.
-				% The exclude relation is represented as: $\ev{A} \erel \ev{B}$
-
-				% \subsubsection*{Condition relation}
-				% If there is a condition relation from event \texttt{A} to event \texttt{B}, then \texttt{B} can only be executed if the \textit{executed} attribute of \texttt{A} is true or the \textit{included} attribute of \texttt{A} is false.
-				% The condition relation is represented as: $\ev{A} \crel \ev{B}$
-
-				% \subsubsection*{Milestone relation}
-				% If there is a milestone relation from event \texttt{A} to event \texttt{B}, then \texttt{B} can only be executed if the \textit{pending} attribute of \texttt{A} is false or the \textit{included} attribute of \texttt{A} is false.
-				% The milestone relation is represented as: $\ev{A} \mrel \ev{B}$
-
 			\subsubsection{Enabledness}
 
 			Since the properties of DCR graphs described so far all affect whether or not a given event can be executed or not, we use the notion of enabledness to describe the sum of these properties.
@@ -197,15 +177,20 @@
 			Rights to execute can also be assigned based on role.
 
 			\subsubsection{Concurrency}
-			Concurrency can be achieved to a degree in a given DCR graph, depending on the exact construction of that graph, due to the fact that event executions have a limited reach with regards to what states they can modify. 
-			Events which do not have competing read and write locks, as described in~\cite{} can be executed concurrently are said to be independent of one another.
-			For example, given the graph: $\ev{A} \erel \ev{B}, \ev{C} \irel \ev{B}$, \texttt{A} and \texttt{C} are not independent, as they both require a write lock on \texttt{B} in order to execute.
-			Whereas in the graph: $\ev{A} \crel \ev{B}, \ev{C} \crel \ev{B}$ \texttt{A} and \texttt{C} are concurrent, as they have no effect on each other or on a shared event.
+			The notion of concurrency in DCR graphs, described in\cite{debois_concurrency_2015}, is the property a pair of events is said to have when the graph allows those events to be executed in either order with the same result.
+			More formally events are concurrent, when the following principles are applicable:
+			\begin{itemize}
+				\item Adjacent concurrent activities should be able to be executed in either order\footnote{Adjacent meaning in a valid execution sequence.}.
+				\item Concurrent activities cannot enable each other.
+				\item Concurrent activities cannot disable each other.
+				\item Concurrent activities cannot have incompatible effects on the state of other activities.
+			\end{itemize}
 
-				% \subsubsection{Event Independence}
+			Given that concurrency does not regard the state of the graph, when evaluating the validity of the principles mentioned above, there is the need for further specification.
+			For this, the term event independence is used.
 			There are two types of independence analyses relevant for this paper:
 			\begin{description}
-				\item[Dynamic independence] means that for two event and the state of them, are they independent.
+				\item[Dynamic independence] means that for two given events and their current state, are they independent.
 				\item[Static independence] means that for two events, are they independent in every state they could be in. This problem belongs to NP and an approximation will have to be used instead.
 			\end{description}
 
@@ -217,9 +202,9 @@
 
 		A consensus protocol is formally as a protocol with $N$ processes ($p_0, p_1, \dots, p_{N-1}$), where each process $p_i$ begins in an undecided state, and proposes a single value $v_i$ from a set of values $D$. The processes then communicate their values to each other, and each process sets a decision variable $d_i$ and enters a decided state. For the protocol to solve the consensus problem, the following requirements should hold for every execution:
 		\begin{description}
-			\item[Termination]: every process eventually sets its decision variable.
-			\item[Agreement]: the decision variable of all correct processes are the same.
-			\item[Validity]: if a correct process decides $d$, then some correct process has proposed a value $v$, where $v = d$.
+			\item[Termination:] every process eventually sets its decision variable.
+			\item[Agreement:] the decision variable of all correct processes are the same.
+			\item[Validity:] if a correct process decides $d$, then some correct process has proposed a value $v$, where $v = d$.
 		\end{description}
 
 		It's easy to see that distributed DCR reduces to consensus.
@@ -243,8 +228,8 @@
 		Replicas are modelled as state machine.
 		In SMR systems, \textit{clients} send requests to replicas who must then guarantee:
 		\begin{description}
-			\item[Safety]: all non-faulty replicas execute the requests in the same order.
-			\item[Liveness]: clients eventually receive replies to their requests.
+			\item[Safety:] all non-faulty replicas execute the requests in the same order.
+			\item[Liveness:] clients eventually receive replies to their requests.
 		\end{description}
 		The state machine replication problem is equivalent to the consensus problem and essentially provides the same guarantees~\cite{schneider_implementing_1990}. 
 		This is evident in the fact that the safety requirement is essentially an aggregation of the agreement and validity requirements in consensus, while the liveness property is equivalent to termination.  
@@ -280,8 +265,8 @@
 			\label{subsec:enclave}
 			What allows SGX enabled CPUs to provide these strong guarantees builds on the following two hardware details:
 			\begin{description}
-			\item [Processor Reserved Memory (PRM)] is a sequential block of memory reserved for SGX, inaccessible from untrusted software and even hardware.
-			\item [Enclave mode] is a mode under which a logical processor gains access to the PRM.
+				\item [Processor Reserved Memory (PRM)] is a sequential block of memory reserved for SGX, inaccessible from untrusted software and even hardware.
+				\item [Enclave mode] is a mode under which a logical processor gains access to the PRM.
 			\end{description}
 			Using these hardware facilities SGX defines the concept of an enclave.
 			An enclave is, as its name suggests, a software module isolated completely from the rest of the system.
