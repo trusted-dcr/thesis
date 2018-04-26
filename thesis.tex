@@ -43,7 +43,7 @@
 
 	\vspace{\fill}
 	\begin{abstract}
-		In this thesis the security and optimization options provided by recent advances in trusted execution environments (TEE), specifically Intel Secure Guard Extensions (SGX), are explored in relation to the known problem of decentralized replication.
+		In this thesis the security and optimization options provided by recent advances in trusted execution environments (TEE), specifically Intel Secure Guard Extensions (SGX), are explored in relation to the problem of decentralized partial state replication.
 		An algorithm, and the implementation of that algorithm, for running decentralized Dynamic Condition Response (DCR) graphs is used as the example of a system requiring decentralized replication.
 		Lastly a description of what it would require to transform the developed system to be able to handle general smart contracts is given.
 	\end{abstract}
@@ -216,15 +216,15 @@
 			\item Let $D$ be the set of enabled events.
 			\item Let $v_i$ be an identifier an event. 
 			\item A correct process will only propose $v_i$ if the event identified by $v_i$ is enabled.
-			\item We can now use a consensus subprocess to decide on a $v$, which will then be executed.
+			\item We can now use a consensus sub-process to decide on a $v$, which will then be executed.
 			\item Each process recalculates $D$ to reflect the new global state, and repeats the protocol until the workflow has been completed.
 		\end{itemize}
 
 		In the famous FLP impossibility result from 1985~\cite{fischer_impossibility_1985}, it was shown that non-termination was possible in all consensus protocol systems with asynchronous communication channels and at least one (crash)faulty process.
-		In order to circumvent this impossibility, the guarantees of a fault-tolerant system that utilises a consensus protocol are relaxed, for instance by guaranteeing Termination only when no faults are present, as is the case in  the Paxos protocol~\cite{lamport_part-time_1998}. 
+		In order to circumvent this impossibility, the guarantees of a fault-tolerant system that utilizes a consensus protocol are relaxed, for instance by guaranteeing Termination only when no faults are present, as is the case in  the Paxos protocol~\cite{lamport_part-time_1998}. 
 
 		\subsubsection{State Machine Replication}
-		One problem that relates directly to consensus, is \textit{state machine replication} (SMR).
+		One problem that relates directly to consensus, is \textit{State Machine Replication} (SMR).
 		SMR is the problem of replicating the state of a system on several nodes, called \textit{replicas}.
 		Replicas are modelled as state machine.
 		In SMR systems, \textit{clients} send requests to replicas who must then guarantee:
@@ -245,7 +245,15 @@
 		Similarly it has been shown that $3f+1$ processes are necessary and sufficient to solve SMR with relaxed liveness if faulty processes can exhibit byzantine faults~\cite{bracha_asynchronous_1985,pease_reaching_1980}.
 		Recent advances have been made in BFT-algorithms, which increase fault tolerance from $3f+1$ to $2f+1$ by utilizing TEE features~\cite{liu_scalable_2016,kapitza_cheapbft_2012,veronese_efficient_2013}.
 		When we take the proofs of sufficient and necessary amounts of processes in BFT systems into account, these advanced strongly indicates that TEEs might be able to reduce byzantine faults to crash faults, a statement we will explore further in section \ref{subsubsec:transforming-byzantine-faults}.
+		SMR brings with it the taxing job of pushing each update to all nodes in the network, which leads to obvious scalability issues in large networks.
 
+		One solution to that problem is delegating the responsibility of segments of data to each node in the network.
+		This is called \textit{Partial State Machine Replication} (PSMR).
+		PSMR, by necessity, allows multiple simultaneous leaders and only synchronizes state changes when those state changes are conflicting.
+		Due to allowing multiple leaders, PSMR provides high availability as any node can request a state change.
+		High concurrency and performance also follows from the partial states reducing the number of nodes which have to be notified of a state change leading to both fewer messages and less chance of two state changes overlapping, requiring ordering.
+		Relatively few solutions exists for the PSMR problem and the ones that do require a large amount of messages \cite{sousa_partial_2001}.
+		To the best of our knowledge, no solution to the PSMR problem using a trusted execution environment exists.
 
 		\subsection{Intel SGX}
 
@@ -637,7 +645,7 @@
 
 	\section{Distributed Smart Contract Engine}
 
-		\subsection{Reduction to LATS}
+		% \subsection{Reduction to LATS}
 
 		\subsection{Algorithm}
 

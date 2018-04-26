@@ -1,4 +1,317 @@
 
+@inproceedings{song_bosco_2008,
+  title = {Bosco: {{One}}-Step Byzantine Asynchronous Consensus},
+  shorttitle = {Bosco},
+  booktitle = {International {{Symposium}} on {{Distributed Computing}}},
+  publisher = {{Springer}},
+  author = {Song, Yee Jiun and {van Renesse}, Robbert},
+  year = {2008},
+  pages = {438--450},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\TZD9JK48\\Song and van Renesse - 2008 - Bosco One-step byzantine asynchronous consensus.pdf;C:\\Users\\Krukke\\Zotero\\storage\\KMY33ZLC\\978-3-540-87779-0_30.html}
+}
+
+@inproceedings{kapitza_cheapbft_2012,
+  title = {{{CheapBFT}}: Resource-Efficient Byzantine Fault Tolerance},
+  shorttitle = {{{CheapBFT}}},
+  booktitle = {Proceedings of the 7th {{ACM}} European Conference on {{Computer Systems}}},
+  publisher = {{ACM}},
+  author = {Kapitza, R{\"u}diger and Behl, Johannes and Cachin, Christian and Distler, Tobias and Kuhnle, Simon and Mohammadi, Seyed Vahid and Schr{\"o}der-Preikschat, Wolfgang and Stengel, Klaus},
+  year = {2012},
+  pages = {295--308},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\UNJS9SZL\\Kapitza et al. - 2012 - CheapBFT resource-efficient byzantine fault toler.pdf;C:\\Users\\Krukke\\Zotero\\storage\\NUN6A6DB\\citation.html}
+}
+
+@article{pease_reaching_1980,
+  title = {Reaching Agreement in the Presence of Faults},
+  volume = {27},
+  number = {2},
+  journal = {Journal of the ACM (JACM)},
+  author = {Pease, Marshall and Shostak, Robert and Lamport, Leslie},
+  year = {1980},
+  pages = {228--234},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\GK5UU3FU\\Pease et al. - 1980 - Reaching agreement in the presence of faults.pdf;C:\\Users\\Krukke\\Zotero\\storage\\MNBVD3K3\\Pease et al. - 1980 - Reaching agreement in the presence of faults.pdf;C:\\Users\\Krukke\\Zotero\\storage\\CNKLSAUC\\citation.html}
+}
+
+@inproceedings{kotla_zyzzyva_2007,
+  title = {Zyzzyva: Speculative Byzantine Fault Tolerance},
+  volume = {41},
+  shorttitle = {Zyzzyva},
+  booktitle = {{{ACM SIGOPS Operating Systems Review}}},
+  publisher = {{ACM}},
+  author = {Kotla, Ramakrishna and Alvisi, Lorenzo and Dahlin, Mike and Clement, Allen and Wong, Edmund},
+  year = {2007},
+  pages = {45--58},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\3KHPVYNE\\Kotla et al. - 2007 - Zyzzyva speculative byzantine fault tolerance.pdf;C:\\Users\\Krukke\\Zotero\\storage\\93RFYGLD\\citation.html}
+}
+
+@article{bracha_asynchronous_1985,
+  title = {Asynchronous Consensus and Broadcast Protocols},
+  volume = {32},
+  number = {4},
+  journal = {Journal of the ACM (JACM)},
+  author = {Bracha, Gabriel and Toueg, Sam},
+  year = {1985},
+  pages = {824--840},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\643WSD83\\Bracha and Toueg - 1985 - Asynchronous consensus and broadcast protocols.pdf;C:\\Users\\Krukke\\Zotero\\storage\\6JBUWY7Y\\citation.html}
+}
+
+@article{normand_single_1996,
+  title = {Single Event Upset at Ground Level},
+  volume = {43},
+  number = {6},
+  journal = {IEEE transactions on Nuclear Science},
+  author = {Normand, Eugene},
+  year = {1996},
+  pages = {2742--2750}
+}
+
+@inproceedings{jang_sgx-bomb_2017,
+  title = {{{SGX}}-{{Bomb}}: {{Locking Down}} the {{Processor}} via {{Rowhammer Attack}}},
+  isbn = {978-1-4503-5097-6},
+  shorttitle = {{{SGX}}-{{Bomb}}},
+  doi = {10.1145/3152701.3152709},
+  abstract = {Intel Software Guard Extensions (SGX) provides a strongly isolated memory space, known as an enclave, for a user process, ensuring confidentiality and integrity against software and hardware attacks. Even the operating system and hypervisor cannot access the enclave because of the hardware-level isolation. Further, hardware attacks are neither able to disclose plaintext data from the enclave because its memory is always encrypted nor modify it because its integrity is always verified using an integrity tree. When the processor detects any integrity violation, it locks itself to prevent further damages; that is, a system reboot is necessary. The processor lock seems a reasonable solution against such a powerful hardware attacker; however, if a software attacker has a way to trigger integrity violation, the lock could result in a severe denial-of-service (DoS) attack.},
+  language = {en},
+  publisher = {{ACM Press}},
+  author = {Jang, Yeongjin and Lee, Jaehyuk and Lee, Sangho and Kim, Taesoo},
+  year = {2017},
+  pages = {1-6},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\WE3LJZK4\\Jang et al. - 2017 - SGX-Bomb Locking Down the Processor via Rowhammer.pdf}
+}
+
+@techreport{gueron_memory_2016,
+  title = {A {{Memory Encryption Engine Suitable}} for {{General Purpose Processors}}},
+  abstract = {Cryptographic protection of memory is an essential ingredient for any technology that allows a closed computing system to run software in a trustworthy manner and handle secrets, while its external memory is susceptible to eavesdropping and tampering. An example for such a technology is Intel's emerging Software Guard Extensions technology (Intel SGX) that appears in the latest processor generation, Architecture Codename Skylake. This technology operates under the assumption that the security perimeter includes only the internals of the CPU package, and in particular, leaves the DRAM untrusted. It is supported by an autonomous hardware unit called the Memory Encryption Engine (MEE), whose role is to protect the confidentiality, integrity, and freshness of the CPU-DRAM traffic over some memory range. To succeed in adding this unit to the micro architecture of a general purpose processor product, it must be designed under very strict engineering constraints. This requires a careful combination of cryptographic primitives operating over a customized integrity tree that mostly resides on the DRAM while relying only on a small internally stored root. The purpose of this paper is to explain how this hardware component of SGX works, and the rationale behind some of its design choices. To this end, we formalize the MEE threat model and security objectives, describe the MEE design, cryptographic properties, security margins, and report some concrete performance results.},
+  number = {204},
+  author = {Gueron, Shay},
+  year = {2016},
+  keywords = {implementation},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\CT5FU3TD\\Gueron - 2016 - A Memory Encryption Engine Suitable for General Pu.pdf;C:\\Users\\Krukke\\Zotero\\storage\\6F39FJ57\\204.html}
+}
+
+@inproceedings{driscoll_byzantine_2003,
+  title = {Byzantine Fault Tolerance, from Theory to Reality},
+  booktitle = {International {{Conference}} on {{Computer Safety}}, {{Reliability}}, and {{Security}}},
+  publisher = {{Springer}},
+  author = {Driscoll, Kevin and Hall, Brendan and akan Sivencrona, H$\backslash$a and Zumsteg, Phil},
+  year = {2003},
+  pages = {235--248},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\HP95GIDT\\Driscoll et al. - 2003 - Byzantine fault tolerance, from theory to reality.pdf;C:\\Users\\Krukke\\Zotero\\storage\\ZWZVWGKE\\978-3-540-39878-3_19.html}
+}
+
+@article{veronese_efficient_2013,
+  title = {Efficient Byzantine Fault-Tolerance},
+  volume = {62},
+  number = {1},
+  journal = {IEEE Transactions on Computers},
+  author = {Veronese, Giuliana Santos and Correia, Miguel and Bessani, Alysson Neves and Lung, Lau Cheuk and Verissimo, Paulo},
+  year = {2013},
+  pages = {16--30},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\ZAIYNNB3\\Veronese et al. - 2013 - Efficient byzantine fault-tolerance.pdf;C:\\Users\\Krukke\\Zotero\\storage\\EXFIG2JJ\\6081855.html}
+}
+
+@inproceedings{skeen_nonblocking_1981,
+  address = {New York, NY, USA},
+  series = {SIGMOD '81},
+  title = {Nonblocking {{Commit Protocols}}},
+  isbn = {978-0-89791-040-8},
+  doi = {10.1145/582318.582339},
+  abstract = {Protocols that allow operational sites to continue transaction processing even though site failures have occurred are called nonblocking. Many applications require nonblocking protocols. This paper investigates the properties of nonblocking protocols. Necessary and sufficient conditions for a protocol to be nonblocking are presented and from these conditions a method for designing them is derived. Both a central site nonblocking protocol and a decentralized nonblocking protocol are presented.},
+  booktitle = {Proceedings of the 1981 {{ACM SIGMOD International Conference}} on {{Management}} of {{Data}}},
+  publisher = {{ACM}},
+  author = {Skeen, Dale},
+  year = {1981},
+  pages = {133--142},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\I5KBV5C4\\10.1.1.86.3.pdf}
+}
+
+@inproceedings{hildebrandt_safe_2011,
+  title = {Safe Distribution of Declarative Processes},
+  booktitle = {International {{Conference}} on {{Software Engineering}} and {{Formal Methods}}},
+  publisher = {{Springer}},
+  author = {Hildebrandt, Thomas and Mukkamala, Raghava Rao and Slaats, Tijs},
+  year = {2011},
+  pages = {237--252},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\KJZYYDHW\\Hildebrandt et al. - 2011 - Safe distribution of declarative processes.pdf;C:\\Users\\Krukke\\Zotero\\storage\\9ACR8P6S\\10.html}
+}
+
+@inproceedings{debois_concurrency_2015,
+  title = {Concurrency and Asynchrony in Declarative Workflows},
+  booktitle = {International {{Conference}} on {{Business Process Management}}},
+  publisher = {{Springer}},
+  author = {Debois, S{\o}ren and Hildebrandt, Thomas and Slaats, Tijs},
+  year = {2015},
+  pages = {72--89},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\CXEX8UN2\\Debois et al. - 2015 - Concurrency and asynchrony in declarative workflow.pdf;C:\\Users\\Krukke\\Zotero\\storage\\3VIEPWZY\\978-3-319-23063-4_5.html}
+}
+
+@misc{silent_bob,
+  title = {Silent {{Bob}} Is Silent},
+  howpublished = {https://embedi.com/wp-content/uploads/dlm\_uploads/2017/11/silent-bob-is-silent.pdf},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\JC27HYPD\\silent-bob-is-silent.pdf}
+}
+
+@misc{intel_sgx_guide,
+  title = {{{Intel}}\textregistered{} {{Software Guard Extensions Developer Guide}} | {{Intel}}\textregistered{} {{Software}}},
+  howpublished = {https://software.intel.com/en-us/documentation/sgx-developer-guide},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\GCHKNSKQ\\sgx-developer-guide.html}
+}
+
+@misc{intel_sgx,
+  title = {Intel {{SGX}}},
+  howpublished = {https://software.intel.com/en-us/sgx},
+  author = {{Intel}},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\IZH5D2JG\\sgx.html}
+}
+
+@article{lamport_part-time_1998,
+  title = {The Part-Time Parliament},
+  volume = {16},
+  number = {2},
+  journal = {ACM Transactions on Computer Systems (TOCS)},
+  author = {Lamport, Leslie},
+  year = {1998},
+  pages = {133--169},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\MR29D7IA\\Lamport - 1998 - The part-time parliament.pdf;C:\\Users\\Krukke\\Zotero\\storage\\AZQPPUF6\\citation.html}
+}
+
+@article{correia_byzantine_2011,
+  title = {Byzantine Consensus in Asynchronous Message-Passing Systems: A Survey},
+  volume = {2},
+  shorttitle = {Byzantine Consensus in Asynchronous Message-Passing Systems},
+  number = {2},
+  journal = {International Journal of Critical Computer-Based Systems},
+  author = {Correia, Miguel and Veronese, Giuliana Santos and Neves, Nuno Ferreira and Verissimo, Paulo},
+  year = {2011},
+  pages = {141--161},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\XR3DVAR8\\Correia et al. - 2011 - Byzantine consensus in asynchronous message-passin.pdf;C:\\Users\\Krukke\\Zotero\\storage\\RGKCLXV9\\IJCCBS.2011.html}
+}
+
+@article{nakamoto_bitcoin_2008,
+  title = {Bitcoin: {{A}} Peer-to-Peer Electronic Cash System},
+  shorttitle = {Bitcoin},
+  author = {Nakamoto, Satoshi},
+  year = {2008},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\DSCHGWNY\\Nakamoto - 2008 - Bitcoin A peer-to-peer electronic cash system.pdf;C:\\Users\\Krukke\\Zotero\\storage\\SLM6GJCI\\Nakamoto - 2008 - Bitcoin A peer-to-peer electronic cash system.pdf}
+}
+
+@article{miller_anonymous_2014,
+  title = {Anonymous Byzantine Consensus from Moderately-Hard Puzzles: {{A}} Model for Bitcoin},
+  shorttitle = {Anonymous Byzantine Consensus from Moderately-Hard Puzzles},
+  journal = {Available on line: http://nakamotoinstitute. org/research/anonymous-byzantine-consensus},
+  author = {Miller, Andrew and LaViola Jr, Joseph J.},
+  year = {2014},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\5YMIUVRD\\Miller and LaViola Jr - 2014 - Anonymous byzantine consensus from moderately-hard.pdf;C:\\Users\\Krukke\\Zotero\\storage\\HXKBNZ4D\\Miller and LaViola Jr - 2014 - Anonymous byzantine consensus from moderately-hard.pdf}
+}
+
+@article{fischer_impossibility_1985,
+  title = {Impossibility of Distributed Consensus with One Faulty Process},
+  volume = {32},
+  number = {2},
+  journal = {Journal of the ACM (JACM)},
+  author = {Fischer, Michael J. and Lynch, Nancy A. and Paterson, Michael S.},
+  year = {1985},
+  pages = {374--382},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\LPPPFKAH\\Fischer et al. - 1985 - Impossibility of distributed consensus with one fa.pdf;C:\\Users\\Krukke\\Zotero\\storage\\BTCBD6TX\\citation.html}
+}
+
+@book{coulouris_distributed_2005,
+  edition = {5.th},
+  title = {Distributed Systems: Concepts and Design},
+  shorttitle = {Distributed Systems},
+  publisher = {{pearson education}},
+  author = {Coulouris, George F. and Dollimore, Jean and Kindberg, Tim},
+  year = {2005},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\IK9YHKVN\\books.html;C:\\Users\\Krukke\\Zotero\\storage\\TT8D4IK4\\refs.html}
+}
+
+@incollection{dhillon_hyperledger_2017,
+  title = {The {{Hyperledger Project}}},
+  booktitle = {Blockchain {{Enabled Applications}}},
+  publisher = {{Springer}},
+  author = {Dhillon, Vikram and Metcalf, David and Hooper, Max},
+  year = {2017},
+  pages = {139--149},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\MG53I7AU\\978-1-4842-3081-7_10.html}
+}
+
+@article{gopinath_nirmala_improving_2017,
+  title = {Improving the {{Security}} and {{Efficiency}} of {{Blockchain}}-Based {{Cryptocurrencies}}},
+  author = {Gopinath Nirmala, Rakesh},
+  year = {2017},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\KF4GNZ8R\\Gopinath Nirmala - 2017 - Improving the Security and Efficiency of Blockchai.pdf;C:\\Users\\Krukke\\Zotero\\storage\\N9KWLC6U\\27919.html}
+}
+
+@article{szabo_formalizing_1997,
+  title = {Formalizing and Securing Relationships on Public Networks},
+  volume = {2},
+  number = {9},
+  journal = {First Monday},
+  author = {Szabo, Nick},
+  year = {1997},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\DBSPITTN\\469.html;C:\\Users\\Krukke\\Zotero\\storage\\FFPUCJ2M\\548.html}
+}
+
+@article{costan_intel_2016,
+  title = {Intel {{SGX Explained}}.},
+  volume = {2016},
+  journal = {IACR Cryptology ePrint Archive},
+  author = {Costan, Victor and Devadas, Srinivas},
+  year = {2016},
+  pages = {86},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\A5ZG274I\\Costan and Devadas - 2016 - Intel SGX Explained..pdf;C:\\Users\\Krukke\\Zotero\\storage\\AKCMRN3V\\Costan and Devadas - 2016 - Intel SGX Explained..pdf}
+}
+
+@article{hildebrandt_declarative_2011,
+  title = {Declarative Event-Based Workflow as Distributed Dynamic Condition Response Graphs},
+  journal = {arXiv preprint arXiv:1110.4161},
+  author = {Hildebrandt, Thomas T. and Mukkamala, Raghava Rao},
+  year = {2011},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\NPHW6JFR\\Hildebrandt and Mukkamala - 2011 - Declarative event-based workflow as distributed dy.pdf;C:\\Users\\Krukke\\Zotero\\storage\\WR8FE2IP\\1110.html}
+}
+
+@misc{_wiki_2018,
+  title = {Wiki: {{The Ethereum Wiki}} -},
+  shorttitle = {Wiki},
+  publisher = {{ethereum}},
+  month = mar,
+  year = {2018},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\J7DZS3WN\\White-Paper.html}
+}
+
+@inproceedings{castro_practical_1999,
+  title = {Practical {{Byzantine}} Fault Tolerance},
+  volume = {99},
+  booktitle = {{{OSDI}}},
+  author = {Castro, Miguel and Liskov, Barbara},
+  year = {1999},
+  pages = {173--186},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\B7LCL5PH\\osdi99.pdf;C:\\Users\\Krukke\\Zotero\\storage\\YLADX7X6\\Castro and Liskov - 1999 - Practical Byzantine fault tolerance.ps;C:\\Users\\Krukke\\Zotero\\storage\\N429RAHS\\castro.html}
+}
+
+@article{verissimo_travelling_2006,
+  title = {Travelling through Wormholes: A New Look at Distributed Systems Models},
+  volume = {37},
+  shorttitle = {Travelling through Wormholes},
+  number = {1},
+  journal = {ACM SIGACT News},
+  author = {Ver{\'\i}ssimo, Paulo E.},
+  year = {2006},
+  pages = {66--81},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\9YQZYHF9\\p66-verissimo.pdf;C:\\Users\\Krukke\\Zotero\\storage\\5X2F2H6X\\citation.html}
+}
+
+@techreport{matetic_rote_2017,
+  title = {{{ROTE}}: {{Rollback Protection}} for {{Trusted Execution}}},
+  shorttitle = {{{ROTE}}},
+  abstract = {Security architectures such as Intel SGX need protection against rollback attacks, where the adversary violates the integrity of a protected application state by replaying old persistently stored data or by starting multiple application instances. Successful rollback attacks have serious consequences on applications such as financial services. In this paper, we propose a new approach for rollback protection on SGX. The intuition behind our approach is simple. A single platform cannot efficiently prevent rollback, but in many practical scenarios, multiple processors can be enrolled to assist each other. We design and implement a rollback protection system called ROTE that realizes integrity protection as a distributed system. We construct a model that captures adversarial ability to schedule enclave execution and show that our solution achieves a strong security property: the only way to violate integrity is to reset all participating platforms to their initial state. We implement ROTE and demonstrate that distributed rollback protection can provide significantly better performance than previously known solutions based on local non-volatile memory.},
+  number = {048},
+  author = {Matetic, Sinisa and Ahmed, Mansoor and Kostiainen, Kari and Dhar, Aritra and Sommer, David and Gervais, Arthur and Juels, Ari and Capkun, Srdjan},
+  year = {2017},
+  keywords = {Distributed system,Rollback protection,SGX,State protection,TEE,Trusted Execution},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\TFE2PNMI\\Matetic m.fl. - 2017 - ROTE Rollback Protection for Trusted Execution.pdf;C:\\Users\\Krukke\\Zotero\\storage\\ZB9VDSF7\\048.html}
+}
+
 @article{schneider_implementing_1990,
   title = {Implementing {{Fault}}-Tolerant {{Services Using}} the {{State Machine Approach}}: {{A Tutorial}}},
   volume = {22},
@@ -11,7 +324,8 @@
   author = {Schneider, Fred B.},
   month = dec,
   year = {1990},
-  pages = {299--319}
+  pages = {299--319},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\VVGIRLMT\\Schneider - 1990 - Implementing Fault-tolerant Services Using the Sta.pdf}
 }
 
 @article{androulaki_hyperledger_2018,
@@ -26,14 +340,16 @@
   author = {Androulaki, Elli and Barger, Artem and Bortnikov, Vita and Cachin, Christian and Christidis, Konstantinos and De Caro, Angelo and Enyeart, David and Ferris, Christopher and Laventman, Gennady and Manevich, Yacov and Muralidharan, Srinivasan and Murthy, Chet and Nguyen, Binh and Sethi, Manish and Singh, Gari and Smith, Keith and Sorniotti, Alessandro and Stathakopoulou, Chrysoula and Vukoli{\'c}, Marko and Cocco, Sharon Weed and Yellick, Jason},
   month = jan,
   year = {2018},
-  keywords = {Computer Science - Cryptography and Security,Computer Science - Distributed; Parallel; and Cluster Computing}
+  keywords = {Computer Science - Cryptography and Security,Computer Science - Distributed; Parallel; and Cluster Computing},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\ZHQ3NTFY\\Androulaki et al. - 2018 - Hyperledger Fabric A Distributed Operating System.pdf;C:\\Users\\Krukke\\Zotero\\storage\\EMKL8E69\\1801.html}
 }
 
 @article{liu_scalable_2016,
   title = {Scalable {{Byzantine Consensus}} via {{Hardware}}-Assisted {{Secret Sharing}}},
   journal = {arXiv preprint arXiv:1612.04997},
   author = {Liu, Jian and Li, Wenting and Karame, Ghassan O. and Asokan, N.},
-  year = {2016}
+  year = {2016},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\8WZ84UEC\\Liu et al. - 2016 - Scalable Byzantine Consensus via Hardware-assisted.pdf;C:\\Users\\Krukke\\Zotero\\storage\\HRCP9E8M\\1612.html}
 }
 
 @inproceedings{bentov_cryptocurrencies_2016,
@@ -48,290 +364,21 @@
   author = {Bentov, Iddo and Gabizon, Ariel and Mizrahi, Alex},
   month = feb,
   year = {2016},
-  pages = {142-157}
+  pages = {142-157},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\BKJ3XS3M\\10.html}
 }
 
-@techreport{matetic_rote_2017,
-  title = {{{ROTE}}: {{Rollback Protection}} for {{Trusted Execution}}},
-  shorttitle = {{{ROTE}}},
-  abstract = {Security architectures such as Intel SGX need protection against rollback attacks, where the adversary violates the integrity of a protected application state by replaying old persistently stored data or by starting multiple application instances. Successful rollback attacks have serious consequences on applications such as financial services. In this paper, we propose a new approach for rollback protection on SGX. The intuition behind our approach is simple. A single platform cannot efficiently prevent rollback, but in many practical scenarios, multiple processors can be enrolled to assist each other. We design and implement a rollback protection system called ROTE that realizes integrity protection as a distributed system. We construct a model that captures adversarial ability to schedule enclave execution and show that our solution achieves a strong security property: the only way to violate integrity is to reset all participating platforms to their initial state. We implement ROTE and demonstrate that distributed rollback protection can provide significantly better performance than previously known solutions based on local non-volatile memory.},
-  number = {048},
-  author = {Matetic, Sinisa and Ahmed, Mansoor and Kostiainen, Kari and Dhar, Aritra and Sommer, David and Gervais, Arthur and Juels, Ari and Capkun, Srdjan},
-  year = {2017},
-  keywords = {Distributed system,Rollback protection,SGX,State protection,TEE,Trusted Execution}
-}
-
-@article{verissimo_travelling_2006,
-  title = {Travelling through Wormholes: A New Look at Distributed Systems Models},
-  volume = {37},
-  shorttitle = {Travelling through Wormholes},
-  number = {1},
-  journal = {ACM SIGACT News},
-  author = {Ver{\'\i}ssimo, Paulo E.},
-  year = {2006},
-  pages = {66--81}
-}
-
-@inproceedings{castro_practical_1999,
-  title = {Practical {{Byzantine}} Fault Tolerance},
-  volume = {99},
-  booktitle = {{{OSDI}}},
-  author = {Castro, Miguel and Liskov, Barbara},
-  year = {1999},
-  pages = {173--186}
-}
-
-@misc{_ethereum_2018,
-  title = {The {{Ethereum White Paper}}},
-  shorttitle = {Wiki},
-  publisher = {{ethereum}},
-  month = mar,
-  year = {2018}
-}
-
-@article{hildebrandt_declarative_2011,
-  title = {Declarative Event-Based Workflow as Distributed Dynamic Condition Response Graphs},
-  journal = {arXiv preprint arXiv:1110.4161},
-  author = {Hildebrandt, Thomas T. and Mukkamala, Raghava Rao},
-  year = {2011}
-}
-
-@article{costan_intel_2016,
-  title = {Intel {{SGX Explained}}.},
-  volume = {2016},
-  journal = {IACR Cryptology ePrint Archive},
-  author = {Costan, Victor and Devadas, Srinivas},
-  year = {2016},
-  pages = {86}
-}
-
-@article{szabo_formalizing_1997,
-  title = {Formalizing and Securing Relationships on Public Networks},
-  volume = {2},
-  number = {9},
-  journal = {First Monday},
-  author = {Szabo, Nick},
-  year = {1997}
-}
-
-@article{gopinath_nirmala_improving_2017,
-  title = {Improving the {{Security}} and {{Efficiency}} of {{Blockchain}}-Based {{Cryptocurrencies}}},
-  author = {Gopinath Nirmala, Rakesh},
-  year = {2017}
-}
-
-@incollection{dhillon_hyperledger_2017,
-  title = {The {{Hyperledger Project}}},
-  booktitle = {Blockchain {{Enabled Applications}}},
-  publisher = {{Springer}},
-  author = {Dhillon, Vikram and Metcalf, David and Hooper, Max},
-  year = {2017},
-  pages = {139--149}
-}
-
-@misc{intel_sgx,
-  title = {Intel {{SGX}}},
-  howpublished = {https://software.intel.com/en-us/sgx},
-  author = {{Intel}}
-}
-
-@misc{intel_sgx_guide,
-  title = {{{Intel}}\textregistered{} {{Software Guard Extensions Developer Guide}} | {{Intel}}\textregistered{} {{Software}}},
-  howpublished = {https://software.intel.com/en-us/documentation/sgx-developer-guide}
-}
-
-@book{coulouris_distributed_2005,
-  edition = {5.th},
-  title = {Distributed Systems: Concepts and Design},
-  shorttitle = {Distributed Systems},
-  publisher = {{pearson education}},
-  author = {Coulouris, George F. and Dollimore, Jean and Kindberg, Tim},
-  year = {2005}
-}
-
-@article{fischer_impossibility_1985,
-  title = {Impossibility of Distributed Consensus with One Faulty Process},
-  volume = {32},
-  number = {2},
-  journal = {Journal of the ACM (JACM)},
-  author = {Fischer, Michael J. and Lynch, Nancy A. and Paterson, Michael S.},
-  year = {1985},
-  pages = {374--382}
-}
-
-@misc{silent_bob,
-  title = {Silent {{Bob}} Is Silent},
-  howpublished = {https://embedi.com/wp-content/uploads/dlm\_uploads/2017/11/silent-bob-is-silent.pdf}
-}
-
-@article{miller_anonymous_2014,
-  title = {Anonymous Byzantine Consensus from Moderately-Hard Puzzles: {{A}} Model for Bitcoin},
-  shorttitle = {Anonymous Byzantine Consensus from Moderately-Hard Puzzles},
-  journal = {Available on line: http://nakamotoinstitute. org/research/anonymous-byzantine-consensus},
-  author = {Miller, Andrew and LaViola Jr, Joseph J.},
-  year = {2014}
-}
-
-@article{nakamoto_bitcoin_2008,
-  title = {Bitcoin: {{A}} Peer-to-Peer Electronic Cash System},
-  shorttitle = {Bitcoin},
-  author = {Nakamoto, Satoshi},
-  year = {2008}
-}
-
-@article{correia_byzantine_2011,
-  title = {Byzantine Consensus in Asynchronous Message-Passing Systems: A Survey},
-  volume = {2},
-  shorttitle = {Byzantine Consensus in Asynchronous Message-Passing Systems},
-  number = {2},
-  journal = {International Journal of Critical Computer-Based Systems},
-  author = {Correia, Miguel and Veronese, Giuliana Santos and Neves, Nuno Ferreira and Verissimo, Paulo},
-  year = {2011},
-  pages = {141--161}
-}
-
-@article{lamport_part-time_1998,
-  title = {The Part-Time Parliament},
-  volume = {16},
-  number = {2},
-  journal = {ACM Transactions on Computer Systems (TOCS)},
-  author = {Lamport, Leslie},
-  year = {1998},
-  pages = {133--169}
-}
-
-@inproceedings{debois_concurrency_2015,
-  title = {Concurrency and Asynchrony in Declarative Workflows},
-  booktitle = {International {{Conference}} on {{Business Process Management}}},
-  publisher = {{Springer}},
-  author = {Debois, S{\o}ren and Hildebrandt, Thomas and Slaats, Tijs},
-  year = {2015},
-  pages = {72--89}
-}
-
-@inproceedings{hildebrandt_safe_2011,
-  title = {Safe Distribution of Declarative Processes},
-  booktitle = {International {{Conference}} on {{Software Engineering}} and {{Formal Methods}}},
-  publisher = {{Springer}},
-  author = {Hildebrandt, Thomas and Mukkamala, Raghava Rao and Slaats, Tijs},
-  year = {2011},
-  pages = {237--252}
-}
-
-@inproceedings{skeen_nonblocking_1981,
-  address = {New York, NY, USA},
-  series = {SIGMOD '81},
-  title = {Nonblocking {{Commit Protocols}}},
-  isbn = {978-0-89791-040-8},
-  doi = {10.1145/582318.582339},
-  abstract = {Protocols that allow operational sites to continue transaction processing even though site failures have occurred are called nonblocking. Many applications require nonblocking protocols. This paper investigates the properties of nonblocking protocols. Necessary and sufficient conditions for a protocol to be nonblocking are presented and from these conditions a method for designing them is derived. Both a central site nonblocking protocol and a decentralized nonblocking protocol are presented.},
-  booktitle = {Proceedings of the 1981 {{ACM SIGMOD International Conference}} on {{Management}} of {{Data}}},
-  publisher = {{ACM}},
-  author = {Skeen, Dale},
-  year = {1981},
-  pages = {133--142}
-}
-
-@article{veronese_efficient_2013,
-  title = {Efficient Byzantine Fault-Tolerance},
-  volume = {62},
-  number = {1},
-  journal = {IEEE Transactions on Computers},
-  author = {Veronese, Giuliana Santos and Correia, Miguel and Bessani, Alysson Neves and Lung, Lau Cheuk and Verissimo, Paulo},
-  year = {2013},
-  pages = {16--30}
-}
-
-@inproceedings{driscoll_byzantine_2003,
-  title = {Byzantine Fault Tolerance, from Theory to Reality},
-  booktitle = {International {{Conference}} on {{Computer Safety}}, {{Reliability}}, and {{Security}}},
-  publisher = {{Springer}},
-  author = {Driscoll, Kevin and Hall, Brendan and akan Sivencrona, H$\backslash$a and Zumsteg, Phil},
-  year = {2003},
-  pages = {235--248}
-}
-
-@techreport{gueron_memory_2016,
-  title = {A {{Memory Encryption Engine Suitable}} for {{General Purpose Processors}}},
-  abstract = {Cryptographic protection of memory is an essential ingredient for any technology that allows a closed computing system to run software in a trustworthy manner and handle secrets, while its external memory is susceptible to eavesdropping and tampering. An example for such a technology is Intel's emerging Software Guard Extensions technology (Intel SGX) that appears in the latest processor generation, Architecture Codename Skylake. This technology operates under the assumption that the security perimeter includes only the internals of the CPU package, and in particular, leaves the DRAM untrusted. It is supported by an autonomous hardware unit called the Memory Encryption Engine (MEE), whose role is to protect the confidentiality, integrity, and freshness of the CPU-DRAM traffic over some memory range. To succeed in adding this unit to the micro architecture of a general purpose processor product, it must be designed under very strict engineering constraints. This requires a careful combination of cryptographic primitives operating over a customized integrity tree that mostly resides on the DRAM while relying only on a small internally stored root. The purpose of this paper is to explain how this hardware component of SGX works, and the rationale behind some of its design choices. To this end, we formalize the MEE threat model and security objectives, describe the MEE design, cryptographic properties, security margins, and report some concrete performance results.},
-  number = {204},
-  author = {Gueron, Shay},
-  year = {2016},
-  keywords = {implementation}
-}
-
-@inproceedings{jang_sgx-bomb_2017,
-  title = {{{SGX}}-{{Bomb}}: {{Locking Down}} the {{Processor}} via {{Rowhammer Attack}}},
-  isbn = {978-1-4503-5097-6},
-  shorttitle = {{{SGX}}-{{Bomb}}},
-  doi = {10.1145/3152701.3152709},
-  abstract = {Intel Software Guard Extensions (SGX) provides a strongly isolated memory space, known as an enclave, for a user process, ensuring confidentiality and integrity against software and hardware attacks. Even the operating system and hypervisor cannot access the enclave because of the hardware-level isolation. Further, hardware attacks are neither able to disclose plaintext data from the enclave because its memory is always encrypted nor modify it because its integrity is always verified using an integrity tree. When the processor detects any integrity violation, it locks itself to prevent further damages; that is, a system reboot is necessary. The processor lock seems a reasonable solution against such a powerful hardware attacker; however, if a software attacker has a way to trigger integrity violation, the lock could result in a severe denial-of-service (DoS) attack.},
+@inproceedings{sousa_partial_2001,
+  title = {Partial Replication in the {{Database State Machine}}},
+  isbn = {978-0-7695-1432-1},
+  doi = {10.1109/NCA.2001.962546},
+  abstract = {This paper investigates the use of partial replication in the Database State Machine approach introduced earlier for fully replicated databases. It builds on the order and atomicity properties of group communication primitives to achieve strong consistency and proposes two new abstractions: Resilient Atomic Commit and Fast Atomic Broadcast.},
   language = {en},
-  publisher = {{ACM Press}},
-  author = {Jang, Yeongjin and Lee, Jaehyuk and Lee, Sangho and Kim, Taesoo},
-  year = {2017},
-  pages = {1-6}
-}
-
-@article{normand_single_1996,
-  title = {Single Event Upset at Ground Level},
-  volume = {43},
-  number = {6},
-  journal = {IEEE transactions on Nuclear Science},
-  author = {Normand, Eugene},
-  year = {1996},
-  pages = {2742--2750}
-}
-
-@article{bracha_asynchronous_1985,
-  title = {Asynchronous Consensus and Broadcast Protocols},
-  volume = {32},
-  number = {4},
-  journal = {Journal of the ACM (JACM)},
-  author = {Bracha, Gabriel and Toueg, Sam},
-  year = {1985},
-  pages = {824--840}
-}
-
-@inproceedings{kotla_zyzzyva_2007,
-  title = {Zyzzyva: Speculative Byzantine Fault Tolerance},
-  volume = {41},
-  shorttitle = {Zyzzyva},
-  booktitle = {{{ACM SIGOPS Operating Systems Review}}},
-  publisher = {{ACM}},
-  author = {Kotla, Ramakrishna and Alvisi, Lorenzo and Dahlin, Mike and Clement, Allen and Wong, Edmund},
-  year = {2007},
-  pages = {45--58}
-}
-
-@article{pease_reaching_1980,
-  title = {Reaching Agreement in the Presence of Faults},
-  volume = {27},
-  number = {2},
-  journal = {Journal of the ACM (JACM)},
-  author = {Pease, Marshall and Shostak, Robert and Lamport, Leslie},
-  year = {1980},
-  pages = {228--234}
-}
-
-@inproceedings{kapitza_cheapbft_2012,
-  title = {{{CheapBFT}}: Resource-Efficient Byzantine Fault Tolerance},
-  shorttitle = {{{CheapBFT}}},
-  booktitle = {Proceedings of the 7th {{ACM}} European Conference on {{Computer Systems}}},
-  publisher = {{ACM}},
-  author = {Kapitza, R{\"u}diger and Behl, Johannes and Cachin, Christian and Distler, Tobias and Kuhnle, Simon and Mohammadi, Seyed Vahid and Schr{\"o}der-Preikschat, Wolfgang and Stengel, Klaus},
-  year = {2012},
-  pages = {295--308}
-}
-
-@inproceedings{song_bosco_2008,
-  title = {Bosco: {{One}}-Step Byzantine Asynchronous Consensus},
-  shorttitle = {Bosco},
-  booktitle = {International {{Symposium}} on {{Distributed Computing}}},
-  publisher = {{Springer}},
-  author = {Song, Yee Jiun and {van Renesse}, Robbert},
-  year = {2008},
-  pages = {438--450}
+  publisher = {{IEEE Comput. Soc}},
+  author = {Sousa, A. and Pedone, F. and Oliveira, R. and Moura, F.},
+  year = {2001},
+  pages = {298-309},
+  file = {C:\\Users\\Krukke\\Zotero\\storage\\U563IDIL\\Sousa et al. - 2001 - Partial replication in the Database State Machine.pdf}
 }
 
 
