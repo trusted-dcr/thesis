@@ -354,9 +354,9 @@
 
 
 			To show the transformation, we will model an arbitrary distributed protocol as consisting of \textit{finite state machines}, \textit{channels} and \textit{processes}.
-			A finite state machine consists of a current state, $s_{current}$, a set of a finite set of $n$ distinct states, $S=\{s_1, s_2, \dots, s_n\}$, and a finite set of $m$ distinct state-transitions, $T$.
-			A finite state machine can only be in one state at any time, and transitions to another state by accepting any bit-string as input, and optionally outputs another bit-string. 
-			A transition has the form $(s_{from}, i, o, s_{to})$, where $i$ is an input consisting of tuple of a bit-string and the channel the bit-string was received on, and $o$ is the output consisting of a tuple of a bit-string and the set of channels that bit-string will be sent on.
+			A finite state machine consists of a current state, $s_{current}$, a finite set of $n$ distinct states, $S=\{s_1, s_2, \dots, s_n\}$, and a finite set of $m$ distinct state-transitions, $T$.
+			A finite state machine can only be in one state at any time, and transitions to another state by accepting a bit-string as input, and optionally outputs another bit-string. 
+			A transition has the form $(s_{from}, i, o, s_{to})$, where $i$ is an input consisting of tuple of a bit-string and the channel the bit-string was received on, and $o$ is the output consisting of a set of bit-string/channel pair, each representing that bit-string being sent on the appertaining channel.
 			For example, the finite state machine in figure \ref{fig:simple-nfa} will transition from the starting state $s_0$ to $s_2$ on input $"010"$ from channel $c_0$, and will during the transition output $"101"$ to channel $c_1$ and $"100"$ to $c_2$.
 			
 			A channel can either be reliable or unreliable, and is bi-directional. 
@@ -365,17 +365,17 @@
 
 			The last component in our model is the process.
 			A process is a set of running state machines.
-			The state machine inside the process can be connected with reliable channels. 
+			The state machines inside the process can be connected with reliable channels. 
 			State machines can be connected to state machines in other processes only with unreliable channels.
 
-			\begin{figure}[h]
+			\begin{figure}[ht]
 				\center
 				\includegraphics[scale=0.6]{figures/state-machines/Distributed-protocol-model.pdf}
 				\caption{A simple example of distributed protocol model.\label{fig:simple-model}}
 			\end{figure}
 
-			Figure \ref{fig:simple-model} is a model of a simple distributed protocol, consisting of the processes $p_0$ and $p_1$, each of which has three state machines $SM_0 - SM_5$. 
-			Each state machine is connected to the other on the same process with reliable channels $c_0-c_3$, and $SM_1$ on $p_0$ is connected to $SM_3$ on $p_1$ with the unreliable channel $c_4$.
+			Figure \ref{fig:simple-model} is a model of a simple distributed protocol, consisting of the processes $P_0$ and $P_1$, each of which has three state machines $SM_0 - SM_5$. 
+			Each state machine is connected to other state machines on the same process with reliable channels $c_0-c_3$, and $SM_1$ on $P_0$ is connected to $SM_3$ on $P_1$ with the unreliable channel $c_4$.
 
 			A distributed protocol can experience a plethora of different errors. 
 			Apart from the channel faults already described, we will model crashes and byzantine faults, as these are the ones we are concerned about in this transformation.
@@ -387,8 +387,9 @@
 
 			To transform a crash-resistant distributed protocol into a byzantine-fault-tolerant protocol, we utilize the verification in Remote Attestation (see section \ref{subsec:attestation}) and the integrity guarantees provided by Intel SGX.
 			To model this, we introduce the notion of a cryptographic secret state machine $SM_{s}$, and an integrity protected area of the process.
-			We assume that any byzantine fault cannot replicate $SM_{s}$, which models that faulty processes cannot access the cryptographic secrets of a correct process.
-			This is a reasonable assumption by the integrity and confidentiality guarantees given by Intel SGX, if the secrets are stored in an enclave (see section \ref{subsec:enclave}).
+			We assume that any byzantine fault can replicate $SM_{s}$, but cannot replicate the secrets contained in $SM_s$ if $SM_s$ is changed. 
+			This models that faulty processes cannot access the cryptographic secrets of a correct process, which is a reasonable assumption by the integrity and confidentiality guarantees given by Intel SGX, given that the secrets are stored in an enclave (see section \ref{subsec:enclave}).
+
 			State machines running in the integrity protected area of the process can be uniquely identified by $SM_{s}$, but cannot have channels to state machines running on other processes.
 			This models the integrity protection in Intel SGX and the QE' abilities, as well as an enclave's inability to access peripheral hardware such as network cards.
 
@@ -397,14 +398,14 @@
 				\item Add all the state machines to the integrity protected area of the process.
 					\begin{itemize}
 						\item This is equivalent to making the distributed components in the crash-resistant protocol into enclaves. 
-						Please note that it is rarely necessary to make all components into enclaves, only the security-%something-something TODO MANGLER HUSK SDF
+						Please note that it is rarely necessary to make all components into enclaves, only the so-called \textit{security critical components}.
 					\end{itemize}
 				\item For each endpoint state machine in unreliable channels between processes, add a new state machine in the unprotected area of each of the processes, connect a new unreliable channel between these and add a reliable channel from the old endpoint state machines to the new.
 					\begin{itemize}
 					   	\item This is equivalent to adding unprotected wrapper components for the enclaves, which will have access to the network, an thus can act as a middle-man for communicating with other processes.
 				    \end{itemize}
 				\item Add reliable channels from all state machines in the integrity protected area of the process to the cryptographic secret state machine $SM_s$.
-				\item Add a Remote Attestation state machines to each process and a Remote Attestation process.
+				\item Add a Remote Attestation state machines, $SM_A$, to each process and a Remote Attestation process, $P_{RA}$ to the protocol.
 					\begin{itemize}
 						\item We will not go into detail with the Remote Attestation protocol here.
 						We will simply use it to securely provision $SM_s$ with a symmetric key.
@@ -412,59 +413,74 @@
 					\end{itemize}
 			\end{enumerate}
 
-			\begin{figure}[h!]
+			\begin{figure}[ht!]
 				\center
 				\includegraphics[scale=0.39]{figures/state-machines/Distributed-protocol-model-transformation0.pdf}
 			\end{figure}
-			\begin{figure}[h!]	
+			\begin{figure}[ht!]	
 				\center
 				\includegraphics[scale=0.39]{figures/state-machines/Distributed-protocol-model-transformation1.pdf}
 			\end{figure}
-			\begin{figure}[h!]	
+			\begin{figure}[ht!]	
 				\center
 				\includegraphics[scale=0.39]{figures/state-machines/Distributed-protocol-model-transformation2.pdf}
 			\end{figure}
-			\begin{figure}[h!]	
+			\begin{figure}[ht!]	
 				\center
 				\includegraphics[scale=0.39]{figures/state-machines/Distributed-protocol-model-transformation3.pdf}
 			\end{figure}
-			\begin{figure}[h!]	
+			\begin{figure}[ht!]	
 				\center
 				\includegraphics[scale=0.39]{figures/state-machines/Distributed-protocol-model-transformation4.pdf}
-				\caption{Transformation of figure \ref{fig:simple-model} from crash-resistant protocol to byzantine fault-tolerant protocol\label{fig:tranformation-model}}
+				\caption{Transformation of figure \ref{fig:simple-model} from crash-resistant protocol to byzantine fault-tolerant protocol.\label{fig:tranformation-model}}
 			\end{figure}
 			\FloatBarrier
 
 			After this transformation, some steps must added to the internals of protocol:
 			\begin{itemize}
 				\item Before running the protocol, a pre-compute step must be added where each process' $SM_s$ is provisioned with the same cryptographic secret. 
-				This is handled by the $SM_s$ and $SM_A$, which will contact $P_RA$ and be Attested and securely provisioned. 
-				In our example, we have only added a single $P_RA$, which of course means that a \textit{k}-resilient protocol suddenly cannot handle a single $P_RA$ crash. 
-				This can be solved by adding \textit{k} identical $P_RA$s.
-				\item All messages that were to be sent in the original protocol, must be sent from a state machine in the integrity protected area though a state machine in the unprotected area of the process.  
+				This is handled by the $SM_s$ and $SM_A$, which will contact $P_{RA}$ and be Attested and securely provisioned. 
+				In our example, we have only added a single $P_{RA}$, which of course means that a \textit{k}-resilient protocol suddenly cannot handle a single $P_{RA}$ crash. 
+				This can be solved by adding \textit{k+1} identical $P_{RA}$s, as this is a pre-compute step. 
+				This means that the $P_{RA}$s plays no further role after this step in the protocol.
+				\item All messages that were to be sent in the original protocol, must be sent from a state machine in the integrity protected area though a state machine in the unprotected area of the process.
+				This is due to the constraint that the state machines in the integrity protected area of the process can no longer have channels to other processes.  
 				\item Before any message intended for another process is sent from the integrity protected area, it must be have a cryptographic message authentication code (MAC) appended on the message.
 				The MAC is an output of the message and the Remote Attestation provisioned key.
 				$SM_s$ is the only state machine with the Remote Attestation provisioned key, and thus only $SM_s$ can MAC a message correctly.
+				This translates to a transformation of the state machine, such that each transition\\
+				$(s_{from}, i, \{(m_o, c_o)\}, s_{to})$,\\
+				where $c_o$ is a channel that was previously to another process, must be transformed to the transitions\\
+				$(s_{from}, i, \{(m_o, c_{SM_s})\}, s_{wait})$ and\\ 
+				$(s_{wait}, (m_o+MAC, c_{SM_s}), \{(m_o+MAC, c_o)\}, s_{to})$\\
+				with the intermediate state $s_{wait}$, which acts as a state in which the state machine waits for $SM_s$ to MAC the output message.
 				\item Whenever a message that supposedly originates from another process is received from the unprotected area  by a state machine in the integrity protected area, the MAC of that message must be verified by $SM_s$.
-					\begin{itemize}
-						\item In case this verification fails, the message must be dropped discarded.
-					\end{itemize}
+				In case this verification fails, the message must be dropped discarded.
+				This translates to a transformation of the state machine, such that each transition\\
+				$(s_{from}, (m_i, c_i), o, s_{to})$,\\
+				where $c_i$ is a channel that was previously to another process, must be transformed to the transitions\\
+				$(s_{from}, (m_i+MAC, c_i), \{(m_i+MAC, c_{SM_s})\}, s_{wait})$,\\
+				$(s_{wait}, ("0", c_{SM_s}), \{\}, s_{from})$ and \\
+				$(s_{wait}, ("1", c_{SM_s}), o, s_{to})$ \\
+				with the intermediate state $s_{wait}$, which acts as a state in which the state machine waits for $SM_s$ to verify the MAC of the input, and the messages $"0"$ and $"1"$ represents the failure and success of this verification, respectively.
 				\item In the event that $SM_s$ is asked to sign a message from a state machine that it identifies is not the original state machines in the integrity protected area, it discards the message.
 			\end{itemize}
 
-			\begin{figure}[h!]	
+			\begin{figure}[ht!]	
 				\center
 				\includegraphics[scale=0.45]{figures/state-machines/NFA-transformation.pdf}
-				\caption{Transformation of figure \ref{fig:simple-nfa} from state machine in crash-resistant protocol to integrity protected state machine in byzantine fault-tolerant protocol.\label{fig:tranformation-model}}
+				\caption{Transformation of figure \ref{fig:simple-nfa} from state machine in crash-resistant protocol to integrity protected state machine in byzantine fault-tolerant protocol, given that all channels are to other processes.\label{fig:nfa-transformation}}
 			\end{figure}
 
 			These transformations gives us the following guarantees, if a process experiences a byzantine fault:
 			\begin{itemize}
-				\item If the state machines in the integrity protected area are replaced with similar state machines, $SM_s$ will identify them as being incorrect and refuse to MAC their messages, which will result either (1) the message will be unMACed or MACed with the wrong key, (2) the message being dropped by the faulty state machine or (3) one of the state machines crashing.
+				\item If the state machines in the integrity protected area are replaced with similar state machines, $SM_s$ will identify them as being incorrect and refuse to MAC their messages, which will result either (1) the message will be not be MAC or MACed with the wrong key by the sending state machine, (2) the message being dropped by the faulty state machine or (3) one of the state machines crashing.
 				In case (1), $SM_s$ on any correct process who receives the message will recognise that the MAC is invalid, and the correct integrity protected state-machines will drop the message and revert to the previous state.
 				This is equivalent to the message never being sent, which by definition the protocol can handle, as it can handle unreliable channels between processes.
 				In case (2), the message will be dropped by the faulty process, which is again is equivalent to the message being dropped on an unreliable channel.
 				Case (3) is a crash, which the crash-resistant protocol can already handle.
+				\item If $SM_s$ itself is replaced, it can no longer MAC messages, as it no longer has the appropriate key, and cannot be provisioned with one.
+				So the same three cases will still hold.
 				\item If one or more of the state machines in the integrity protected area are removed, it is equivalent to a crash. Any correct state machine sending messages to the removed state machine, and will not get a reply, which is the same behaviour as a crash.
 				\item If any state machines are added to the integrity protected area, they are inconsequential, as the other state machines in the area cannot communicate with them without being replaced.
 				\item If the state machines outside the integrity protected area are replaced, it can result in either (1) replacing the messages to/from the integrity protected area, (2) dropping messages to/from the integrity protected area or (3) inducing crashes in other state machines, as well as itself.
