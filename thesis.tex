@@ -94,7 +94,7 @@
 
 	\subsection{Related works}
 
-	An existing platform which partially provides a solution to the goal of this project is Ethereum~\cite{_ethereum_2018}.
+	An existing platform which partially provides a solution to the goal of this project is Ethereum~\cite{_wiki_2018}.
 	Ethereum is a distributed computing platform based on blockchain technologies, which does, however, also feature a currency, making computations disproportionately expensive, both monetarily and computationally due to the large amounts of computations required by proof-of-work based blockchains.
 	Even though SGX is a new technology, it has already been proposed to solve several issues in the blockchain concept. 
 	SGX has been used as an intermediate for faster consensus about transactions in~\cite{gopinath_nirmala_improving_2017}, however it still relies on the underlying blockchain to prevent double-spending.
@@ -360,11 +360,10 @@
 				\caption{A simple example of our finite state machine model\label{fig:simple-nfa}}
 			\end{figure}
 
-
 			To show the transformation, we will model an arbitrary distributed protocol as consisting of \textit{finite state machines}, \textit{channels} and \textit{processes}.
 			A finite state machine consists of a current state, $s_{current}$, a finite set of $n$ distinct states, $S=\{s_1, s_2, \dots, s_n\}$, and a finite set of $m$ distinct state-transitions, $T$.
 			A finite state machine can only be in one state at any time, and transitions to another state by accepting a bit-string as input, and optionally outputs another bit-string. 
-			A transition has the form $(s_{from}, i, o, s_{to})$, where $i$ is an input consisting of tuple of a bit-string and the channel the bit-string was received on, and $o$ is the output consisting of a set of bit-string/channel pair, each representing that bit-string being sent on the appertaining channel.
+			A transition has the form $(s_{from}, i, o, s_{to})$, where $i$ is an input consisting of a tuple of a bit-string and the channel the bit-string was received on, and $o$ is the output consisting of a set of bit-string/channel pair, each representing that bit-string being sent on the appertaining channel.
 			For example, the finite state machine in figure \ref{fig:simple-nfa} will transition from the starting state $s_0$ to $s_2$ on input $"010"$ from channel $c_0$, and will during the transition output $"101"$ to channel $c_1$ and $"100"$ to $c_2$.
 			
 			A channel can either be reliable or unreliable, and is bi-directional. 
@@ -560,28 +559,42 @@
 
 	\subsection{Locking}
 	\label{subsec:locking}
-	As shown in section \ref{sec:algorithm}, execution of an event must be pushed to effected neighbours (1), and executions of non-independent events must be synchronised (2). 
-	One way to achieve this is through locking of events.
-	
-	Since the semantics of DCR only allows the execution of an activity to affect events in the neighbourhood, (3), and the second neighbourhood, (4), of the executing event, locking need only be performed within this set.
-	In a graph, $G(E,V)$, we define the set of events that could be incident to locking, $L$, on the execution of an event, $v$, as $L(v)$.
+	As discussed in section \ref{sec:algorithm}, the execution of non-independent events must be synchronised.
+	This is achieved through locking of individual events.
+		
+	In a graph, $G(E,V)$, we define the set of locked events, $L$, on the execution of an event, $v$, as $L(v)$.
+	As DCR only allows the execution of an activity to affect events in the neighbourhood, (3), and the second neighbourhood, (4), of the executing event, locking need only be performed within this set.
+	Locking can be performed on the entirety of $L(v)\ =\ N(N(v))\ \cup\ N(v)\ \cup\ v$ on the execution of $v$, guaranteeing synchronization in the case of competing event executions.
+	However, since locking two neighbourhoods actually gives a range of four, locking some subset could be just as correct and more efficient.
 
-	Assuming that locking the entirety of $L(v)\ =\ N(N(v))\ \cup\ N(v)\ \cup\ v$ when executing $v$ is suboptimal, there are three intuitive methods of locking, here compared on three non-trivial graphs:
+	\begin{figure}[ht!]	
+		\center
+		\includegraphics[scale=0.5]{figures/dcr-graphs/race-condition.pdf}
+		\caption{}
+		\label{fig:race-condition}
+	\end{figure}
 
-	\begin{description}
-		\item[1: Exclude-include] $\ev{A} \erel \ev{D}, \ev{A} \irel \ev{C}, \ev{B} \erel \ev{C}, \ev{B} \irel \ev{D}$
-		\item[2: Include condition] $\ev{A} \irel \ev[000]{C}, \ev[000]{C} \crel \ev{B}, \ev{B} \irel \ev[000]{D}, \ev[000]{D} \crel \ev{A}$
-		\item[3: Non-modifying to condition] $\ev{A} \irel \ev{C}, \ev{C} \crel \ev{B}, \ev{B} \irel \ev[000]{D}, \ev[000]{D} \crel \ev{A}, \ev{E} \erel \ev{C}$
-	\end{description}
+	In the graph shown in figure \ref{fig:race-condition} it is shown that at least part of the locking set has to be $N_{out}(v)$ so as to avoid a race condition in this case.
 
-	\begin{description}
-		\item[Backwards locking] $L(v)\ =\ N(N(v))\ \cup\ N(v)\ \cup\ v$ where $N(v)$ is the in-neighbourhood of $v$. This locking does not work for graph 1, as executions on \texttt{A} and \texttt{B} does require locking \texttt{C} and \texttt{D}. This means that the end-state of the workflow is subject to race conditions.
-		\item[All adjacent] $L(v)\ =\ N(v)\ \cup\ v$ where $N(v)$ is the neighbourhood of $v$. This solves the problem of \emph{backwards locking} for graph 1, as \texttt{C} and \texttt{D} would be incident to locking by both \texttt{A} and \texttt{B}.
-		\item[Forwards locking] $L(v)\ =\ N(N(v))\ \cup\ N(v)\ \cup\ v$ where $N(v)$ is the out-neighbourhood of $v$. While there is no inherent problem with the \emph{all adjacent} locking rules, an execution of event \texttt{A} in graph 3 using \emph{all adjacent} would require two locks: on \texttt{C} and \texttt{D}, while using \emph{forwards locking} would only incur locking on \texttt{C} as the state-change incurred by the include relation on \texttt{C} does not allow \texttt{B} to be executed.
-	\end{description}
+	\begin{figure}[ht!]	
+		\center
+		\includegraphics[scale=0.5]{figures/dcr-graphs/second-degree-effect.pdf}
+		\caption{}
+		\label{fig:second-degree-effect}
+	\end{figure}
 
-	It seems that, given the state of all relevant nodes, the locking mechanism described as \emph{forward locking} minimizes the amount of locks needed for any execution.
-	This optimization is, however, only possible when, in example graph 3, the state of \texttt{C} is known and since locking is only performed forwards, there is no implicit way to propagate executions backwards.
+	In the graph shown in figure \ref{fig:second-degree-effect} it is shown that the locking set has to include either $N_{out}(N_{out}(v))$ or $N_{in}(v) \cup N_{out}(v)$, in order to prevent the graph from ending in a state where both \texttt{A} and \texttt{B} has been executed, which should be impossible due to the execution of either including a condition on the other.
+
+	\begin{figure}[ht!]	
+		\center
+		\includegraphics[scale=0.5]{figures/dcr-graphs/second-degree-no-effect.pdf}
+		\caption{}
+		\label{fig:second-degree-no-effect}
+	\end{figure}
+
+ 	In the graph shown in figure \ref{fig:second-degree-no-effect} an execution of \texttt{A} no longer has an effect on the enabledness of \texttt{B}, as \texttt{C} has the same state before and after the execution of \texttt{A}.
+ 	If the locking scheme of $L(v) = N_{in}(v) \cup N_{out}(v) \cup v$ is applied, this has no effect, but if the locking scheme of $L(v) = N_{out}(N_{out}(v)) \cup N_{out}(v) \cup v$ is used, the lock on \texttt{B} can be foregone.
+	This optimization is, however, only possible when the state of \texttt{C} is known and since locking is only performed forwards, there is no implicit way to propagate executions backwards.
 	This means that \texttt{A} does not know the state of \texttt{C} on execution and would have to do one of two options when executing:
 	\begin{itemize}
 		\item \texttt{A} sends a locking message to \texttt{C}, telling it to lock \texttt{B} if necessary.
@@ -590,9 +603,6 @@
 	Both options result in the minimum amount of locks, but the first option has fewer messages, as it only results in two messages.
 	However, the first option has the disadvantage of potentially taking twice as long, assuming that transporting a message between \texttt{A} and \texttt{C} takes the same amount of time as between \texttt{A} and \texttt{B}.
 	These various advantages of different methods means that finding one optimal solution is not possible, as it is dependent on the specific workflow and the topology of the network at a given time. 
-
-	% SGX role regarding fault tolerance
-
 
 	\subsection{Network topology}
 	Due to the algorithm not requiring the executioner of an event to have the global state of the workflow at the time of execution, any state changes are only propagated to the relevant parties.
