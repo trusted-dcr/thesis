@@ -570,7 +570,7 @@
 	\begin{figure}[ht!]	
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/race-condition.pdf}
-		\caption{}
+		\caption{Graph illustrating the need for locking within $N_{out}(v)$.}
 		\label{fig:race-condition}
 	\end{figure}
 
@@ -579,7 +579,7 @@
 	\begin{figure}[ht!]	
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/second-degree-effect.pdf}
-		\caption{}
+		\caption{Graph illustrating the need for locking in either $N_{out}(N_{out}(v))$ or $N_{in}(v) \cup N_{out}(v)$.}
 		\label{fig:second-degree-effect}
 	\end{figure}
 
@@ -588,7 +588,7 @@
 	\begin{figure}[ht!]	
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/second-degree-no-effect.pdf}
-		\caption{}
+		\caption{Graph illustrating the advantage of locking in $N_{out}(N_{out}(v))$ rather than $N_{in}(v) \cup N_{out}(v)$.}
 		\label{fig:second-degree-no-effect}
 	\end{figure}
 
