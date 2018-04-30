@@ -347,361 +347,370 @@
 			As indicated by the name, monotonic counters are integer counters, that can only be incremented.
 			They are implemented as a block of non-volatile memory accessible only through SGX instructions, protecting against replay attacks.
 
-			\subsubsection{Transforming byzantine faults to crashes}
-			\label{subsubsec:transforming-byzantine-faults}
-			We conjecture that the correct use of Intel SGX can transform all byzantine faults in a distributed system with unreliable channels to crashes and lost messages.
+	\section{System model}
 
-			Thereby a crash-fault-tolerant distributed protocol with unreliable channels which will exhibit undocumented behaviour under byzantine-faults (from here on in "crash-resistant protocol") can be transformed into a byzantine-fault-tolerant protocol using Intel SGX and cryptography.
-			We assume that processes exhibiting byzantine faults will not be able to utilize the cryptographic secrets of a correct process.
+	\section{Transforming byzantine faults to crashes}
+	\label{subsubsec:transforming-byzantine-faults}
+	We conjecture that the correct use of Intel SGX can transform all byzantine faults in a distributed system with unreliable channels to crashes and lost messages.
 
-			\begin{figure}[h]
-				\center
-				\includegraphics[scale=0.6]{figures/state-machines/simple-NFA.pdf}
-				\caption{A simple example of our finite state machine model\label{fig:simple-nfa}}
-			\end{figure}
+	Thereby a crash-fault-tolerant distributed protocol with unreliable channels which will exhibit undocumented behaviour under byzantine-faults (from here on in "crash-resistant protocol") can be transformed into a byzantine-fault-tolerant protocol using Intel SGX and cryptography.
+	We assume that processes exhibiting byzantine faults will not be able to utilize the cryptographic secrets of a correct process.
 
-			To show the transformation, we will model an arbitrary distributed protocol as consisting of \textit{finite state machines}, \textit{channels} and \textit{processes}.
-			A finite state machine consists of a current state, $s_{current}$, a finite set of $n$ distinct states, $S=\{s_1, s_2, \dots, s_n\}$, and a finite set of $m$ distinct state-transitions, $T$.
-			A finite state machine can only be in one state at any time, and transitions to another state by accepting a bit-string as input, and optionally outputs another bit-string. 
-			A transition has the form $(s_{from}, i, o, s_{to})$, where $i$ is an input consisting of a tuple of a bit-string and the channel the bit-string was received on, and $o$ is the output consisting of a set of bit-string/channel pair, each representing that bit-string being sent on the appertaining channel.
-			For example, the finite state machine in figure \ref{fig:simple-nfa} will transition from the starting state $s_0$ to $s_2$ on input $"010"$ from channel $c_0$, and will during the transition output $"101"$ to channel $c_1$ and $"100"$ to $c_2$.
-			
-			A channel can either be reliable or unreliable, and is bi-directional. 
-			A reliable channel guarantees that messages sent on it will be delivered, will be delivered in the order the messages was sent, and will not be changed during transmission.
-			An unreliable channel gives no such guarantees, and can thus experience loss, reordering and corruption of messages.
+	\begin{figure}[h]
+		\center
+		\includegraphics[scale=0.6]{figures/state-machines/simple-NFA.pdf}
+		\caption{A simple example of our finite state machine model\label{fig:simple-nfa}}
+	\end{figure}
 
-			The last component in our model is the process.
-			A process is a set of running state machines.
-			The state machines inside the process can be connected with reliable channels. 
-			State machines can be connected to state machines in other processes only with unreliable channels.
+	To show the transformation, we will model an arbitrary distributed protocol as consisting of \textit{finite state machines}, \textit{channels} and \textit{processes}.
+	A finite state machine consists of a current state, $s_{current}$, a finite set of $n$ distinct states, $S=\{s_1, s_2, \dots, s_n\}$, and a finite set of $m$ distinct state-transitions, $T$.
+	A finite state machine can only be in one state at any time, and transitions to another state by accepting a bit-string as input, and optionally outputs another bit-string. 
+	A transition has the form $(s_{from}, i, o, s_{to})$, where $i$ is an input consisting of a tuple of a bit-string and the channel the bit-string was received on, and $o$ is the output consisting of a set of bit-string/channel pair, each representing that bit-string being sent on the appertaining channel.
+	For example, the finite state machine in figure \ref{fig:simple-nfa} will transition from the starting state $s_0$ to $s_2$ on input $"010"$ from channel $c_0$, and will during the transition output $"101"$ to channel $c_1$ and $"100"$ to $c_2$.
+	
+	A channel can either be reliable or unreliable, and is bi-directional. 
+	A reliable channel guarantees that messages sent on it will be delivered, will be delivered in the order the messages was sent, and will not be changed during transmission.
+	An unreliable channel gives no such guarantees, and can thus experience loss, reordering and corruption of messages.
 
-			\begin{figure}[ht]
-				\center
-				\includegraphics[scale=0.6]{figures/state-machines/Distributed-protocol-model.pdf}
-				\caption{A simple example of distributed protocol model.\label{fig:simple-model}}
-			\end{figure}
+	The last component in our model is the process.
+	A process is a set of running state machines.
+	The state machines inside the process can be connected with reliable channels. 
+	State machines can be connected to state machines in other processes only with unreliable channels.
 
-			Figure \ref{fig:simple-model} is a model of a simple distributed protocol, consisting of the processes $P_0$ and $P_1$, each of which has three state machines $SM_0 - SM_5$. 
-			Each state machine is connected to other state machines on the same process with reliable channels $c_0-c_3$, and $SM_1$ on $P_0$ is connected to $SM_3$ on $P_1$ with the unreliable channel $c_4$.
+	\begin{figure}[ht]
+		\center
+		\includegraphics[scale=0.6]{figures/state-machines/Distributed-protocol-model.pdf}
+		\caption{A simple example of distributed protocol model.\label{fig:simple-model}}
+	\end{figure}
 
-			A distributed protocol can experience a plethora of different errors. 
-			Apart from the channel faults already described, we will model crashes and byzantine faults, as these are the ones we are concerned about in this transformation.
-			We model a crash fault in the state machine by adding an empty input transition ("$\epsilon$") from every state to an error-state, which cannot transition to another state (see $s_{error}$ in figure \ref{fig:simple-nfa}).
-			As the state machine will not be able to transition to another state, and thus also cannot output anything from this state, this serves to model a component crashing in distributed protocol.
-			We model a byzantine fault by exchanging a process with a new process.
-			This potentially includes the removal of state machines, the addition of state machines or the exchange of old state machine with new state machines with new current states and new channels (we will refer to this last case as \textit{corrupted} state machines).
-			This models a process beginning to exhibit arbitrary behaviour.
+	Figure \ref{fig:simple-model} is a model of a simple distributed protocol, consisting of the processes $P_0$ and $P_1$, each of which has three state machines $SM_0 - SM_5$. 
+	Each state machine is connected to other state machines on the same process with reliable channels $c_0-c_3$, and $SM_1$ on $P_0$ is connected to $SM_3$ on $P_1$ with the unreliable channel $c_4$.
 
-			To transform a crash-resistant distributed protocol into a byzantine-fault-tolerant protocol, we utilize the verification in Remote Attestation (see section \ref{subsec:attestation}) and the integrity guarantees provided by Intel SGX.
-			To model this, we introduce the notion of a cryptographic secret state machine $SM_{s}$, and an integrity protected area of the process.
-			We assume that any byzantine fault can replicate $SM_{s}$, but cannot replicate the secrets contained in $SM_s$ if $SM_s$ is changed. 
-			This models that faulty processes cannot access the cryptographic secrets of a correct process, which is a reasonable assumption by the integrity and confidentiality guarantees given by Intel SGX, given that the secrets are stored in an enclave (see section \ref{subsec:enclave}).
+	A distributed protocol can experience a plethora of different errors. 
+	Apart from the channel faults already described, we will model crashes and byzantine faults, as these are the ones we are concerned about in this transformation.
+	We model a crash fault in the state machine by adding an empty input transition ("$\epsilon$") from every state to an error-state, which cannot transition to another state (see $s_{error}$ in figure \ref{fig:simple-nfa}).
+	As the state machine will not be able to transition to another state, and thus also cannot output anything from this state, this serves to model a component crashing in distributed protocol.
+	We model a byzantine fault by exchanging a process with a new process.
+	This potentially includes the removal of state machines, the addition of state machines or the exchange of old state machine with new state machines with new current states and new channels (we will refer to this last case as \textit{corrupted} state machines).
+	This models a process beginning to exhibit arbitrary behaviour.
 
-			State machines running in the integrity protected area of the process can be uniquely identified by $SM_{s}$, but cannot have channels to state machines running on other processes.
-			This models the integrity protection in Intel SGX and the QE' abilities, as well as an enclave's inability to access peripheral hardware such as network cards.
+	To transform a crash-resistant distributed protocol into a byzantine-fault-tolerant protocol, we utilize the verification in Remote Attestation (see section \ref{subsec:attestation}) and the integrity guarantees provided by Intel SGX.
+	To model this, we introduce the notion of a cryptographic secret state machine $SM_{s}$, and an integrity protected area of the process.
+	We assume that any byzantine fault can replicate $SM_{s}$, but cannot replicate the secrets contained in $SM_s$ if $SM_s$ is changed. 
+	This models that faulty processes cannot access the cryptographic secrets of a correct process, which is a reasonable assumption by the integrity and confidentiality guarantees given by Intel SGX, given that the secrets are stored in an enclave (see section \ref{subsec:enclave}).
 
-			The transformation from a crash-resistant protocol to a byzantine-fault-tolerant protocol consist of 4 steps:
-			\begin{enumerate}
-				\item Add all the state machines to the integrity protected area of the process.
-					\begin{itemize}
-						\item This is equivalent to making the distributed components in the crash-resistant protocol into enclaves. 
-						Please note that it is rarely necessary to make all components into enclaves, only the so-called \textit{security critical components}.
-					\end{itemize}
-				\item For each endpoint state machine in unreliable channels between processes, add a new state machine in the unprotected area of each of the processes (called a wrapper state machine), connect a new unreliable channel between these and add a reliable channel from the old endpoint state machines to the new.
-					\begin{itemize}
-					   	\item This is equivalent to adding unprotected wrapper components for the enclaves, which will have access to the network, an thus can act as a middle-man for communicating with other processes.
-				    \end{itemize}
-				\item Add reliable channels from all state machines in the integrity protected area of the process to the cryptographic secret state machine $SM_s$.
-				\item Add a Remote Attestation state machines, $SM_A$, to each process and a Remote Attestation process, $P_{RA}$ to the protocol.
-					\begin{itemize}
-						\item We will not go into detail with the Remote Attestation protocol here.
-						We will simply use it to securely provision $SM_s$ with a symmetric key.
-						For more information on the Remote Attestation protocol, see section \ref{subsec:attestation}, \textit{Intel SGX explained}~\cite{costan_intel_2016} and/or \textit{Intel SGX Developter guide}~\cite{intel_sgx_guide}.
-					\end{itemize}
-			\end{enumerate}
+	State machines running in the integrity protected area of the process can be uniquely identified by $SM_{s}$, but cannot have channels to state machines running on other processes.
+	This models the integrity protection in Intel SGX and the QE' abilities, as well as an enclave's inability to access peripheral hardware such as network cards.
 
-			\begin{figure}[ht!]
-				\center
-				\includegraphics[scale=0.39]{figures/state-machines/distributed-protocol-model-transformation0.pdf}
-			\end{figure}
-			\begin{figure}[ht!]	
-				\center
-				\includegraphics[scale=0.39]{figures/state-machines/distributed-protocol-model-transformation1.pdf}
-			\end{figure}
-			\begin{figure}[ht!]	
-				\center
-				\includegraphics[scale=0.39]{figures/state-machines/distributed-protocol-model-transformation2.pdf}
-			\end{figure}
-			\begin{figure}[ht!]	
-				\center
-				\includegraphics[scale=0.39]{figures/state-machines/distributed-protocol-model-transformation3.pdf}
-			\end{figure}
-			\begin{figure}[ht!]	
-				\center
-				\includegraphics[scale=0.39]{figures/state-machines/distributed-protocol-model-transformation4.pdf}
-				\caption{Transformation of figure \ref{fig:simple-model} from crash-resistant protocol to byzantine fault-tolerant protocol.\label{fig:tranformation-model}}
-			\end{figure}
-			\FloatBarrier
-
-			After this transformation, some steps must added to the internals of protocol:
+	The transformation from a crash-resistant protocol to a byzantine-fault-tolerant protocol consist of 4 steps:
+	\begin{enumerate}
+		\item Add all the state machines to the integrity protected area of the process.
 			\begin{itemize}
-				\item Before running the protocol, a pre-compute step must be added where each process' $SM_s$ is provisioned with the same cryptographic secret. 
-				This is handled by the $SM_s$ and $SM_A$, which will contact $P_{RA}$ and be Attested and securely provisioned. 
-				In our example, we have only added a single $P_{RA}$, which of course means that a \textit{k}-resilient protocol suddenly cannot handle a single $P_{RA}$ crash. 
-				This can be solved by adding \textit{k+1} identical $P_{RA}$s, as this is a pre-compute step. 
-				This means that the $P_{RA}$s plays no further role after this step in the protocol.
-				\item All messages that were to be sent in the original protocol, must be sent from a state machine in the integrity protected area though a state machine in the unprotected area of the process.
-				This is due to the constraint that the state machines in the integrity protected area of the process can no longer have channels to other processes.  
-				\item Before any message intended for another process is sent from the integrity protected area, it must be have a cryptographic message authentication code (MAC) appended on the message.
-				The MAC is an output of the message and the Remote Attestation provisioned key.
-				$SM_s$ is the only state machine with the Remote Attestation provisioned key, and thus only $SM_s$ can MAC a message correctly.
-				$SM_s$ will refuse to sign any message if any state machine in the integrity protected area is not the original.
-				This translates to a transformation of the state machine, such that each transition\\
-				$(s_{from}, i, \{(m_o, c_o)\}, s_{to})$,\\
-				where $c_o$ is a channel that was previously to another process, must be transformed to the transitions\\
-				$(s_{from}, i, \{(m_o, c_{SM_s})\}, s_{wait})$ and\\ 
-				$(s_{wait}, (m_o+MAC, c_{SM_s}), \{(m_o+MAC, c_o)\}, s_{to})$\\
-				with the intermediate state $s_{wait}$, which acts as a state in which the state machine waits for $SM_s$ to MAC the output message.
-				\item Whenever a message that supposedly originates from another process is received from the unprotected area  by a state machine in the integrity protected area, the MAC of that message must be verified by $SM_s$.
-				In case this verification fails, the message must be dropped discarded.
-				This translates to a transformation of the state machine, such that each transition\\
-				$(s_{from}, (m_i, c_i), o, s_{to})$,\\
-				where $c_i$ is a channel that was previously to another process, must be transformed to the transitions\\
-				$(s_{from}, (m_i+MAC, c_i), \{(m_i+MAC, c_{SM_s})\}, s_{wait})$,\\
-				$(s_{wait}, ("0", c_{SM_s}), \{\}, s_{from})$ and \\
-				$(s_{wait}, ("1", c_{SM_s}), o, s_{to})$ \\
-				with the intermediate state $s_{wait}$, which acts as a state in which the state machine waits for $SM_s$ to verify the MAC of the input, and the messages $"0"$ and $"1"$ represents the failure and success of this verification, respectively.
-				\item In the event that $SM_s$ is asked to sign a message from a state machine that it identifies is not the original state machines in the integrity protected area, it discards the message.
+				\item This is equivalent to making the distributed components in the crash-resistant protocol into enclaves. 
+				Please note that it is rarely necessary to make all components into enclaves, only the so-called \textit{security critical components}.
 			\end{itemize}
-
-			Notice that this transformation is polynomial in the number of messages, under the assumption that the MAC, and MAC-verification sub-routines in $SM_s$ are polynomial operations in the length of the message.
-			Each input message in the transitions is transformed to exactly one new state, three new state transitions and one MAC-verification sub-routine on $SM_s$.
-			Each output-set is transformed to exactly one new state, two new state transitions and $n$ MAC sub-routines on $SM_s$ where $n$ is the size of the output set.
-			Under the assumption that $SM_s$ sends no additional messages during the MAC and MAC-verification sub-routines, and no failures, $m$ messages in the original state machine will become $7m$ messages after the transformation (see table \ref{tab:number-of-messages-transformed}).
-			If we only count the messages sent between processes, there is no change in the number of messages sent.
-
-			\begin{table}[ht!]
-			\centering
-			\makebox[\textwidth][c]{\begin{tabular}{l|l}
-			\textbf{Number of messages} 	& \textbf{Origin} \\ \hline
-			$m$                           	&  MAC-request outputs to $SM_s$                						\\ \hline
-			$m$                           	&  MAC-response inputs from $SM_s$               						\\ \hline
-			$m$                           	&  messages sent to the wrapper state machine on the sending process    \\ \hline
-			$m$                           	&  messages sent between processes               						\\ \hline
-			$m$                           	&  messages sent from the wrapper state machine on the receiving process               																					 \\ \hline
-			$m$                           	&  input MAC verification requests to $SM_s$               				\\ \hline
-			$m$                           	&  verification responses from $SM_s$                					\\ \hline\hline
-			$7m$                          	&  total messages            
-			\end{tabular}}
-			\caption{Number of messages after the transformation}
-			\label{tab:number-of-messages-transformed}
-			\end{table}
-
-			\FloatBarrier
-			\begin{figure}[ht!]	
-				\center
-				\makebox[\textwidth][c]{\includegraphics[scale=0.6]{figures/state-machines/NFA-transformation.pdf}}
-				\caption{Transformation of figure \ref{fig:simple-nfa} from state machine in crash-resistant protocol to integrity protected state machine in byzantine fault-tolerant protocol, if all channels are to other processes.\label{fig:nfa-transformation}}
-			\end{figure}
-			\FloatBarrier
-
-			These transformations gives us the following guarantees, if a process experiences a byzantine fault:
+		\item For each endpoint state machine in unreliable channels between processes, add a new state machine in the unprotected area of each of the processes (called a wrapper state machine), connect a new unreliable channel between these and add a reliable channel from the old endpoint state machines to the new.
 			\begin{itemize}
-				\item If the state machines in the integrity protected area are replaced with similar state machines, $SM_s$ will identify them as being incorrect and refuse to MAC any messages, which will result either (1) the message will be not be MAC or MACed with the wrong key by the sending state machine, (2) the message being dropped by the faulty state machine or (3) one of the state machines crashing.
-				In case (1), $SM_s$ on any correct process who receives the message will recognise that the MAC is invalid, and the correct integrity protected state-machines will drop the message and revert to the previous state.
-				This is equivalent to the message never being sent, which by definition the protocol can handle, as it can handle unreliable channels between processes.
-				In case (2), the message will be dropped by the faulty process, which is again is equivalent to the message being dropped on an unreliable channel.
-				Case (3) is a crash, which the crash-resistant protocol can already handle.
-				\item If $SM_s$ itself is replaced, it can no longer MAC messages, as it no longer has the appropriate key, and cannot be provisioned with one.
-				This results in the same three cases as above.
-				\item If one or more of the state machines in the integrity protected area are removed, it is equivalent to a crash. Any correct state machine sending messages to the removed state machine, and will not get a reply, which is the same behaviour as a crash.
-				\item If any state machines are added to the integrity protected area, they are inconsequential, as the other state machines in the area cannot communicate with them without being replaced.
-				\item If the state machines outside the integrity protected area are replaced, it can result in either (1) replacing the messages to/from the integrity protected area, (2) dropping messages to/from the integrity protected area or (3) inducing crashes in other state machines, as well as itself.
-				Case (1) is equivalent to dropping the messages, by much the same argument as above: $SM_s$ will recognise that the MAC is invalid, and the state machines in the correct processes will ignore the message.
-				Case (2) is a message loss, and case (3) is a crash, both of which the crash-resistant protocol can already tolerate.
-			\end{itemize}
-
-			This concludes the argument that Intel SGX and cryptography can change byzantine faults to crash faults, and thereby, using the above transformation, make a crash-resistant protocol into a byzantine-fault-tolerant protocol.
-
-			\subsubsection{Transforming a real-life protocol}
-			We will know show a practical example of how the transformation in section \ref{subsubsec:transforming-byzantine-faults} can be utilised.
-			The protocol that we will transform is the central server protocol for mutual exclusion.
-			The central server protocol for mutual exclusion (from here on in CSME) is a protocol which partly solves the \textit{distributed mutual exclusion} problem.
-			In the distributed mutual exclusion problem, a collection of processes share one or more resources (referred to as the \textit{critical section}), and need to do read/writes on these resources. 
-			To prevent race-conditions, a mutual exclusion algorithm ensures that only a single process has access to the critical section at any given time.
-			More formally, in any solution to the distributed mutual exclusion problem, the following requirements must be upheld:
-			\begin{description}
-				\item[ME1: Safety] At most one process may execute in the critical section (CS) at a time.
-				\item[ME2: Liveness] Requests to enter and exit the critical section eventually succeed.
-			\end{description}
-			Optionally, some distributed mutual exclusion protocols also solves the additional fairness requirement of
-			\begin{description}
-				\item[ME3: Happened-before ordering]  If one request to enter the CS happened-before another, then entry to the CS is granted in that order. 
-			\end{description}
-			CSME does not fulfil the requirements of ME3 in asynchronous systems, and thus only partly solves the distributed mutual exclusion problem.
-
-			CSME solves ME1 and ME2 under the conditions of no process failures.
-			In broad strokes, the protocol works by deploying a central server process, which will process a request for access to the critical section in the received order, send an access token to the appropriate client process, waits for an acknowledgement from the process that access to the critical section is no longer needed, and then processes the next request.
-			It is trivial that the protocol does not provide liveness under process crashes:
-			If the server crashes, no process can gain access tokens, and thus no requests for access will succeed.
-			The same scenario is true if a process crashes while having access to the critical section, as the server will never release the token of the crashed process.
-			However, safety is still guaranteed, as a process cannot access the critical section without a token.
-			Under byzantine faults, neither safety nor liveness can be guaranteed. 
-			For instance, the server could serve the tokens to all requests without waiting for acknowledgements from the clients.
-
-			We will now show how the transformation from section \ref{subsubsec:transforming-byzantine-faults}, can transform CSME to give the same guarantees in a byzantine system as the untransformed protocol gives in a crash-fault system.
-			Notice that there is no formal definition of how the critical section access and token is implemented in CSME -- it can be implemented with cryptography, as partial states, with append-only memory, as another process, etc.
-			We will keep this abstraction in the following transformation, but the implementation of this is also required to undergo the same transformation.
-			We will omit the handling of unreliable channels on the state machines for readability, but assume that it is handled.
-
-			First we need to model the protocol as finite state machines, channels and processes.
-			We model two different state machines: a client state machine, and a server state machine.
-
-			\FloatBarrier
-			\begin{figure}[ht!]	
-				\center
-				\includegraphics[scale=0.6]{figures/state-machines/CSME-client-NFA.pdf}
-				\caption{Client state machine from the central server protocol for mutual exclusion. Note that the channel $c_s$ represents the unreliable channel to the server, and is different across client instances.\label{fig:CSME-client-NFA}}
-			\end{figure}
-			\FloatBarrier
-
-			The client state machine is quite simple, and is modelled in figure \ref{fig:CSME-client-NFA}.
-			It can either not not have requested access to the critical section ($s_0$), wait for the token from the server ($s_1$), or have the token and be in the critical section ($s_2$). 
-			Naturally it can also crash ($s_{error}$).
-
-			\FloatBarrier
-			\begin{figure}[ht!]	
-				\center
-				\includegraphics[scale=0.6]{figures/state-machines/CSME-server-NFA.pdf}
-				\caption{Server state machine from the central server protocol for mutual exclusion. Note that this server state machine can only handle two client processes.\label{fig:CSME-server-NFA}}
-			\end{figure}
-			\FloatBarrier
-
-			The server state machine is a bit more complex as it must be modelled to account for the number of client processes.
-			Figure \ref{fig:CSME-server-NFA} is a model of the server state machine in a protocol with two client processes.
-			It encompasses 6 states: $s_0$ where no client has access to the critical section, and no requests has been , $s_1$ where client $1$ has requested the token and the token has been sent, $s_2$ where client $2$ has requested the token and the token has been sent, $s_3$ where client $1$ has the token and client $2$ has requested the token, $s_4$ where client $2$ has the token and client $1$ has requested the token and $s_{error}$ where the state machine has crashed.
-
-			\FloatBarrier
-			\begin{figure}[ht!]	
-				\center
-				\includegraphics[scale=0.6]{figures/state-machines/CSME-protocol.pdf}
-				\caption{Processes and channels in the central server protocol for mutual exclusion, with one server and two clients.\label{fig:CSME-protocol}}
-			\end{figure}
-			\FloatBarrier
-
-			Figure \ref{fig:CSME-protocol} show the processes and channels in CSME with two client processes.
-			$P_1$ and $P_2$ are the clients, each running an instance of the state machine from figure \ref{fig:CSME-client-NFA}, with an unreliable channel to the server process $P_0$, which runs an instance of the state machine from figure \ref{fig:CSME-server-NFA}.
-
-			We start the transformation by transforming the state machines to have their messages MAC'ed by $SM_s$, and to have $SM_s$ verify the messages they receive.
-			This is done by rules for state machine transformation in section \ref{subsubsec:transforming-byzantine-faults}. 
-
-			\FloatBarrier
-			\begin{figure}[ht!]	
-				\center
-				\includegraphics[scale=0.6]{figures/state-machines/CSME-client-NFA-transformed.pdf}
-				\caption{Client state machine in CSME, after it has been transformed to handle byzantine faults.\label{fig:CSME-client-NFA-transformed}}
-			\end{figure}
-			\FloatBarrier
-
-			Figure \ref{fig:CSME-client-NFA-transformed} shows the client state machine after the transformation.
-			Whenever the client wants to enter the critical section, the state machine sends the request to $SM_s$ for MAC'ing.
-			When the MAC'ed message is received from $SM_s$, this message is sent to the server process. 
-			The state machine is now in $s_1$, which is equivalent to $s_1$ in the untransformed state machine (figure \ref{fig:CSME-client-NFA}).
-			$c_s$ is now a channel from the wrapper state machine.
-			When a token is received from $c_s$, the message's MAC is sent to $SM_s$ for verification.
-			If the MAC is correct, the state machine will transition to $s_2$, which is in the critical section, and is equivalent to $s_2$ in the untransformed state machine.
-			Before exiting the critical section, the exit message is sent to $SM_s$ for MAC'ing, and when the appropriate MAC is received from $SM_s$, the exit message is sent to the wrapper state machine for redirection to the server process.
-
-			\FloatBarrier
-			\begin{figure}[ht!]	
-				\center
-				\makebox[\textwidth][c]{\includegraphics[scale=0.6]{figures/state-machines/CSME-server-NFA-transformed.pdf}}
-				\caption{Server state machine in the central server protocol for mutual exclusion, after it has been transformed to handle byzantine errors. Note that $s_{error}$ has been omitted for (some) readability.\label{fig:CSME-server-NFA-transformed}}
-			\end{figure}
-			\FloatBarrier
-
-			Figure \ref{fig:CSME-server-NFA-transformed} shows the transformed server state machine.
-			We have omitted $s_{error}$ for readability.
-			$s_0$, $s_1$, $s_2$, $s_3$ and $s_4$ are equivalent to the states by the same names in the untransformed state machine (figure \ref{fig:CSME-server-NFA}).
-			In $s_0$ the token has been released, and no client has requested the token.
-			In $s_1$, client $1$ has requested the token, $SM_s$ has verified the MAC of the request and MAC'ed the token which has then been sent to the servers wrapper state machine for redirection to the client $1$ process.
-			If the token is released by client $1$, and this message's MAC is verified, the state machine will transition to $s_0$. 
-			$s_2$ is equivalent to $s_1$, except with client $2$ instead of client $1$. 
-			In $s_3$, client $1$ has the token, and client $2$ has requested the token.
-			So when the server state machine receives a verifiably "exit" message from client $1$, a token is MAC'ed and sent to client $2$, so the state machine can transition to $s_2$.
-			$s_4$ is equivalent to $s_3$, except with the clients reversed (client $2$ has the token, client $1$ has requested it, when client $2$ releases the token).  
-
-			\FloatBarrier
-			\begin{figure}[ht!]	
-				\center
-				\includegraphics[scale=0.6]{figures/state-machines/CSME-protocol-transformed.pdf}
-				\caption{Processes and channels in the central server protocol for mutual exclusion, after they have been transformed to handle byzantine errors.\label{fig:CSME-protocol-transformed}}
-			\end{figure}
-			\FloatBarrier
-
-			Figure \ref{fig:CSME-protocol-transformed} show the process's transformation. 
-			Each of the client processes ($P_1$ and $P_2$), is now running the transformed client state machines in the integrity protected area. The transformed client state machines have a reliable channel to a $SM_s$, and another to a wrapper state machine outside the integrity protected area, which is responsible for passing on the messages to the server process.
-			Each of the processes have has an $SM_A$ responsible for passing Remote Attestation messages from the $SM_s$ to the new Remote Attestation process.
-			The server process is running a transformed server state machine, connected to two wrapper state machines and an $SM_s$.
-			The server $SM_s$ is also connected to a $SM_A$ for attestation.
-
-			Having transformed the CSME protocol, we will now show that the transformed protocol will exhibit the same behaviour under byzantine faults, as the untransformed protocol does under crash faults.
-			Recall that we model a byzantine fault as a process being exchanged with a new process, potentially with removed, added and/or corrupted state machines.
-			The following is a systematic walkthrough of any possible byzantine faults on the processes, and their results:
+			   	\item This is equivalent to adding unprotected wrapper components for the enclaves, which will have access to the network, an thus can act as a middle-man for communicating with other processes.
+		    \end{itemize}
+		\item Add reliable channels from all state machines in the integrity protected area of the process to the cryptographic secret state machine $SM_s$.
+		\item Add a Remote Attestation state machines, $SM_A$, to each process and a Remote Attestation process, $P_{RA}$ to the protocol.
 			\begin{itemize}
-				\item If a process has its transformed state machine removed, the process will exhibit exactly the same behaviour as a crash (the state machine can take no further inputs, and produce no further outputs), and so it is exactly equivalent to a crash of the state machine. 
-				\item If the wrapper state machines are removed, the transformed state machine can no longer send or receive messages.
-				This is again equivalent to a crash, as a token can no longer be sent to or from that state machine.
-				\item If the $SM_A$ is removed, it can either happen before or after the Remote Attestation process has completed.
-				If it happens before, the process's $SM_S$ will never be provisioned with the Remotely Attestation secret, and no messages will be verified.
-				Therefore, the transformed state will never have its outgoing messages MAC'ed nor will it have any incoming messages verified.
-				As such, it will either get stuck in a state where it never gets a response from $SM_s$ of a message MAC request, or it will get stuck in a state where a specific message cannot be verified.
-				If it happens after the provisioning it will have no effect, as $SM_s$ is already provisioned, and no further communication with $SM_A$ is required.
-				\item If a process gets an additional state machine in the integrity protected area
-				\item If a process gets an additional state machine outside the integrity protected area
-				\item If a process has a corrupted transformed state machine (in the integrity protected area), $SM_s$ will refuse to sign any messages. 
-				So any messages sent from this corrupted state machine, will not be verified on correct processes, meaning that the transformed state machines receiving this message will not transition any further than the verification state.
-				\item If a process has a corrupted wrapper state machine % UPS!
+				\item We will not go into detail with the Remote Attestation protocol here.
+				We will simply use it to securely provision $SM_s$ with a symmetric key.
+				For more information on the Remote Attestation protocol, see section \ref{subsec:attestation}, \textit{Intel SGX explained}~\cite{costan_intel_2016} and/or \textit{Intel SGX Developter guide}~\cite{intel_sgx_guide}.
 			\end{itemize}
-			
+	\end{enumerate}
 
-			\FloatBarrier
-			\begin{figure}[ht!]	
-				\center
-				\includegraphics[scale=0.6]{figures/state-machines/CSME-protocol-transformed-byzantine.pdf}
-				\caption{Processes and channels in the transformed central server protocol for mutual exclusion, with a byzantine fault on the server process.\label{fig:CSME-protocol-transformed-byzantine}}
-			\end{figure}
-			\FloatBarrier
+	\begin{figure}[ht!]
+		\center
+		\includegraphics[scale=0.39]{figures/state-machines/distributed-protocol-model-transformation0.pdf}
+	\end{figure}
+	\begin{figure}[ht!]	
+		\center
+		\includegraphics[scale=0.39]{figures/state-machines/distributed-protocol-model-transformation1.pdf}
+	\end{figure}
+	\begin{figure}[ht!]	
+		\center
+		\includegraphics[scale=0.39]{figures/state-machines/distributed-protocol-model-transformation2.pdf}
+	\end{figure}
+	\begin{figure}[ht!]	
+		\center
+		\includegraphics[scale=0.39]{figures/state-machines/distributed-protocol-model-transformation3.pdf}
+	\end{figure}
+	\begin{figure}[ht!]	
+		\center
+		\includegraphics[scale=0.39]{figures/state-machines/distributed-protocol-model-transformation4.pdf}
+		\caption{Transformation of figure \ref{fig:simple-model} from crash-resistant protocol to byzantine fault-tolerant protocol.\label{fig:tranformation-model}}
+	\end{figure}
+	\FloatBarrier
 
-			Let's see how a byzantine fault is reduced to a crash failure in the example where the server state machines tries to serve tokens on any request, without getting acknowledgement that the token has been released by the possessing client.
-			There are several ways this could be modelled, one of which is presented here:
-			We model this byzantine fault as $P_0$ being exchanged with $P_{byz}$.
-			$P_{byz}$ (see figure \ref{fig:CSME-protocol-transformed-byzantine}) is exactly equal to $P_0$, except that $SM_0$ has been exchanged with $SM_{byz}$ (see figure \ref{fig:CSME-server-NFA-transformed-byzantine}), which serves a token to any request by the clients.
+	After this transformation, some steps must added to the internals of protocol:
+	\begin{itemize}
+		\item Before running the protocol, a pre-compute step must be added where each process' $SM_s$ is provisioned with the same cryptographic secret. 
+		This is handled by the $SM_s$ and $SM_A$, which will contact $P_{RA}$ and be Attested and securely provisioned. 
+		In our example, we have only added a single $P_{RA}$, which of course means that a \textit{k}-resilient protocol suddenly cannot handle a single $P_{RA}$ crash. 
+		This can be solved by adding \textit{k+1} identical $P_{RA}$s, as this is a pre-compute step. 
+		This means that the $P_{RA}$s plays no further role after this step in the protocol.
+		\item All messages that were to be sent in the original protocol, must be sent from a state machine in the integrity protected area though a state machine in the unprotected area of the process.
+		This is due to the constraint that the state machines in the integrity protected area of the process can no longer have channels to other processes.  
+		\item Before any message intended for another process is sent from the integrity protected area, it must be have a cryptographic message authentication code (MAC) appended on the message.
+		The MAC is an output of the message and the Remote Attestation provisioned key.
+		$SM_s$ is the only state machine with the Remote Attestation provisioned key, and thus only $SM_s$ can MAC a message correctly.
+		$SM_s$ will refuse to sign any message if any state machine in the integrity protected area is not the original.
+		This translates to a transformation of the state machine, such that each transition\\
+		$(s_{from}, i, \{(m_o, c_o)\}, s_{to})$,\\
+		where $c_o$ is a channel that was previously to another process, must be transformed to the transitions\\
+		$(s_{from}, i, \{(m_o, c_{SM_s})\}, s_{wait})$ and\\ 
+		$(s_{wait}, (m_o+MAC, c_{SM_s}), \{(m_o+MAC, c_o)\}, s_{to})$\\
+		with the intermediate state $s_{wait}$, which acts as a state in which the state machine waits for $SM_s$ to MAC the output message.
+		\item Whenever a message that supposedly originates from another process is received from the unprotected area  by a state machine in the integrity protected area, the MAC of that message must be verified by $SM_s$.
+		In case this verification fails, the message must be dropped discarded.
+		This translates to a transformation of the state machine, such that each transition\\
+		$(s_{from}, (m_i, c_i), o, s_{to})$,\\
+		where $c_i$ is a channel that was previously to another process, must be transformed to the transitions\\
+		$(s_{from}, (m_i+MAC, c_i), \{(m_i+MAC, c_{SM_s})\}, s_{wait})$,\\
+		$(s_{wait}, ("0", c_{SM_s}), \{\}, s_{from})$ and \\
+		$(s_{wait}, ("1", c_{SM_s}), o, s_{to})$ \\
+		with the intermediate state $s_{wait}$, which acts as a state in which the state machine waits for $SM_s$ to verify the MAC of the input, and the messages $"0"$ and $"1"$ represents the failure and success of this verification, respectively.
+		\item In the event that $SM_s$ is asked to sign a message from a state machine that it identifies is not the original state machines in the integrity protected area, it discards the message.
+	\end{itemize}
 
-			\FloatBarrier
-			\begin{figure}[ht!]	
-				\center
-				\includegraphics[scale=0.6]{figures/state-machines/CSME-server-NFA-transformed-byzantine.pdf}
-				\caption{The byzantine fault state machine $SM_{byz}$ on the server process.\label{fig:CSME-server-NFA-transformed-byzantine}}
-			\end{figure}
-			\FloatBarrier
+	Notice that this transformation is polynomial in the number of messages, under the assumption that the MAC, and MAC-verification sub-routines in $SM_s$ are polynomial operations in the length of the message.
+	Each input message in the transitions is transformed to exactly one new state, three new state transitions and one MAC-verification sub-routine on $SM_s$.
+	Each output-set is transformed to exactly one new state, two new state transitions and $n$ MAC sub-routines on $SM_s$ where $n$ is the size of the output set.
+	Under the assumption that $SM_s$ sends no additional messages during the MAC and MAC-verification sub-routines, and no failures, $m$ messages in the original state machine will become $7m$ messages after the transformation (see table \ref{tab:number-of-messages-transformed}).
+	If we only count the messages sent between processes, there is no change in the number of messages sent.
 
-			If this byzantine fault happens, none of the tokens are MAC'ed.
-			Thereby, any client process (figure \ref{fig:CSME-client-NFA-transformed}) will get stuck in a loop between $s_1$ and $s_1'$, when $SM_s$ rejects the (missing) MAC of the token. 
-			This is equivalent behaviour to the server process crashing, as a (correct) token will never be provided, and the client is unable to enter the critical section.
+	\begin{table}[ht!]
+	\centering
+	\makebox[\textwidth][c]{\begin{tabular}{l|l}
+	\textbf{Number of messages} 	& \textbf{Origin} \\ \hline
+	$m$                           	&  MAC-request outputs to $SM_s$                						\\ \hline
+	$m$                           	&  MAC-response inputs from $SM_s$               						\\ \hline
+	$m$                           	&  messages sent to the wrapper state machine on the sending process    \\ \hline
+	$m$                           	&  messages sent between processes               						\\ \hline
+	$m$                           	&  messages sent from the wrapper state machine on the receiving process               																					 \\ \hline
+	$m$                           	&  input MAC verification requests to $SM_s$               				\\ \hline
+	$m$                           	&  verification responses from $SM_s$                					\\ \hline\hline
+	$7m$                          	&  total messages            
+	\end{tabular}}
+	\caption{Number of messages after the transformation}
+	\label{tab:number-of-messages-transformed}
+	\end{table}
+
+	\FloatBarrier
+	\begin{figure}[ht!]	
+		\center
+		\makebox[\textwidth][c]{\includegraphics[scale=0.6]{figures/state-machines/NFA-transformation.pdf}}
+		\caption{Transformation of figure \ref{fig:simple-nfa} from state machine in crash-resistant protocol to integrity protected state machine in byzantine fault-tolerant protocol, if all channels are to other processes.\label{fig:nfa-transformation}}
+	\end{figure}
+	\FloatBarrier
+
+	These transformations gives us the following guarantees, if a process experiences a byzantine fault:
+	\begin{itemize}
+		\item If the state machines in the integrity protected area are replaced with similar state machines, $SM_s$ will identify them as being incorrect and refuse to MAC any messages, which will result either (1) the message will be not be MAC or MACed with the wrong key by the sending state machine, (2) the message being dropped by the faulty state machine or (3) one of the state machines crashing.
+		In case (1), $SM_s$ on any correct process who receives the message will recognise that the MAC is invalid, and the correct integrity protected state-machines will drop the message and revert to the previous state.
+		This is equivalent to the message never being sent, which by definition the protocol can handle, as it can handle unreliable channels between processes.
+		In case (2), the message will be dropped by the faulty process, which is again is equivalent to the message being dropped on an unreliable channel.
+		Case (3) is a crash, which the crash-resistant protocol can already handle.
+		\item If $SM_s$ itself is replaced, it can no longer MAC messages, as it no longer has the appropriate key, and cannot be provisioned with one.
+		This results in the same three cases as above.
+		\item If one or more of the state machines in the integrity protected area are removed, it is equivalent to a crash. Any correct state machine sending messages to the removed state machine, and will not get a reply, which is the same behaviour as a crash.
+		\item If any state machines are added to the integrity protected area, they are inconsequential, as the other state machines in the area cannot communicate with them without being replaced.
+		\item If the state machines outside the integrity protected area are replaced, it can result in either (1) replacing the messages to/from the integrity protected area, (2) dropping messages to/from the integrity protected area or (3) inducing crashes in other state machines, as well as itself.
+		Case (1) is equivalent to dropping the messages, by much the same argument as above: $SM_s$ will recognise that the MAC is invalid, and the state machines in the correct processes will ignore the message.
+		Case (2) is a message loss, and case (3) is a crash, both of which the crash-resistant protocol can already tolerate.
+	\end{itemize}
+
+	This concludes the argument that Intel SGX and cryptography can change byzantine faults to crash faults, and thereby, using the above transformation, make a crash-resistant protocol into a byzantine-fault-tolerant protocol.
+
+		\subsection{Transforming a real-life protocol}
+		We will know show a practical example of how the transformation in section \ref{subsubsec:transforming-byzantine-faults} can be utilised.
+		The protocol that we will transform is the central server protocol for mutual exclusion.
+		The central server protocol for mutual exclusion (from here on in CSME) is a protocol which partly solves the \textit{distributed mutual exclusion} problem.
+		In the distributed mutual exclusion problem, a collection of processes share one or more resources (referred to as the \textit{critical section}), and need to do read/writes on these resources. 
+		To prevent race-conditions, a mutual exclusion algorithm ensures that only a single process has access to the critical section at any given time.
+		More formally, in any solution to the distributed mutual exclusion problem, the following requirements must be upheld:
+		\begin{description}
+			\item[ME1: Safety] At most one process may execute in the critical section (CS) at a time.
+			\item[ME2: Liveness] Requests to enter and exit the critical section eventually succeed.
+		\end{description}
+		Optionally, some distributed mutual exclusion protocols also solves the additional fairness requirement of
+		\begin{description}
+			\item[ME3: Happened-before ordering]  If one request to enter the CS happened-before another, then entry to the CS is granted in that order. 
+		\end{description}
+		CSME does not fulfil the requirements of ME3 in asynchronous systems, and thus only partly solves the distributed mutual exclusion problem.
+
+		CSME solves ME1 and ME2 under the conditions of no process failures.
+		In broad strokes, the protocol works by deploying a central server process, which will process a request for access to the critical section in the received order, send an access token to the appropriate client process, waits for an acknowledgement from the process that access to the critical section is no longer needed, and then processes the next request.
+		It is trivial that the protocol does not provide liveness under process crashes:
+		If the server crashes, no process can gain access tokens, and thus no requests for access will succeed.
+		The same scenario is true if a process crashes while having access to the critical section, as the server will never release the token of the crashed process.
+		However, safety is still guaranteed, as a process cannot access the critical section without a token.
+		Under byzantine faults, neither safety nor liveness can be guaranteed. 
+		For instance, the server could serve the tokens to all requests without waiting for acknowledgements from the clients.
+
+		We will now show how the transformation from section \ref{subsubsec:transforming-byzantine-faults}, can transform CSME to give the same guarantees in a byzantine system as the untransformed protocol gives in a crash-fault system.
+		Notice that there is no formal definition of how the critical section access and token is implemented in CSME -- it can be implemented with cryptography, as partial states, with append-only memory, as another process, etc.
+		We will keep this abstraction in the following transformation, but the implementation of this is also required to undergo the same transformation.
+		We will omit the handling of unreliable channels on the state machines for readability, but assume that it is handled.
+
+		First we need to model the protocol as finite state machines, channels and processes.
+		We model two different state machines: a client state machine, and a server state machine.
+
+		\FloatBarrier
+		\begin{figure}[ht!]	
+			\center
+			\includegraphics[scale=0.6]{figures/state-machines/CSME-client-NFA.pdf}
+			\caption{Client state machine from the central server protocol for mutual exclusion. Note that the channel $c_s$ represents the unreliable channel to the server, and is different across client instances.\label{fig:CSME-client-NFA}}
+		\end{figure}
+		\FloatBarrier
+
+		The client state machine is quite simple, and is modelled in figure \ref{fig:CSME-client-NFA}.
+		It can either not not have requested access to the critical section ($s_0$), wait for the token from the server ($s_1$), or have the token and be in the critical section ($s_2$). 
+		Naturally it can also crash ($s_{error}$).
+
+		\FloatBarrier
+		\begin{figure}[ht!]	
+			\center
+			\includegraphics[scale=0.6]{figures/state-machines/CSME-server-NFA.pdf}
+			\caption{Server state machine from the central server protocol for mutual exclusion. Note that this server state machine can only handle two client processes.\label{fig:CSME-server-NFA}}
+		\end{figure}
+		\FloatBarrier
+
+		The server state machine is a bit more complex as it must be modelled to account for the number of client processes.
+		Figure \ref{fig:CSME-server-NFA} is a model of the server state machine in a protocol with two client processes.
+		It encompasses 6 states: $s_0$ where no client has access to the critical section, and no requests has been , $s_1$ where client $1$ has requested the token and the token has been sent, $s_2$ where client $2$ has requested the token and the token has been sent, $s_3$ where client $1$ has the token and client $2$ has requested the token, $s_4$ where client $2$ has the token and client $1$ has requested the token and $s_{error}$ where the state machine has crashed.
+
+		\FloatBarrier
+		\begin{figure}[ht!]	
+			\center
+			\includegraphics[scale=0.6]{figures/state-machines/CSME-protocol.pdf}
+			\caption{Processes and channels in the central server protocol for mutual exclusion, with one server and two clients.\label{fig:CSME-protocol}}
+		\end{figure}
+		\FloatBarrier
+
+		Figure \ref{fig:CSME-protocol} show the processes and channels in CSME with two client processes.
+		$P_1$ and $P_2$ are the clients, each running an instance of the state machine from figure \ref{fig:CSME-client-NFA}, with an unreliable channel to the server process $P_0$, which runs an instance of the state machine from figure \ref{fig:CSME-server-NFA}.
+
+		We start the transformation by transforming the state machines to have their messages MAC'ed by $SM_s$, and to have $SM_s$ verify the messages they receive.
+		This is done by rules for state machine transformation in section \ref{subsubsec:transforming-byzantine-faults}. 
+
+		\FloatBarrier
+		\begin{figure}[ht!]	
+			\center
+			\includegraphics[scale=0.6]{figures/state-machines/CSME-client-NFA-transformed.pdf}
+			\caption{Client state machine in CSME, after it has been transformed to handle byzantine faults.\label{fig:CSME-client-NFA-transformed}}
+		\end{figure}
+		\FloatBarrier
+
+		Figure \ref{fig:CSME-client-NFA-transformed} shows the client state machine after the transformation.
+		Whenever the client wants to enter the critical section, the state machine sends the request to $SM_s$ for MAC'ing.
+		When the MAC'ed message is received from $SM_s$, this message is sent to the server process. 
+		The state machine is now in $s_1$, which is equivalent to $s_1$ in the untransformed state machine (figure \ref{fig:CSME-client-NFA}).
+		$c_s$ is now a channel from the wrapper state machine.
+		When a token is received from $c_s$, the message's MAC is sent to $SM_s$ for verification.
+		If the MAC is correct, the state machine will transition to $s_2$, which is in the critical section, and is equivalent to $s_2$ in the untransformed state machine.
+		Before exiting the critical section, the exit message is sent to $SM_s$ for MAC'ing, and when the appropriate MAC is received from $SM_s$, the exit message is sent to the wrapper state machine for redirection to the server process.
+
+		\FloatBarrier
+		\begin{figure}[ht!]	
+			\center
+			\makebox[\textwidth][c]{\includegraphics[scale=0.6]{figures/state-machines/CSME-server-NFA-transformed.pdf}}
+			\caption{Server state machine in the central server protocol for mutual exclusion, after it has been transformed to handle byzantine errors. Note that $s_{error}$ has been omitted for (some) readability.\label{fig:CSME-server-NFA-transformed}}
+		\end{figure}
+		\FloatBarrier
+
+		Figure \ref{fig:CSME-server-NFA-transformed} shows the transformed server state machine.
+		We have omitted $s_{error}$ for readability.
+		$s_0$, $s_1$, $s_2$, $s_3$ and $s_4$ are equivalent to the states by the same names in the untransformed state machine (figure \ref{fig:CSME-server-NFA}).
+		In $s_0$ the token has been released, and no client has requested the token.
+		In $s_1$, client $1$ has requested the token, $SM_s$ has verified the MAC of the request and MAC'ed the token which has then been sent to the servers wrapper state machine for redirection to the client $1$ process.
+		If the token is released by client $1$, and this message's MAC is verified, the state machine will transition to $s_0$. 
+		$s_2$ is equivalent to $s_1$, except with client $2$ instead of client $1$. 
+		In $s_3$, client $1$ has the token, and client $2$ has requested the token.
+		So when the server state machine receives a verifiably "exit" message from client $1$, a token is MAC'ed and sent to client $2$, so the state machine can transition to $s_2$.
+		$s_4$ is equivalent to $s_3$, except with the clients reversed (client $2$ has the token, client $1$ has requested it, when client $2$ releases the token).  
+
+		\FloatBarrier
+		\begin{figure}[ht!]	
+			\center
+			\includegraphics[scale=0.6]{figures/state-machines/CSME-protocol-transformed.pdf}
+			\caption{Processes and channels in the central server protocol for mutual exclusion, after they have been transformed to handle byzantine errors.\label{fig:CSME-protocol-transformed}}
+		\end{figure}
+		\FloatBarrier
+
+		Figure \ref{fig:CSME-protocol-transformed} show the process's transformation. 
+		Each of the client processes ($P_1$ and $P_2$), is now running the transformed client state machines in the integrity protected area. The transformed client state machines have a reliable channel to a $SM_s$, and another to a wrapper state machine outside the integrity protected area, which is responsible for passing on the messages to the server process.
+		Each of the processes have has an $SM_A$ responsible for passing Remote Attestation messages from the $SM_s$ to the new Remote Attestation process.
+		The server process is running a transformed server state machine, connected to two wrapper state machines and an $SM_s$.
+		The server $SM_s$ is also connected to a $SM_A$ for attestation.
+
+		Having transformed the CSME protocol, we will now show that the transformed protocol will exhibit the same behaviour under byzantine faults, as the untransformed protocol does under crash faults.
+		Recall that we model a byzantine fault as a process being exchanged with a new process, potentially with removed, added and/or corrupted state machines.
+		The following is a systematic walkthrough of any possible byzantine faults on the processes, and their results:
+		\begin{itemize}
+			\item If a process has its transformed state machine removed, the process will exhibit exactly the same behaviour as a crash (the state machine can take no further inputs, and produce no further outputs), and so it is exactly equivalent to a crash of the state machine. 
+			\item If the wrapper state machines are removed, the transformed state machine can no longer send or receive messages.
+			This is again equivalent to a crash, as a token can no longer be sent to or from that state machine.
+			\item If the $SM_A$ is removed, it can either happen before or after the Remote Attestation process has completed.
+			If it happens before, the process's $SM_S$ will never be provisioned with the Remotely Attestation secret, and no messages will be verified.
+			Therefore, the transformed state will never have its outgoing messages MAC'ed nor will it have any incoming messages verified.
+			As such, it will either get stuck in a state where it never gets a response from $SM_s$ of a message MAC request, or it will get stuck in a state where a specific message cannot be verified.
+			If it happens after the provisioning it will have no effect, as $SM_s$ is already provisioned, and no further communication with $SM_A$ is required.
+			\item If a process gets an additional state machine in the integrity protected area, it will have no consequence, as $SM_s$ will refuse MAC'ing and verification of messages from this state machine, and it cannot communicate with other state machines, unless these are corrupted.
+			\item If a process gets an additional state machine outside the integrity protected area, it cannot communicate with anything inside the integrity protected area, with corrupting these (see below). 
+			It can communicate with other non-protected state machines, but this is equivalent to the other state machines being corrupted (see below).
+			\item If a process has a corrupted transformed state machine (in the integrity protected area), $SM_s$ will refuse to sign any messages. 
+			So any messages sent from this corrupted state machine, will not be verified on correct processes, meaning that the transformed state machines receiving this message will not transition any further than the verification state.
+			\item If a process has a corrupted $SM_s$, the new $SM_s$ will, by assumption, not have access to the Attestation secret. 
+			Thereby, it cannot MAC or verify messages.
+			Nor can it be provisioned with the key again, as this the Remote Attestation procedure ensures that $SM_s$ is the correct state machine. 
+			\item If a process has a corrupted wrapper state machine % UPS!
+		\end{itemize}
+		
+
+		\FloatBarrier
+		\begin{figure}[ht!]	
+			\center
+			\includegraphics[scale=0.6]{figures/state-machines/CSME-protocol-transformed-byzantine.pdf}
+			\caption{Processes and channels in the transformed central server protocol for mutual exclusion, with a byzantine fault on the server process.\label{fig:CSME-protocol-transformed-byzantine}}
+		\end{figure}
+		\FloatBarrier
+
+		Let's see how a byzantine fault is reduced to a crash failure in the example where the server state machines tries to serve tokens on any request, without getting acknowledgement that the token has been released by the possessing client.
+		There are several ways this could be modelled, one of which is presented here:
+		We model this byzantine fault as $P_0$ being exchanged with $P_{byz}$.
+		$P_{byz}$ (see figure \ref{fig:CSME-protocol-transformed-byzantine}) is exactly equal to $P_0$, except that $SM_0$ has been exchanged with $SM_{byz}$ (see figure \ref{fig:CSME-server-NFA-transformed-byzantine}), which serves a token to any request by the clients.
+
+		\FloatBarrier
+		\begin{figure}[ht!]	
+			\center
+			\includegraphics[scale=0.6]{figures/state-machines/CSME-server-NFA-transformed-byzantine.pdf}
+			\caption{The byzantine fault state machine $SM_{byz}$ on the server process.\label{fig:CSME-server-NFA-transformed-byzantine}}
+		\end{figure}
+		\FloatBarrier
+
+		If this byzantine fault happens, none of the tokens are MAC'ed.
+		Thereby, any client process (figure \ref{fig:CSME-client-NFA-transformed}) will get stuck in a loop between $s_1$ and $s_1'$, when $SM_s$ rejects the (missing) MAC of the token. 
+		This is equivalent behaviour to the server process crashing, as a (correct) token will never be provided, and the client is unable to enter the critical section.
 
 
-			% forklar algorithm - ME1, ME2 og ME3 *
-			% ikke decideret crash-resistant - bevarer safety under crashes *
-			% intet er sikkert under byzantinske fejl *
-			% lav state machines (måske n SMs på server process? måske critical section SM på clients? Men hvordan sikrer vi den mod byz?)* 
-			% lav tranformation *
-			% lav byzantisk fejl på server
-			% Vis at det reducerer til crashes og tabte beskeder
-			% hvad med at sende tokens til forkerte clients? Ligger det sig bare under eventual liveness?
-			% Hvad med to byzantiske fejl, sådan at server ikke signer, og client ikke verificerer?
-				% Der er nok et argument for at de ikke kan påvirke KORREKTE processor.
+		% forklar algorithm - ME1, ME2 og ME3 *
+		% ikke decideret crash-resistant - bevarer safety under crashes *
+		% intet er sikkert under byzantinske fejl *
+		% lav state machines * 
+		% lav tranformation *
+		% lav byzantisk fejl på server *
+		% Vis at det reducerer til crashes og tabte beskeder (*)
+		% hvad med at sende tokens til forkerte clients? Ligger det sig bare under eventual liveness?
+			% Enten skal tokens tage sig af det (er det så generisk?)
+			% Ellers skal SM_s signere modtager/afsender også (hvordan ved vi hvem det er?)
+		% Hvad med to byzantiske fejl, sådan at server ikke signer, og client ikke verificerer?
+			% Der er nok et argument for at de ikke kan påvirke KORREKTE processor.
 
+		% Correct processes will exhibit behaviour under other processes' byzantine faults, as if they had crashed
 
 
 	\section{Requirements}
