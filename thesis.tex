@@ -63,13 +63,13 @@
 	A core necessity of DCR is the agreement of all parties on what has transpired in the workflow and what the state of the workflow is at any given point, a non-trivial problem in decentralized DCR.
 	DCR graphs allow for highly localized states, as nodes in a DCR graph are only dependent on, and can only effect, nodes within a limited range, graph-wise.
 	Depending on how a specific DCR graph is constructed, it can therefore allow for a very high degree of concurrency.
-	As DCR graphs are concerned with maintaining a consistent state, distributed DCR graphs lead to the well-known issue of state replication.
+	As DCR graphs are concerned with maintaining a consistent state, the issue of making DCR graphs distributed is closely related to that of synchronizing distributed state replications.
 
-	Existing solutions to this problem are expensive, in the sense that they require a large number of messages to be exchanged and slow in that they provide a low degree of concurrency.
-	As DCR graphs have innate properties which would be very limited by existing solutions to the state replication problem, the lesser known partial state replication seems opportune.
-	Partial state replication is a significantly less understood problem, but is increasing in importance, as scalability issues of popular decentralized databases, such as Bitcoin's blockchain, present themselves.
-	The tools afforded to us by recent technological advances, provide strong guarantees and advantages which have already made waves within state replication solutions and could potentially be leveraged to improve existing solutions to the problem of partial state replication.
-	Trusted execution environments, such as Intel Software Guard Extensions (SGX), provides a verifiable trusted subsystem to each participant, which is especially interesting in a decentralized system of mutually untrusting nodes.
+	However, the innate properties of DCR graphs would be heavily constrained by existing solutions to distributed state replication, due to the large number of messages required and the low degree of concurrency provided by the strict synchronization of these algorithms.
+	The problem, and solution, described in this thesis is not limited to applications of DCR, but can also be applied in other software concerned with maintaining a distributed, fragmented state.
+	An example of such an application is also given, in the form of a distributed smart contract algorithm, as popularized by Ethereum \cite{_ethereum_2018}.
+	The tools afforded to us by recent technological advances, provide strong guarantees and advantages which have already made waves within state replication solutions and which could potentially be leveraged to provide a solution to the described problem, while achieving the goals of a low number of messages and a high degree of concurrency.
+	One such recent technological advancement are Trusted execution environments, such as Intel Software Guard Extensions (SGX), which provide a verifiable trusted subsystem to each participant, which is especially interesting in a decentralized system of mutually untrusting nodes.
 
 	The goal is therefore a decentralized DCR engine distributed among a number of actors, which allows for a graph to be distributed to and interacted with by each actor, in accordance with the specifications of the graph.
 	Actors interacting with the graph simultaneously, should be allowed only when the ordering of those interactions is inconsequential.
@@ -94,7 +94,7 @@
 
 	\subsection{Related works}
 
-	An existing platform which partially provides a solution to the goal of this project is Ethereum~\cite{_wiki_2018}.
+	An existing platform which partially provides a solution to the goal of this project is Ethereum~\cite{_ethereum_2018}.
 	Ethereum is a distributed computing platform based on blockchain technologies, which does, however, also feature a currency, making computations disproportionately expensive, both monetarily and computationally due to the large amounts of computations required by proof-of-work based blockchains.
 	Even though SGX is a new technology, it has already been proposed to solve several issues in the blockchain concept. 
 	SGX has been used as an intermediate for faster consensus about transactions in~\cite{gopinath_nirmala_improving_2017}, however it still relies on the underlying blockchain to prevent double-spending.
@@ -117,6 +117,8 @@
 	This is a strong indicator that Intel SGX can be used for efficiently attaining consensus.
 
 \section{Background}
+
+% Description of components covered in this section and why they are needed.
 
 	\subsection{DCR}
 
@@ -356,7 +358,7 @@
 	Thereby a crash-fault-tolerant distributed protocol with unreliable channels which will exhibit undocumented behaviour under byzantine-faults (from here on in "crash-resistant protocol") can be transformed into a byzantine-fault-tolerant protocol using Intel SGX and cryptography.
 	We assume that processes exhibiting byzantine faults will not be able to utilize the cryptographic secrets of a correct process.
 
-	\begin{figure}[h]
+	\begin{figure}[!ht]
 		\center
 		\includegraphics[scale=0.6]{figures/state-machines/simple-NFA.pdf}
 		\caption{A simple example of our finite state machine model\label{fig:simple-nfa}}
@@ -525,8 +527,8 @@
 
 	This concludes the argument that Intel SGX and cryptography can change byzantine faults to crash faults, and thereby, using the above transformation, make a crash-resistant protocol into a byzantine-fault-tolerant protocol.
 
-		\subsection{Transforming a real-life protocol}
-		We will know show a practical example of how the transformation in section \ref{subsubsec:transforming-byzantine-faults} can be utilised.
+		\subsection{Example: Central Server Mutual Exclusion}
+		We will now show a practical example of how the transformation in section \ref{subsubsec:transforming-byzantine-faults} can be utilised.
 		The protocol that we will transform is the central server protocol for mutual exclusion.
 		The central server protocol for mutual exclusion (from here on in CSME) is a protocol which partly solves the \textit{distributed mutual exclusion} problem.
 		In the distributed mutual exclusion problem, a collection of processes share one or more resources (referred to as the \textit{critical section}), and need to do read/writes on these resources. 
@@ -710,68 +712,64 @@
 		% Hvad med to byzantiske fejl, sådan at server ikke signer, og client ikke verificerer?
 			% Der er nok et argument for at de ikke kan påvirke KORREKTE processor.
 
-		% Correct processes will exhibit behaviour under other processes' byzantine faults, as if they had crashed
-
-
-	\section{Requirements}
-	\begin{description}
-		\item[Consensus]:
-			\begin{description}
-				\item[Termination] Eventually each correct process sets its decision value (single activity state)
-				\item[Partial agreement] % Decision vector = activity state
-								Bottom is allowed as substitute for any activity state, unless that activity is owned by process or dependent on one such process. % Hvad er agreement
-				\item[Integrity] If $p_i$ is correct, then all correct processes decide on $v_i$, or $\bot$ as the i'th component of their vector. % Omformuler. Kan ikke genbruge i på den her måde
-			\end{description}
-		% \item[Concurrency]: DCR-rules for concurrency (only independent activities can be concurrent) (Tie-breaking). Nødvendig? Argumentér hvorfor Agreement + integrity giver concurrency løsning
-		\item[Correctness]: Any state transition must be permitted by DCR logic or they will be rejected by correct nodes.
-		\item[Non-repudiation]: $v_i$ must be provably proposed by $p_i$, within the bounds specified by any applied cryptography.
-		% \item[Co-non-repudiation?]:
-	\end{description}
+		% Correct processes will exhibit behaviour under other processes' byzantine faults, as if they had crashed	
 
 	\section{Algorithm}
 	\label{sec:algorithm}
-	%This section uses the following terms, which must therefore be introduced before this section:
-	% - closed neighbourhood
-	% - Second neighbourhood
 
-	For any algorithm to guarantee workflow correctness of a distributed DCR graph in an asynchronous setting, the algorithm must (1) push executions to effected neighbours and (2) synchronize the executions of non-independent events.
-	This section provides the reasoning behind these requirements.
-	Furthermore, this section will show (3) that an execution of an event can change the state of events only in the immediate neighbourhood, and (4) that an execution can change the enabledness of events only if the events are in the closed neighbourhood of the closed neighbourhood of the executing event.  
+	% Reiterate problem as in-depth as possible. Termination, Liveness etc requirements?
 
-	We will describe the algorithm under the most general case where each event is handled by a separate peer.
-	For simplicity e.g. $A$ will refer to both the event and the peer responsible for it.
-	% We will show that this workflow is enough to describe a general algorithm when $A$ is executed.
-	% Something with events only chaining state one degree forward and thereby enabledness two degrees forward. 
-	% Why?
+	% \begin{description}
+	% 	\item[Consensus]:
+	% 		\begin{description}
+	% 			\item[Termination] Eventually each correct process sets its decision value (single activity state)
+	% 			\item[Partial agreement] % Decision vector = activity state
+	% 							Bottom is allowed as substitute for any activity state, unless that activity is owned by process or dependent on one such process. % Hvad er agreement
+	% 			\item[Integrity] If $p_i$ is correct, then all correct processes decide on $v_i$, or $\bot$ as the i'th component of their vector. % Omformuler. Kan ikke genbruge i på den her måde
+	% 		\end{description}
+	% 	% \item[Concurrency]: DCR-rules for concurrency (only independent activities can be concurrent) (Tie-breaking). Nødvendig? Argumentér hvorfor Agreement + integrity giver concurrency løsning
+	% 	\item[Correctness]: Any state transition must be permitted by DCR logic or they will be rejected by correct nodes.
+	% 	\item[Non-repudiation]: $v_i$ must be provably proposed by $p_i$, within the bounds specified by any applied cryptography.
+	% 	% \item[Co-non-repudiation?]:
+	% \end{description}
 
-	% Effects must push execution state (1)
-	Consider the events $A$, $B$ and $C$, where $A$ has relation $AB$ to $B$, and $B$ has relation $BC$ to $C$.
-	When $AB$ is an effect ($A\irel B$, $A\erel B$ or $A\rrel B$), $B$ must be informed of any execution of $A$ (1).
-	To see this is the case, consider the workflow $(\{D, E, F\}, \{D\erel F, E\irel F\})$, where $D$ and $E$ has been executed.
-	As $F$ is not immediately informed about executions of $D$ and $E$, an execution attempt at $F$ must query $D$ and $E$ to determine the inclusion state of $F$.
-	Such a query would require an ordering of executions of $D$ and $E$, which is not generally possible in an asynchronous setting.
+	% Define terms used in the section: neighbourhoods(in/out)(open/closed)
+	% List challenges/subsections: consensus, locking, network, global state, etc.
 
-	% AB effects must synchronize (2)
-	When an execution happens on an event with an effect to another event, some degree of synchronization must occur between a subset of peers (2).
-	To see this is the case, consider the workflow $(\{D, D', E, E'\}, \{D\irel E, D\erel E', D'\erel E, D'\irel E'\})$.
-	We showed executions must be propagated along effects in an asynchronous setting.
-	Thus when executing $D$ and $D'$, messages $M_{D\irel E}$, $M_{D\erel E'}$, $M_{D'\erel E}$ and $M_{D'\irel E'}$ are required.
-	The ordering of these messages can not generally be guaranteed in an asynchronous setting.
-	To see why synchronization must occur, consider the message arrival sequence $(M_{D\irel E}, M_{D'\erel E}, M_{D'\irel E'}, M_{D\erel E'})$, resulting in an invalid workflow state where both $E$ and $E'$ are excluded.
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	% For any algorithm to guarantee workflow correctness of a distributed DCR graph in an asynchronous setting, the algorithm must (1) push executions to effected neighbours and (2) synchronize the executions of non-independent events.
+	% This section provides the reasoning behind these requirements.
+	% Furthermore, this section will show (3) that an execution of an event can change the state of events only in the immediate neighbourhood, and (4) that an execution can change the enabledness of events only if the events are in the closed neighbourhood of the closed neighbourhood of the executing event.  
 
-	%Executions of events can only effect state in the immediate neighbourhood (3)
-	Executions of events can only effect state in the immediate neighbourhood (3).
-	When event A is executed, its \texttt{Executed} state will change, and all events that A has an effect relation to, has its appropriate state variable changed. 
-	In other words, one state change propagates to state changes along effect relations. 
-	However, the only state change that propagates to state changes in other events is the change of the \texttt{Executed} variable.
-	And since none of the effect relations change the \texttt{Executed} variable, the state change can at most propagate to the immediate neighbourhood of the executing event.
-	Notice that state change does not propagate along constraint relations, but the enabledness of events along these relations are still changed. 
-	However, enabledness cannot propagate, since no state change is induced by a change in enabledness, and enabledness itself is changed only by state changes in the constraining event. 
+	% We will describe the algorithm under the most general case where each event is handled by a separate peer.
+	% For simplicity e.g. $A$ will refer to both the event and the peer responsible for it.
 
-	%Rewrite this?
-	From (3) we also gain (4), that enabledness is at most changed in the closed second neighbourhood of the executing event. 
-	Since enabledness of a constrained event is changed only by state changes in the constraining event, and state changes propagates at most to the neighbourhood of an executing event, it must follow that an execution can at most change enabledness in the closed second neighbourhood of the executing event.
-	%Example
+	% Consider the events $A$, $B$ and $C$, where $A$ has relation $AB$ to $B$, and $B$ has relation $BC$ to $C$.
+	% When $AB$ is an effect ($A\irel B$, $A\erel B$ or $A\rrel B$), $B$ must be informed of any execution of $A$ (1).
+	% To see this is the case, consider the workflow $(\{D, E, F\}, \{D\erel F, E\irel F\})$, where $D$ and $E$ has been executed.
+	% As $F$ is not immediately informed about executions of $D$ and $E$, an execution attempt at $F$ must query $D$ and $E$ to determine the inclusion state of $F$.
+	% Such a query would require an ordering of executions of $D$ and $E$, which is not generally possible in an asynchronous setting.
+
+	% When an execution happens on an event with an effect to another event, some degree of synchronization must occur between a subset of peers (2).
+	% To see this is the case, consider the workflow $(\{D, D', E, E'\}, \{D\irel E, D\erel E', D'\erel E, D'\irel E'\})$.
+	% We showed executions must be propagated along effects in an asynchronous setting.
+	% Thus when executing $D$ and $D'$, messages $M_{D\irel E}$, $M_{D\erel E'}$, $M_{D'\erel E}$ and $M_{D'\irel E'}$ are required.
+	% The ordering of these messages can not generally be guaranteed in an asynchronous setting.
+	% To see why synchronization must occur, consider the message arrival sequence $(M_{D\irel E}, M_{D'\erel E}, M_{D'\irel E'}, M_{D\erel E'})$, resulting in an invalid workflow state where both $E$ and $E'$ are excluded.
+
+	% Executions of events can only effect state in the immediate neighbourhood (3).
+	% When event A is executed, its \texttt{Executed} state will change, and all events that A has an effect relation to, has its appropriate state variable changed. 
+	% In other words, one state change propagates to state changes along effect relations. 
+	% However, the only state change that propagates to state changes in other events is the change of the \texttt{Executed} variable.
+	% And since none of the effect relations change the \texttt{Executed} variable, the state change can at most propagate to the immediate neighbourhood of the executing event.
+	% Notice that state change does not propagate along constraint relations, but the enabledness of events along these relations are still changed. 
+	% However, enabledness cannot propagate, since no state change is induced by a change in enabledness, and enabledness itself is changed only by state changes in the constraining event. 
+
+	% From (3) we also gain (4), that enabledness is at most changed in the closed second neighbourhood of the executing event. 
+	% Since enabledness of a constrained event is changed only by state changes in the constraining event, and state changes propagates at most to the neighbourhood of an executing event, it must follow that an execution can at most change enabledness in the closed second neighbourhood of the executing event.
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+	\subsection{Consensus} % Probably a bad name? Should contain description of messages, lamport diagrams, requirements for when to commit/abort, etc.
 
 	\subsection{Locking}
 	\label{subsec:locking}
@@ -870,10 +868,6 @@
 	\section{DCR-TEE Implementation}
 
 	\section{Distributed Smart Contract Engine}
-
-		% \subsection{Reduction to LATS}
-
-		\subsection{Algorithm}
 
 	\section{Discussion}
 
