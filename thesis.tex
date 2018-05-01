@@ -71,26 +71,27 @@
 	The tools afforded to us by recent technological advances, provide strong guarantees and advantages which have already made waves within state replication solutions and which could potentially be leveraged to provide a solution to the described problem, while achieving the goals of a low number of messages and a high degree of concurrency.
 	One such recent technological advancement are Trusted execution environments, such as Intel Software Guard Extensions (SGX), which provide a verifiable trusted subsystem to each participant, which is especially interesting in a decentralized system of mutually untrusting nodes.
 
-	The goal is therefore a decentralized DCR engine distributed among a number of actors, which allows for a graph to be distributed to and interacted with by each actor, in accordance with the specifications of the graph.
-	Actors interacting with the graph simultaneously, should be allowed only when the ordering of those interactions is inconsequential.
-	At any given time, an actor should be able to collect the state of the graph and at be ensured that any future state will not be incompatible with a previously collected state, with regards to the rules specified by the graph.
+	\noindent The contributions of this thesis are as follows:
+	\begin{itemize}
+		\item The design and implementation of a highly concurrent and fast distributed DCR engine, using SGX.
+		\item A description of a generalized version of that design and implementation supporting arbitrary smart contracts rather than DCR graphs.
+		\item A highly scalable algorithm for achieving consensus in a decentralized and distributed state replication system.
+		\item An argument for the introduction of trusted execution environments reducing byzantine faults to crashes, in any distributed system.
+	\end{itemize}
 
 	\subsection{Problem}
 
-	The solution is outlined by the following summarized requirements.
+	The goal is therefore a decentralized DCR engine distributed among a number of actors, which allows for a graph to be distributed to and interacted with by each actor, in accordance with the specifications of the graph.
+	Actors interacting with the graph simultaneously, should be allowed only when the ordering of those interactions is inconsequential.
+	At any given time, an actor should be able to collect the state of the graph and at be ensured that any future state will not be incompatible with a previously collected state, with regards to the rules specified by the graph.
+	As DCR graphs provide rights on actor by actor basis, it is unintuitive for the distribution of DCR graphs to support dynamic joining of the network.
+
 	The system must:
 	\begin{itemize}
 		\item Support the replication of a decentralized DCR graph, while maintaining a high degree of concurrency as permitted by DCR.
-		\item Achieve consensus on the state of a decentralized DCR graph in less than a quadratic number of messages.
+		\item Achieve consensus on a state of a decentralized DCR graph in a number of messages by a factor of less than the number of nodes in the graph.
 		\item Function in a highly malicious environment, where the only guarantees are those based on strong cryptographic security.
-	\end{itemize}
-
-	\noindent The contributions of this thesis are as follows:
-	\begin{itemize}
-		\item The design and implementation of the solution outlined above.
-		\item A detailed description of the expansion of the implementation to support arbitrary smart contracts rather than DCR graphs.
-		\item An argument for the introduction of trusted execution environments reducing byzantine faults to crashes, in any distributed system.
-	\end{itemize}
+	\end{itemize}	
 
 	\subsection{Related works}
 
