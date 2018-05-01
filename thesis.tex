@@ -60,9 +60,12 @@
 
 	In a time where collaboration between companies, small and large, occurs daily across vast physical distances, a trusted means of coordination is key.
 	An example of this are Dynamic Condition Response (DCR) graphs, which is a declarative workflow management system.
-	A core necessity of DCR is the agreement of all parties on what has transpired in the workflow and what the state of the workflow is at any given point, a non-trivial problem in decentralized DCR.
-	DCR graphs allow for highly localized states, as nodes in a DCR graph are only dependent on, and can only effect, nodes within a limited range, graph-wise.
-	Depending on how a specific DCR graph is constructed, it can therefore allow for a very high degree of concurrency.
+	DCR graphs formulate processes in terms of events and relations between those events.
+	The relations specify the order in which events can transpire, and what paths can be taken in the workflow.
+	DCR graphs provide a concise and simple way of describing workflows, as executing an event can only affect events within a limited range, graph-wise.
+	This means that DCR graphs allow for highly localized states and depending on how a specific DCR graph is constructed, it can therefore allow for a very high degree of concurrency.
+	Central servers would be an easy solution to this problem, it would however require trust and payment, due to a third party being involved and managing the process.
+	An alternative to central servers is of course a decentralized solution, with participants acting as peers in a peer-to-peer network, but this brings with it completely different challenges, in that a core necessity of DCR is the agreement of all parties on what has transpired in the workflow and what the state of the workflow is at any given point, a non-trivial problem in decentralized DCR.
 	As DCR graphs are concerned with maintaining a consistent state, the issue of making DCR graphs distributed is closely related to that of synchronizing distributed state replications.
 
 	However, the innate properties of DCR graphs would be heavily constrained by existing solutions to distributed state replication, due to the large number of messages required and the low degree of concurrency provided by the strict synchronization of these algorithms.
@@ -82,11 +85,13 @@
 	\subsection{Problem}
 
 	The goal is therefore a decentralized DCR engine distributed among a number of actors, which allows for a graph to be distributed to and interacted with by each actor, in accordance with the specifications of the graph.
-	Actors interacting with the graph simultaneously, should be allowed only when the ordering of those interactions is inconsequential.
-	At any given time, an actor should be able to collect the state of the graph and at be ensured that any future state will not be incompatible with a previously collected state, with regards to the rules specified by the graph.
-	As DCR graphs provide rights on actor by actor basis, it is unintuitive for the distribution of DCR graphs to support dynamic joining of the network.
+	Distributing DCR graphs is not a trivial problem, as there are considerations for the distribution of that graph, especially given the desire for a higher degree of concurrency than simply having all peers be responsible for the entire DCR graph.
+	Alternatively the DCR graph would have to be distributed on an event basis, but this is a much harder problem as changes only have to be propagated to the relevant events, meaning that multiple, possible conflicting, executions can happen simultaneously and would need synchronization intermittently.
+	Actors interacting with the graph simultaneously should be allowed only when the ordering of those interactions is inconsequential.
+	At any given time an actor should be able to collect the state of the graph and be ensured that any future state will not be incompatible with a previously collected state, with regards to the rules specified by the graph.
+	As DCR graphs provide rights on an actor to actor basis, it is unintuitive for the distribution of DCR graphs to support dynamic joining of the network and that is therefore not a requirement for a solution.
 
-	The system must:
+	In summary, the system must:
 	\begin{itemize}
 		\item Support the replication of a decentralized DCR graph, while maintaining a high degree of concurrency as permitted by DCR.
 		\item Achieve consensus on a state of a decentralized DCR graph in a number of messages by a factor of less than the number of nodes in the graph.
