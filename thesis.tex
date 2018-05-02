@@ -716,7 +716,7 @@
 	\label{sec:algorithm}
 
 	The problem of distributed DCR has several parts which must each be considered individually.
-	Consider a solution where a DCR graph is distributed among peers, such that each peer is only responsible for one or more events.
+	Consider a solution where a DCR graph is distributed among peers, such that each peer is responsible for one or more events.
 	Responsible meaning that that peer is able to be involved in making state changes for that peer, on request.
 	Any client can contact a peer, requesting an execution of an event, provided that that client has the correct credentials, with regards to access control.
 	The first issue then presents itself, in that simultaneous client requests can be incompatible and therefore needs to be applied in the same order for all affected peers.
@@ -729,8 +729,9 @@
 
 	The second problem is closely related as consensus must be achieved on which peer holds which lock:
 	\begin{description}
-		\item[Consensus] In extension to preventing simultaneous incompatible executions, locking has pushed the issue of concurrency into the locking portion, which now needs to be handled in the sense that peers must agree who hold the locks.
-		Furthermore avoiding deadlocks and ensuring progression is obviously a concern.
+		\item[Consensus] In extension to preventing simultaneous incompatible executions, locking has pushed the issue of concurrency into the locking portion, which now needs to be handled in the sense that peers must agree who holds the locks.
+		Existing solutions to this problem, such as BFT algorithms and State Machine Replication Algorithms could be applied here, if each peer is responsible for the entirety of the graph.
+		However as those algorithms they are typically quite costly, as discussed earlier, they do not live up to the requirements specified in this thesis.
 	\end{description}
 	
 	With solutions to the problems of locking and consensus, peers are able to progress the graph, but since they will not necessarily be aware of the state of the graph, they would have to aggressively push for an execution for it to possibly happen.
@@ -746,39 +747,6 @@
 		\item[Peer distribution] As events only lock other events in the vicinity, something could be gained, performance-wise, by distributing the events such that they are responsible for events that would typically be locked during the same execution.
 	\end{description}
 
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	% For any algorithm to guarantee workflow correctness of a distributed DCR graph in an asynchronous setting, the algorithm must (1) push executions to effected neighbours and (2) synchronize the executions of non-independent events.
-	% This section provides the reasoning behind these requirements.
-	% Furthermore, this section will show (3) that an execution of an event can change the state of events only in the immediate neighbourhood, and (4) that an execution can change the enabledness of events only if the events are in the closed neighbourhood of the closed neighbourhood of the executing event.  
-
-	% We will describe the algorithm under the most general case where each event is handled by a separate peer.
-	% For simplicity e.g. $A$ will refer to both the event and the peer responsible for it.
-
-	% Consider the events $A$, $B$ and $C$, where $A$ has relation $AB$ to $B$, and $B$ has relation $BC$ to $C$.
-	% When $AB$ is an effect ($A\irel B$, $A\erel B$ or $A\rrel B$), $B$ must be informed of any execution of $A$ (1).
-	% To see this is the case, consider the workflow $(\{D, E, F\}, \{D\erel F, E\irel F\})$, where $D$ and $E$ has been executed.
-	% As $F$ is not immediately informed about executions of $D$ and $E$, an execution attempt at $F$ must query $D$ and $E$ to determine the inclusion state of $F$.
-	% Such a query would require an ordering of executions of $D$ and $E$, which is not generally possible in an asynchronous setting.
-
-	% When an execution happens on an event with an effect to another event, some degree of synchronization must occur between a subset of peers (2).
-	% To see this is the case, consider the workflow $(\{D, D', E, E'\}, \{D\irel E, D\erel E', D'\erel E, D'\irel E'\})$.
-	% We showed executions must be propagated along effects in an asynchronous setting.
-	% Thus when executing $D$ and $D'$, messages $M_{D\irel E}$, $M_{D\erel E'}$, $M_{D'\erel E}$ and $M_{D'\irel E'}$ are required.
-	% The ordering of these messages can not generally be guaranteed in an asynchronous setting.
-	% To see why synchronization must occur, consider the message arrival sequence $(M_{D\irel E}, M_{D'\erel E}, M_{D'\irel E'}, M_{D\erel E'})$, resulting in an invalid workflow state where both $E$ and $E'$ are excluded.
-
-	% Executions of events can only effect state in the immediate neighbourhood (3).
-	% When event A is executed, its \texttt{Executed} state will change, and all events that A has an effect relation to, has its appropriate state variable changed. 
-	% In other words, one state change propagates to state changes along effect relations. 
-	% However, the only state change that propagates to state changes in other events is the change of the \texttt{Executed} variable.
-	% And since none of the effect relations change the \texttt{Executed} variable, the state change can at most propagate to the immediate neighbourhood of the executing event.
-	% Notice that state change does not propagate along constraint relations, but the enabledness of events along these relations are still changed. 
-	% However, enabledness cannot propagate, since no state change is induced by a change in enabledness, and enabledness itself is changed only by state changes in the constraining event. 
-
-	% From (3) we also gain (4), that enabledness is at most changed in the closed second neighbourhood of the executing event. 
-	% Since enabledness of a constrained event is changed only by state changes in the constraining event, and state changes propagates at most to the neighbourhood of an executing event, it must follow that an execution can at most change enabledness in the closed second neighbourhood of the executing event.
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 	\subsection{Locking} % Missing a conclusion: When do we lock what? We have only described cases but not what our locking algorithm is.
 	\label{subsec:locking}
 	As discussed in section \ref{sec:algorithm}, the execution of non-independent events must be synchronised.
@@ -788,7 +756,7 @@
 	\begin{description}
 		\item{Neighbourhood}
 		\item[Out-neighbourhood] denoted $N_{out}(v)$ and defined as the set of relations targeting the event $v$.
-		\item[In-neighbourhood]  denoted $N_{in}(v)$ and defined as the set of relations originating from the event $v$.
+		\item[In-neighbourhood] denoted $N_{in}(v)$ and defined as the set of relations originating from the event $v$.
 	\end{description}
 	For all definitions of neighbourhoods, we denote it as closed or open, if it includes the event $v$ or not, respectfully. \\
 		
