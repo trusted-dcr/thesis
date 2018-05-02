@@ -715,24 +715,36 @@
 	\section{Algorithm}
 	\label{sec:algorithm}
 
-	% Reiterate problem as in-depth as possible. Termination, Liveness etc requirements?
+	The problem of distributed DCR has several parts which must each be considered individually.
+	Consider a solution where a DCR graph is distributed among peers, such that each peer is only responsible for one or more events.
+	Responsible meaning that that peer is able to be involved in making state changes for that peer, on request.
+	Any client can contact a peer, requesting an execution of an event, provided that that client has the correct credentials, with regards to access control.
+	The first issue then presents itself, in that simultaneous client requests can be incompatible and therefore needs to be applied in the same order for all affected peers.
+	This algorithm solves that problem with performing locking before committing, leading to the first key problem of the algorithm:
+	\begin{description}
+		\item[Locking] When an event is executed, synchronization with the affected events by locking must be enforced, in order to avoid incompatible transactions.
+		As locking is expensive both in regards to concurrency and the number of messages required, a minimal number of locks is desired.
+		This issue is therefore concerned with how far changes from an event execution can propagate, necessitating locking, and whether or not there are identifiable cases where locks can be spared.
+	\end{description}
 
-	% \begin{description}
-	% 	\item[Consensus]:
-	% 		\begin{description}
-	% 			\item[Termination] Eventually each correct process sets its decision value (single activity state)
-	% 			\item[Partial agreement] % Decision vector = activity state
-	% 							Bottom is allowed as substitute for any activity state, unless that activity is owned by process or dependent on one such process. % Hvad er agreement
-	% 			\item[Integrity] If $p_i$ is correct, then all correct processes decide on $v_i$, or $\bot$ as the i'th component of their vector. % Omformuler. Kan ikke genbruge i på den her måde
-	% 		\end{description}
-	% 	% \item[Concurrency]: DCR-rules for concurrency (only independent activities can be concurrent) (Tie-breaking). Nødvendig? Argumentér hvorfor Agreement + integrity giver concurrency løsning
-	% 	\item[Correctness]: Any state transition must be permitted by DCR logic or they will be rejected by correct nodes.
-	% 	\item[Non-repudiation]: $v_i$ must be provably proposed by $p_i$, within the bounds specified by any applied cryptography.
-	% 	% \item[Co-non-repudiation?]:
-	% \end{description}
+	The second problem is closely related as consensus must be achieved on which peer holds which lock:
+	\begin{description}
+		\item[Consensus] In extension to preventing simultaneous incompatible executions, locking has pushed the issue of concurrency into the locking portion, which now needs to be handled in the sense that peers must agree who hold the locks.
+		Furthermore avoiding deadlocks and ensuring progression is obviously a concern.
+	\end{description}
+	
+	With solutions to the problems of locking and consensus, peers are able to progress the graph, but since they will not necessarily be aware of the state of the graph, they would have to aggressively push for an execution for it to possibly happen.
+	This brings us to the problem of obtaining the global state of the graph:
+	\begin{description}		
+		\item[Global state collection] Each peer must be able to, at any time, collect a global state of the graph, with the guarantee that that global state will never be invalidated by a global state collected in the future.
+	\end{description}
 
-	% Define terms used in the section: neighbourhoods(in/out)(open/closed)
-	% List challenges/subsections: consensus, locking, network, global state, etc.
+	As this is a decentralized peer-to-peer network solution, two key points also have to be considered:
+	\begin{description}
+		\item[Network topology] As the weakest point of the graph will be the event with the fewest peers responsible for it, some consideration must be given to what, if any, events are to be prioritized.
+		Otherwise some distribution must be specified.
+		\item[Peer distribution] As events only lock other events in the vicinity, something could be gained, performance-wise, by distributing the events such that they are responsible for events that would typically be locked during the same execution.
+	\end{description}
 
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	% For any algorithm to guarantee workflow correctness of a distributed DCR graph in an asynchronous setting, the algorithm must (1) push executions to effected neighbours and (2) synchronize the executions of non-independent events.
@@ -767,15 +779,21 @@
 	% Since enabledness of a constrained event is changed only by state changes in the constraining event, and state changes propagates at most to the neighbourhood of an executing event, it must follow that an execution can at most change enabledness in the closed second neighbourhood of the executing event.
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-	\subsection{Consensus} % Probably a bad name? Should contain description of messages, lamport diagrams, requirements for when to commit/abort, etc.
-
-	\subsection{Locking}
+	\subsection{Locking} % Missing a conclusion: When do we lock what? We have only described cases but not what our locking algorithm is.
 	\label{subsec:locking}
 	As discussed in section \ref{sec:algorithm}, the execution of non-independent events must be synchronised.
 	This is achieved through locking of individual events.
+
+	For this section, we apply terms used in directed graphs and define variations of neighbourhoods with regards to DCR graphs as:
+	\begin{description}
+		\item{Neighbourhood}
+		\item[Out-neighbourhood] denoted $N_{out}(v)$ and defined as the set of relations targeting the event $v$.
+		\item[In-neighbourhood]  denoted $N_{in}(v)$ and defined as the set of relations originating from the event $v$.
+	\end{description}
+	For all definitions of neighbourhoods, we denote it as closed or open, if it includes the event $v$ or not, respectfully. \\
 		
 	In a graph, $G(E,V)$, we define the set of locked events, $L$, on the execution of an event, $v$, as $L(v)$.
-	As DCR only allows the execution of an activity to affect events in the neighbourhood, (3), and the second neighbourhood, (4), of the executing event, locking need only be performed within this set.
+	As DCR only allows the execution of an activity to affect events in the neighbourhood, and that neighbourhoods neighbourhood, of the executing event, locking need only be performed within this set.
 	Locking can be performed on the entirety of $L(v)\ =\ N(N(v))\ \cup\ N(v)\ \cup\ v$ on the execution of $v$, guaranteeing synchronization in the case of competing event executions.
 	However, since locking two neighbourhoods actually gives a range of four, locking some subset could be just as correct and more efficient.
 
@@ -815,6 +833,8 @@
 	Both options result in the minimum amount of locks, but the first option has fewer messages, as it only results in two messages.
 	However, the first option has the disadvantage of potentially taking twice as long, assuming that transporting a message between \texttt{A} and \texttt{C} takes the same amount of time as between \texttt{A} and \texttt{B}.
 	These various advantages of different methods means that finding one optimal solution is not possible, as it is dependent on the specific workflow and the topology of the network at a given time. 
+
+	\subsection{Consensus} % Probably a bad name? Should contain description of messages, lamport diagrams, requirements for when to commit/abort, etc.
 
 	\subsection{Network topology}
 	Due to the algorithm not requiring the executioner of an event to have the global state of the workflow at the time of execution, any state changes are only propagated to the relevant parties.
