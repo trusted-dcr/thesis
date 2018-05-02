@@ -97,7 +97,7 @@
 	In summary, the system must:
 	\begin{itemize}
 		\item Support the replication of a decentralized DCR graph, while maintaining a high degree of concurrency as permitted by the specific DCR graph.
-		\item Achieve consensus on the state of a decentralized DCR graph in a number of messages less than the number of nodes in the graph.
+		\item Achieve consensus on a state of a decentralized DCR graph in a number of messages by a factor of less than the number of nodes in the graph.
 		\item Function in a highly malicious environment, where the only guarantees are those based on strong cryptographic security.
 	\end{itemize}	
 
@@ -201,7 +201,7 @@
 			\subsubsection{Concurrency}
 			The notion of concurrency in DCR graphs, described in~\cite{debois_concurrency_2015}, is the property a pair of events is said to have when the graph allows those events to be executed in either order with the same resulting state in graph.
 
-			More formally, given a graph, $G$, and two events $e_1, e_2$ in $G$, such that $E(G,e_1) = G'$, and $E(G,e_2) = G''$, we say that $e_1$ and $e_2$ are concurrent if $E(E(G, e_1),e_2)=E(E(G, e_2),e_1)$.
+			More formally, given a graph, $G$, and two events $e_1, e_2$ in $G$, we say that $e_1$ and $e_2$ are concurrent if $E(E(G, e_1),e_2)=E(E(G, e_2),e_1)$.
 
 			If two events are concurrent, we say that they are independent.
 			There are two types of independence analyses relevant for this paper:
@@ -776,7 +776,10 @@
 	Responsible meaning that that peer is able to be involved in making state changes for that event, on request, and must agree with the other responsible peers on the current state of that event.
 	Any client can contact a peer, requesting an execution of an event, provided that that client has the correct credentials, with regards to access control.
 	The first issue then presents itself, in that simultaneous client requests can lead to execution of dynamically dependent events, and therefore needs to be applied in the same order for all affected peers.
-	This algorithm solves that problem with performing locking before committing, leading to the first key problem of the algorithm:
+	This is a well-known problem and one solution is the election of a leader which orders the messages, such as in BFT algorithms.
+	Having a single leader is however not possible while fulfilling the requirements specified in this thesis, as it does not allow a distribution of state.
+
+	This algorithm solves the problem with performing locking before committing, leading to the first key problem of the algorithm:
 	\begin{description}
 		\item[Locking] When an event is executed, synchronization with the affected events by locking must be enforced, in order to avoid incompatible transactions.
 		As locking is expensive both in regards to concurrency and the number of messages required, a minimal number of locks is desired.
