@@ -359,7 +359,7 @@
 
 	\section{Transforming byzantine faults to crashes}
 	\label{subsubsec:transforming-byzantine-faults}
-	We conjecture that the correct use of Intel SGX can transform all byzantine faults in a distributed system with unreliable channels to crashes and lost messages.
+	We conjecture that the correct use of Intel SGX can transform all byzantine faults in a distributed system with unreliable channels, such that correct processes in the protocol exhibit behaviour equivalent to the faulty processes crashing and losing messages.
 
 	Thereby a crash-fault-tolerant distributed protocol with unreliable channels which will exhibit undocumented behaviour under byzantine-faults (from here on in "crash-resistant protocol") can be transformed into a byzantine-fault-tolerant protocol using Intel SGX and cryptography.
 	We assume that processes exhibiting byzantine faults will not be able to utilize the cryptographic secrets of a correct process.
@@ -403,14 +403,23 @@
 	This models a process beginning to exhibit arbitrary behaviour.
 
 	To transform a crash-resistant distributed protocol into a byzantine-fault-tolerant protocol, we utilize the verification in Remote Attestation (see section \ref{subsec:attestation}) and the integrity guarantees provided by Intel SGX.
-	To model this, we introduce the notion of a cryptographic secret state machine $SM_{s}$, and an integrity protected area of the process.
+	To model the integrity guarantees, we introduce the notion of a cryptographic secret state machine $SM_{s}$, and an integrity protected area of the process.
 	We assume that any byzantine fault can replicate $SM_{s}$, but cannot replicate the secrets contained in $SM_s$ if $SM_s$ is changed. 
 	This models that faulty processes cannot access the cryptographic secrets of a correct process, which is a reasonable assumption by the integrity and confidentiality guarantees given by Intel SGX, given that the secrets are stored in an enclave (see section \ref{subsec:enclave}).
-
 	State machines running in the integrity protected area of the process can be uniquely identified by $SM_{s}$, but cannot have channels to state machines running on other processes.
 	This models the integrity protection in Intel SGX and the QE' abilities, as well as an enclave's inability to access peripheral hardware such as network cards.
 
-	The transformation from a crash-resistant protocol to a byzantine-fault-tolerant protocol consist of 4 steps:
+	To model the Remote Attestation verification, we introduce a Remote Attestation process, $P_{RA}$ and an Attestation state machine, $P_A$, which will communicate with $P_{RA}$ to verify and provision $SM_s$ with a symmetric secret key.
+	We will not go into detail with, or model the protocol used by, the Remote Attestation protocol, and just use it at an abstract for readability.
+	For more information on the Remote Attestation protocol, see section \ref{subsec:attestation}, \textit{Intel SGX explained}~\cite{costan_intel_2016} and/or \textit{Intel SGX Developer guide}~\cite{intel_sgx_guide}.
+
+	We will also assume that each process has a process unique identifier, $id_p$, that $SM_s$ knows $id_p$, and that each untransformed state machine includes both this $id_p$ and the $id_p$ of the intended receiver it's outgoing messages.
+	In the case of broadcast messages, the $id_p$ of the receiving processes can be omitted. 
+	In practise, this could be implemented as a process's external IP-address that is provisioned to $SM_s$ by in a verifiable or trusted manner (for instance by $P_{RA}$ during secret provisioning), or by a sufficiently large number that is randomly selected on process start up.
+	Both of these solutions require a handshake protocol during channel establishment, in which $SM_s$ on each process must MAC their $id_p$ with the Remote Attestation provisioned secret for verification by the other process. 
+	We will not describe this handshake protocol.
+
+	The transformation from a crash-resistant protocol to a byzantine-fault-tolerant protocol consist of 4 steps on the process-level:
 	\begin{enumerate}
 		\item Add all the state machines to the integrity protected area of the process.
 			\begin{itemize}
@@ -422,12 +431,7 @@
 			   	\item This is equivalent to adding unprotected wrapper components for the enclaves, which will have access to the network, an thus can act as a middle-man for communicating with other processes.
 		    \end{itemize}
 		\item Add reliable channels from all state machines in the integrity protected area of the process to the cryptographic secret state machine $SM_s$.
-		\item Add a Remote Attestation state machines, $SM_A$, to each process and a Remote Attestation process, $P_{RA}$ to the protocol.
-			\begin{itemize}
-				\item We will not go into detail with the Remote Attestation protocol here.
-				We will simply use it to securely provision $SM_s$ with a symmetric key.
-				For more information on the Remote Attestation protocol, see section \ref{subsec:attestation}, \textit{Intel SGX explained}~\cite{costan_intel_2016} and/or \textit{Intel SGX Developter guide}~\cite{intel_sgx_guide}.
-			\end{itemize}
+		\item Add an Attestation state machines, $SM_A$, to each process and a Remote Attestation process, $P_{RA}$ to the protocol.
 	\end{enumerate}
 
 	\begin{figure}[ht!]
@@ -453,13 +457,13 @@
 	\end{figure}
 	\FloatBarrier
 
-	After this transformation, some steps must added to the internals of protocol:
-	\begin{itemize}
-		\item Before running the protocol, a pre-compute step must be added where each process' $SM_s$ is provisioned with the same cryptographic secret. 
+	The transformation of the state machines consists of the following:
+	\begin{enumerate}
+		\item Before a process runs the protocol, a pre-compute step must be added where each process' $SM_s$ is provisioned with the same cryptographic secret. 
 		This is handled by the $SM_s$ and $SM_A$, which will contact $P_{RA}$ and be Attested and securely provisioned. 
 		In our example, we have only added a single $P_{RA}$, which of course means that a \textit{k}-resilient protocol suddenly cannot handle a single $P_{RA}$ crash. 
 		This can be solved by adding \textit{k+1} identical $P_{RA}$s, as this is a pre-compute step. 
-		This means that the $P_{RA}$s plays no further role after this step in the protocol.
+		This means that the $P_{RA}$s plays no further role after this step in the protocol, and can crash without effecting the running processes.
 		\item All messages that were to be sent in the original protocol, must be sent from a state machine in the integrity protected area though a state machine in the unprotected area of the process.
 		This is due to the constraint that the state machines in the integrity protected area of the process can no longer have channels to other processes.  
 		\item Before any message intended for another process is sent from the integrity protected area, it must be have a cryptographic message authentication code (MAC) appended on the message.
@@ -481,10 +485,10 @@
 		$(s_{wait}, ("0", c_{SM_s}), \{\}, s_{from})$ and \\
 		$(s_{wait}, ("1", c_{SM_s}), o, s_{to})$ \\
 		with the intermediate state $s_{wait}$, which acts as a state in which the state machine waits for $SM_s$ to verify the MAC of the input, and the messages $"0"$ and $"1"$ represents the failure and success of this verification, respectively.
-		\item In the event that $SM_s$ is asked to sign a message from a state machine that it identifies is not the original state machines in the integrity protected area, it discards the message.
-	\end{itemize}
+		\item In the event that $SM_s$ is asked to sign a message from a state machine that it identifies is not the original state machines in the integrity protected area, it must discard the message.
+	\end{enumerate}
 
-	Notice that this transformation is polynomial in the number of messages, under the assumption that the MAC, and MAC-verification sub-routines in $SM_s$ are polynomial operations in the length of the message.
+	Notice that this transformation is linear in the number of messages, under the assumption that the MAC, and MAC-verification sub-routines in $SM_s$ does not add any messages.
 	Each input message in the transitions is transformed to exactly one new state, three new state transitions and one MAC-verification sub-routine on $SM_s$.
 	Each output-set is transformed to exactly one new state, two new state transitions and $n$ MAC sub-routines on $SM_s$ where $n$ is the size of the output set.
 	Under the assumption that $SM_s$ sends no additional messages during the MAC and MAC-verification sub-routines, and no failures, $m$ messages in the original state machine will become $7m$ messages after the transformation (see table \ref{tab:number-of-messages-transformed}).
@@ -515,23 +519,33 @@
 	\end{figure}
 	\FloatBarrier
 
-	These transformations gives us the following guarantees, if a process experiences a byzantine fault:
+	These transformations gives us the following guarantees, if a process experiences a byzantine fault.
+	Recall that we model a byzantine fault as a process being exchanged with a new process, potentially with removed, added and/or corrupted state machines.
 	\begin{itemize}
-		\item If the state machines in the integrity protected area are replaced with similar state machines, $SM_s$ will identify them as being incorrect and refuse to MAC any messages, which will result either (1) the message will be not be MAC or MACed with the wrong key by the sending state machine, (2) the message being dropped by the faulty state machine or (3) one of the state machines crashing.
-		In case (1), $SM_s$ on any correct process who receives the message will recognise that the MAC is invalid, and the correct integrity protected state-machines will drop the message and revert to the previous state.
-		This is equivalent to the message never being sent, which by definition the protocol can handle, as it can handle unreliable channels between processes.
-		In case (2), the message will be dropped by the faulty process, which is again is equivalent to the message being dropped on an unreliable channel.
-		Case (3) is a crash, which the crash-resistant protocol can already handle.
-		\item If $SM_s$ itself is replaced, it can no longer MAC messages, as it no longer has the appropriate key, and cannot be provisioned with one.
-		This results in the same three cases as above.
-		\item If one or more of the state machines in the integrity protected area are removed, it is equivalent to a crash. Any correct state machine sending messages to the removed state machine, and will not get a reply, which is the same behaviour as a crash.
-		\item If any state machines are added to the integrity protected area, they are inconsequential, as the other state machines in the area cannot communicate with them without being replaced.
-		\item If the state machines outside the integrity protected area are replaced, it can result in either (1) replacing the messages to/from the integrity protected area, (2) dropping messages to/from the integrity protected area or (3) inducing crashes in other state machines, as well as itself.
-		Case (1) is equivalent to dropping the messages, by much the same argument as above: $SM_s$ will recognise that the MAC is invalid, and the state machines in the correct processes will ignore the message.
-		Case (2) is a message loss, and case (3) is a crash, both of which the crash-resistant protocol can already tolerate.
+		\item If a process has its transformed state machine removed, the process will exhibit exactly the same behaviour as a crash (the state machine can take no further inputs, and produce no further outputs), and so it is exactly equivalent to a crash of the state machine. 
+		\item If the wrapper state machines are removed, the transformed state machine can no longer send or receive messages.
+		This is again equivalent to a crash, as a token can no longer be sent to or from that state machine.
+		\item If the $SM_A$ is removed, it can either happen before or after the Remote Attestation process has completed.
+		If it happens before, the process's $SM_S$ will never be provisioned with the Remotely Attestation secret, and no messages will be verified.
+		Therefore, the transformed state will never have its outgoing messages MAC'ed nor will it have any incoming messages verified.
+		As such, it will either get stuck in a state where it never gets a response from $SM_s$ of a message MAC request, or it will get stuck in a state where a specific message cannot be verified.
+		If it happens after the provisioning it will have no effect, as $SM_s$ is already provisioned, and no further communication with $SM_A$ is required.
+		\item If a process gets an additional state machine in the integrity protected area, it will have no consequence, as $SM_s$ will refuse MAC'ing and verification of messages from this state machine, and it cannot communicate with other state machines, unless these are corrupted.
+		\item If a process gets an additional state machine outside the integrity protected area, it cannot communicate with anything inside the integrity protected area, with corrupting these (see below). 
+		It can communicate with other non-protected state machines, but this is equivalent to the other state machines being corrupted (see below).
+		\item If a process has a corrupted transformed state machine (in the integrity protected area), $SM_s$ will refuse to sign any messages. 
+		So any messages sent from this corrupted state machine, will not be verified on correct processes, meaning that the transformed state machines receiving this message will not transition any further than the verification state.
+		\item If a process has a corrupted $SM_s$, the new $SM_s$ will, by assumption, not have access to the Attestation secret. 
+		Thereby, it cannot MAC or verify messages.
+		Nor can it be provisioned with the key again, as this the Remote Attestation procedure ensures that $SM_s$ is the correct state machine. 
+		\item If a process has a corrupted wrapper state machine, any messages from the integrity protected area can either be dropped, changed/corrupted, redirected, or duplicated. 
+		A dropped message is equivalent to a dropped message on an unreliable channel, which the protocol already handles.
+		A corrupted message will not be verified by a correct receiving process's $SM_s$, and the message will be discarded.
+		A redirected message will be not by verified by the receiving process, as it's $id_p$ will not match the intended recipient, and the message will be discarded.
+		A duplicated message is equivalent to a duplicated message on the unreliable channel, which the protocol already handles.
 	\end{itemize}
-
-	This concludes the argument that Intel SGX and cryptography can change byzantine faults to crash faults, and thereby, using the above transformation, make a crash-resistant protocol into a byzantine-fault-tolerant protocol.
+		
+	This concludes the argument that Intel SGX and cryptography can change correct process behaviour under byzantine faults to behaviour equivalent that under crash faults, and thereby, using the above transformation, make a crash-resistant protocol into a byzantine-fault-tolerant protocol.
 
 		\subsection{Example: Central Server Mutual Exclusion}
 		We will now show a practical example of how the transformation in section \ref{subsubsec:transforming-byzantine-faults} can be utilised.
@@ -655,29 +669,7 @@
 		The server process is running a transformed server state machine, connected to two wrapper state machines and an $SM_s$.
 		The server $SM_s$ is also connected to a $SM_A$ for attestation.
 
-		Having transformed the CSME protocol, we will now show that the transformed protocol will exhibit the same behaviour under byzantine faults, as the untransformed protocol does under crash faults.
-		Recall that we model a byzantine fault as a process being exchanged with a new process, potentially with removed, added and/or corrupted state machines.
-		The following is a systematic walkthrough of any possible byzantine faults on the processes, and their results:
-		\begin{itemize}
-			\item If a process has its transformed state machine removed, the process will exhibit exactly the same behaviour as a crash (the state machine can take no further inputs, and produce no further outputs), and so it is exactly equivalent to a crash of the state machine. 
-			\item If the wrapper state machines are removed, the transformed state machine can no longer send or receive messages.
-			This is again equivalent to a crash, as a token can no longer be sent to or from that state machine.
-			\item If the $SM_A$ is removed, it can either happen before or after the Remote Attestation process has completed.
-			If it happens before, the process's $SM_S$ will never be provisioned with the Remotely Attestation secret, and no messages will be verified.
-			Therefore, the transformed state will never have its outgoing messages MAC'ed nor will it have any incoming messages verified.
-			As such, it will either get stuck in a state where it never gets a response from $SM_s$ of a message MAC request, or it will get stuck in a state where a specific message cannot be verified.
-			If it happens after the provisioning it will have no effect, as $SM_s$ is already provisioned, and no further communication with $SM_A$ is required.
-			\item If a process gets an additional state machine in the integrity protected area, it will have no consequence, as $SM_s$ will refuse MAC'ing and verification of messages from this state machine, and it cannot communicate with other state machines, unless these are corrupted.
-			\item If a process gets an additional state machine outside the integrity protected area, it cannot communicate with anything inside the integrity protected area, with corrupting these (see below). 
-			It can communicate with other non-protected state machines, but this is equivalent to the other state machines being corrupted (see below).
-			\item If a process has a corrupted transformed state machine (in the integrity protected area), $SM_s$ will refuse to sign any messages. 
-			So any messages sent from this corrupted state machine, will not be verified on correct processes, meaning that the transformed state machines receiving this message will not transition any further than the verification state.
-			\item If a process has a corrupted $SM_s$, the new $SM_s$ will, by assumption, not have access to the Attestation secret. 
-			Thereby, it cannot MAC or verify messages.
-			Nor can it be provisioned with the key again, as this the Remote Attestation procedure ensures that $SM_s$ is the correct state machine. 
-			\item If a process has a corrupted wrapper state machine % UPS!
-		\end{itemize}
-		
+		Having transformed the CSME protocol, the correct processes will exhibit the same behaviour when other processes suffer byzantine faults, as the correct processes do in the untransformed protocol when other processes suffer crash faults.
 
 		\FloatBarrier
 		\begin{figure}[ht!]	
@@ -701,7 +693,7 @@
 		\FloatBarrier
 
 		If this byzantine fault happens, none of the tokens are MAC'ed.
-		Thereby, any client process (figure \ref{fig:CSME-client-NFA-transformed}) will get stuck in a loop between $s_1$ and $s_1'$, when $SM_s$ rejects the (missing) MAC of the token. 
+		Thereby, any correct client process (figure \ref{fig:CSME-client-NFA-transformed}) will get stuck in a loop between $s_1$ and $s_1'$, when $SM_s$ rejects the (missing) MAC of the token. 
 		This is equivalent behaviour to the server process crashing, as a (correct) token will never be provided, and the client is unable to enter the critical section.
 
 
