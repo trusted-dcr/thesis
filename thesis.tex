@@ -64,11 +64,13 @@
 	The relations specify the order in which events can transpire, and what paths can be taken in the workflow.
 	DCR graphs provide a concise and simple way of describing workflows, as executing an event can only affect events within a limited range, graph-wise.
 	This means that DCR graphs allow for highly localized states and depending on how a specific DCR graph is constructed, it can therefore allow for a very high degree of concurrency.
-	Central servers would be an easy solution to this problem, it would however require trust and payment, due to a third party being involved and managing the process.
-	An alternative to central servers is of course a decentralized solution, with participants acting as peers in a peer-to-peer network, but this brings with it completely different challenges, in that a core necessity of DCR is the agreement of all parties on what has transpired in the workflow and what the state of the workflow is at any given point, a non-trivial problem in decentralized DCR.
+	Central servers would be an easy solution to this problem, it would, however, require trust and payment, due to a third party being involved and managing the process.
+	An alternative to central servers is, of course, a decentralized solution, with participants acting as peers in a peer-to-peer network. 
+	This brings with it a completely different set of challenges, in that a core necessity of DCR is the agreement of all parties on what has transpired in the workflow and what the state of the workflow is at any given point, a non-trivial problem in decentralized DCR.
+	
 	As DCR graphs are concerned with maintaining a consistent state, the issue of making DCR graphs distributed is closely related to that of synchronizing distributed state replications.
-
 	However, the innate properties of DCR graphs would be heavily constrained by existing solutions to distributed state replication, due to the large number of messages required and the low degree of concurrency provided by the strict synchronization of these algorithms.
+	
 	The problem, and solution, described in this thesis is not limited to applications of DCR, but can also be applied in other software concerned with maintaining a distributed, fragmented state.
 	An example of such an application is also given, in the form of a distributed smart contract algorithm, as popularized by Ethereum \cite{_ethereum_2018}.
 	The tools afforded to us by recent technological advances, provide strong guarantees and advantages which have already made waves within state replication solutions and which could potentially be leveraged to provide a solution to the described problem, while achieving the goals of a low number of messages and a high degree of concurrency.
@@ -84,17 +86,18 @@
 
 	\subsection{Problem}
 
-	The goal is therefore a decentralized DCR engine distributed among a number of actors, which allows for a graph to be distributed to and interacted with by each actor, in accordance with the specifications of the graph.
+	The goal is a decentralized DCR engine distributed among a number of actors, which allows for a graph to be distributed to and interacted with by each actor, in accordance with the specifications of the graph.
 	Distributing DCR graphs is not a trivial problem, as there are considerations for the distribution of that graph, especially given the desire for a higher degree of concurrency than simply having all peers be responsible for the entire DCR graph.
-	Alternatively the DCR graph would have to be distributed on an event basis, but this is a much harder problem as changes only have to be propagated to the relevant events, meaning that multiple, possible conflicting, executions can happen simultaneously and would need synchronization intermittently.
+	Alternatively, the DCR graph would have to be distributed on an event basis, but this is a much harder problem as changes only have to be propagated to the relevant events, meaning that multiple, possible conflicting, executions can happen simultaneously and would need synchronization intermittently.
 	Actors interacting with the graph simultaneously should be allowed only when the ordering of those interactions is inconsequential.
-	At any given time an actor should be able to collect the state of the graph and be ensured that any future state will not be incompatible with a previously collected state, with regards to the rules specified by the graph.
+	
+	At any given time an actor should be able to collect the state of the graph and be ensured that any future state will not be incompatible with a previously collected state, with regards to the semantics specified by the graph.
 	As DCR graphs provide rights on an actor to actor basis, it is unintuitive for the distribution of DCR graphs to support dynamic joining of the network and that is therefore not a requirement for a solution.
 
 	In summary, the system must:
 	\begin{itemize}
-		\item Support the replication of a decentralized DCR graph, while maintaining a high degree of concurrency as permitted by DCR.
-		\item Achieve consensus on a state of a decentralized DCR graph in a number of messages by a factor of less than the number of nodes in the graph.
+		\item Support the replication of a decentralized DCR graph, while maintaining a high degree of concurrency as permitted by the specific DCR graph.
+		\item Achieve consensus on the state of a decentralized DCR graph in a number of messages less than the number of nodes in the graph.
 		\item Function in a highly malicious environment, where the only guarantees are those based on strong cryptographic security.
 	\end{itemize}	
 
@@ -765,29 +768,14 @@
 		This is equivalent behaviour to the server process crashing, as a (correct) token will never be provided, and the client is unable to enter the critical section.
 
 
-		% forklar algorithm - ME1, ME2 og ME3 *
-		% ikke decideret crash-resistant - bevarer safety under crashes *
-		% intet er sikkert under byzantinske fejl *
-		% lav state machines * 
-		% lav tranformation *
-		% lav byzantisk fejl på server *
-		% Vis at det reducerer til crashes og tabte beskeder (*)
-		% hvad med at sende tokens til forkerte clients? Ligger det sig bare under eventual liveness?
-			% Enten skal tokens tage sig af det (er det så generisk?)
-			% Ellers skal SM_s signere modtager/afsender også (hvordan ved vi hvem det er?)
-		% Hvad med to byzantiske fejl, sådan at server ikke signer, og client ikke verificerer?
-			% Der er nok et argument for at de ikke kan påvirke KORREKTE processor.
-
-		% Correct processes will exhibit behaviour under other processes' byzantine faults, as if they had crashed	
-
 	\section{Algorithm}
 	\label{sec:algorithm}
 
 	The problem of distributed DCR has several parts which must each be considered individually.
 	Consider a solution where a DCR graph is distributed among peers, such that each peer is responsible for one or more events.
-	Responsible meaning that that peer is able to be involved in making state changes for that peer, on request.
+	Responsible meaning that that peer is able to be involved in making state changes for that event, on request, and must agree with the other responsible peers on the current state of that event.
 	Any client can contact a peer, requesting an execution of an event, provided that that client has the correct credentials, with regards to access control.
-	The first issue then presents itself, in that simultaneous client requests can be incompatible and therefore needs to be applied in the same order for all affected peers.
+	The first issue then presents itself, in that simultaneous client requests can lead to execution of dynamically dependent events, and therefore needs to be applied in the same order for all affected peers.
 	This algorithm solves that problem with performing locking before committing, leading to the first key problem of the algorithm:
 	\begin{description}
 		\item[Locking] When an event is executed, synchronization with the affected events by locking must be enforced, in order to avoid incompatible transactions.
@@ -797,9 +785,9 @@
 
 	The second problem is closely related as consensus must be achieved on which peer holds which lock:
 	\begin{description}
-		\item[Consensus] In extension to preventing simultaneous incompatible executions, locking has pushed the issue of concurrency into the locking portion, which now needs to be handled in the sense that peers must agree who holds the locks.
+		\item[Consensus] In extension to preventing simultaneous incompatible executions, locking has pushed the issue of concurrency into the locking portion, which now needs to be handled in the sense that peers must agree on who holds the locks.
 		Existing solutions to this problem, such as BFT algorithms and State Machine Replication Algorithms could be applied here, if each peer is responsible for the entirety of the graph.
-		However as those algorithms they are typically quite costly, as discussed earlier, they do not live up to the requirements specified in this thesis.
+		However, as those algorithms they are typically quite costly, as discussed earlier, they do not live up to the requirements specified in this thesis.
 	\end{description}
 	
 	With solutions to the problems of locking and consensus, peers are able to progress the graph, but since they will not necessarily be aware of the state of the graph, they would have to aggressively push for an execution for it to possibly happen.
