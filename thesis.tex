@@ -776,8 +776,8 @@
 	Responsible meaning that that peer is able to be involved in making state changes for that event, on request, and must agree with the other responsible peers on the current state of that event.
 	Any client can contact a peer, requesting an execution of an event, provided that that client has the correct credentials, with regards to access control.
 	The first issue then presents itself, in that simultaneous client requests can lead to execution of dynamically dependent events, and therefore needs to be applied in the same order for all affected peers.
-	This is a well-known problem and one solution is the election of a leader which orders the messages, such as in BFT algorithms.
-	Having a single leader is however not possible while fulfilling the requirements specified in this thesis, as it does not allow a distribution of state.
+	This is a well-known problem and one solution is the election of a leader which orders the messages, such as in most BFT algorithms~\cite{castro_practical_1999,veronese_efficient_2013,kapitza_cheapbft_2012,liu_scalable_2016}.
+	Having a single leader is, however, not possible while fulfilling the requirements specified in this thesis, as it does not allow a distribution of state.
 
 	This algorithm solves the problem with performing locking before committing, leading to the first key problem of the algorithm:
 	\begin{description}
