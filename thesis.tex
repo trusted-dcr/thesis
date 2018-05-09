@@ -767,17 +767,26 @@
 		Thereby, any correct client process (figure \ref{fig:CSME-client-NFA-transformed}) will get stuck in a loop between $s_1$ and $s_1'$, when $SM_s$ rejects the (missing) MAC of the token. 
 		This is equivalent behaviour to the server process crashing, as a (correct) token will never be provided, and the client is unable to enter the critical section.
 
+	\section{Analysis}
+	\label{sec:analysis}
 
-	\section{Algorithm}
-	\label{sec:algorithm}
-
-	The problem of distributed DCR has several parts which must each be considered individually.
 	Consider a solution where a DCR graph is distributed among peers, such that each peer is responsible for one or more events.
-	Responsible meaning that that peer is able to be involved in making state changes for that event, on request, and must agree with the other responsible peers on the current state of that event.
+	Responsible meaning that that peer maintains the state of that event along with the other peers responsible for the same event.
+	Effectively, responsibility entails involvement in executions of the event and executions of event which could affect that event, as the state of the event must be agreed upon by all responsible peers.
+
 	Any client can contact a peer, requesting an execution of an event, provided that that client has the correct credentials, with regards to access control.
-	The first issue then presents itself, in that simultaneous client requests can lead to execution of dynamically dependent events, and therefore needs to be applied in the same order for all affected peers.
-	This is a well-known problem and one solution is the election of a leader which orders the messages, such as in most BFT algorithms~\cite{castro_practical_1999,veronese_efficient_2013,kapitza_cheapbft_2012,liu_scalable_2016}.
-	Having a single leader is, however, not possible while fulfilling the requirements specified in this thesis, as it does not allow a distribution of state.
+	The first issue thereby presents itself, in that simultaneous client requests can lead to execution of dynamically dependent events.
+	Since the executed events are dependent, the order in which the executions are attempted is not inconsequential, as they can be mutually exclusive, or dependent on one another, such that one can be executed followed by the other, but not vice versa.
+	To solve this, the involved parties must agree on which order these executions are applied, to avoid inconsistencies in the state of the events.
+
+	Synchronizing state changes is a well-known problem and one solution is the election of a leader which orders the messages, such as in most BFT algorithms~\cite{castro_practical_1999,veronese_efficient_2013,kapitza_cheapbft_2012,liu_scalable_2016}.
+	%A single-leader system does however neccesitate that each peer in the system manages the entire subject state | in the case of this project the entirety of the DCR graph.
+
+	% TABLE
+
+	%Having a single leader is, however, not possible while fulfilling the requirements specified in this thesis, as it does not allow a distribution of state.
+
+	To avoid the high number of messages associated with a fully replicated system and the message bottleneck associated with a single-leader system, we propose a multi-leader, partial state system with the following components:
 
 	This algorithm solves the problem with performing locking before committing, leading to the first key problem of the algorithm:
 	\begin{description}
@@ -808,7 +817,7 @@
 
 	\subsection{Locking} % Missing a conclusion: When do we lock what? We have only described cases but not what our locking algorithm is.
 	\label{subsec:locking}
-	As discussed in section \ref{sec:algorithm}, the execution of non-independent events must be synchronised.
+	As discussed in section \ref{sec:analysis}, the execution of non-independent events must be synchronised.
 	This is achieved through locking of individual events.
 
 	For this section, we apply terms used in directed graphs and define variations of neighbourhoods with regards to DCR graphs as:
