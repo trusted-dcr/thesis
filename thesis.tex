@@ -783,22 +783,21 @@ s
 	%A single-leader system does however neccesitate that each peer in the system manages the entire subject state | in the case of this project the entirety of the DCR graph.
 	\begin{table}[!ht]
 	\centering
-	
 	\makebox[\textwidth][c]{\begin{tabular}{|p{0.2cm}|p{1.5cm}|p{1.5cm}|p{1.7cm}|p{2cm}|p{2cm}|p{1.5cm}|}
 	\hline
-	\#   & Fault tolerance (Availability) & Fault tolerance (Safety) & Fault tolerance (Data loss) & Nb. of messages for state change (Best case)       & Concurrency           & Request Bottleneck    \\ \hline
-	\textit{1} & $0$                            & n/a ($0$)                & $0$                         & $2$                                                & None                  & $S$                   \\ \hline
-	\textit{2} & $f$                            & $n$                      & $n$                         & $2(f+1)$                                           & Total                 & $L$                   \\ \hline
-	\textit{3} & $\frac{(m-1)}{2}$ (partly)     & $n$                      & $m-1$                       & $2\frac{(m-1)}{2}$                                 & Total                 & $L$                   \\ \hline
-	\textit{4} & $\frac{(m-1)}{2}$ (partly)     & $n$                      & $m-1$                       & $2\frac{(m-1)}{2}$                                 & Up to DCR concurrency & $L \cdot \frac{n}{m}$ \\ \hline
-	\textit{5} & $0$ (partly)                   & $n$                      & $0$                         & $2 \cdot D_{dyn}(G,e)$ 							  & Up to DCR concurrency & $L$                   \\ \hline
+	\#   & Fault tolerance (Availability) & Fault tolerance (Safety) & Fault tolerance (Data loss) & Nb. of messages for state change (Best case)       & Concurrency      & Request Bottleneck    \\ \hline
+	\textit{1} & $0$                            & n/a ($0$)                & $0$                         & $2$                                                & None             & $S$                   \\ \hline
+	\textit{2} & $f$                            & $n$                      & $n$                         & $2(f+1)$                                           & Total            & $L$                   \\ \hline
+	\textit{3} & $\frac{(m-1)}{2}$ (partly)     & $n$                      & $m-1$                       & $2 \cdot \frac{(m-1)}{2}$                          & Total            & $L$                   \\ \hline
+	\textit{4} & $\frac{(m-1)}{2}$ (partly)     & $n$                      & $m-1$                       & $2 \cdot \frac{(m-1)}{2}$                          & DCR concurrency & $L \cdot \frac{n}{m}$ \\ \hline
+	\textit{5} & $0$ (partly)                   & $n$                      & $0$                         & $2 \cdot D_{dyn}(G,e)$ ($e$ executing)			  & DCR concurrency & $L$                   \\ \hline
 	\end{tabular}}
 	\caption{Comparison of different approaches.
-	1: Central Server.
-	2: State Machine Replication.
-	3: Event state distributed and replicated with full consensus.
-	4: Event state distributed and replicated with dependency consensus.
-	5: Event state distinctly distributed (2PC).}
+	\textit{1}: Central Server.
+	\textit{2}: State Machine Replication.
+	\textit{3}: Event state distributed and replicated with full consensus.
+	\textit{4}: Event state distributed and replicated with dependency consensus.
+	\textit{5}: Event state distinctly distributed (2PC).}
 	\label{tab:approcach-comparison}
 	\end{table}
 
