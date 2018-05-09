@@ -802,39 +802,43 @@ s
 	\label{tab:approcach-comparison}
 	\end{table}
 
-	%Having a single leader is, however, not possible while fulfilling the requirements specified in this thesis, as it does not allow a distribution of state.
+	To avoid the high number of messages associated with a fully replicated system and the message bottleneck associated with a single-leader system, we propose a multi-leader, partial state system.
+	Each event is represented by a leader, who can initiate execution of that event at any given time.
+	Since events can affect each other and this system is in an asynchronous setting where messages can be delayed arbitrarily, having multiple leaders can potentially lead to situations where leaders disagree on which order events have been executed in, resulting in inconsistent states.
+	The issue of synchronizing the ordering of simultaneous and incompatible executions, across multiple leaders is solved with the locking of events.	
+	As locking is expensive both in regards to concurrency and the number of messages required, a minimal number of locks is desired.
+	Evaluating the need for locking is concerned with how far changes from an event execution can propagate, necessitating locking, and whether or not there are identifiable cases where locks can be spared.
+	A method of discerning which events need to be locked and when is described in the subsection | \textbf{Event Locking}.
 
-	To avoid the high number of messages associated with a fully replicated system and the message bottleneck associated with a single-leader system, we propose a multi-leader, partial state system with the following components:
+	Given a method of ordering event executions, ensuring that the system can sustain faults means that each event needs to not only be stored by a leader, but rather a number of peers, called a \textit{cluster}, one of which is the leader at any given time.
+	Clusters being responsible for events rather than single peers means that executions and locks need to be synchronized for each individual cluster.
+	Any consensus algorithm can be used to solve the problem of synchronizing executions and locks as it is completely detached from the locking mechanism and reduces to the problem of consensus.
+	Choosing a consensus algorithm to manage the clusters is however still an important decision, as the wrong choice could form significant bottlenecks in the system.
+	For this implementation we have chosen Raft CITE, as the basis for the cluster consensus algorithm, with the addition of Intel SGX to reduce byzantine faults to crash-stop failures and an additional requirement with regards to leader election, to avoid deliberate crashes live-locking the network.
+	The reason for choosing Raft is that it is widely used commercially, relatively simple and able to achieve consensus in very few messages. % Mention synchronous and therefore applying SGX is straight-forward?
+	The consensus algorithm applied in the clusters is described in the subsection | \textbf{Cluster Consensus}.
 
-
-	This algorithm solves the problem with performing locking before committing, leading to the first key problem of the algorithm:
-	\begin{description}
-		\item[Locking] When an event is executed, synchronization with the affected events by locking must be enforced, in order to avoid incompatible transactions.
-		As locking is expensive both in regards to concurrency and the number of messages required, a minimal number of locks is desired.
-		This issue is therefore concerned with how far changes from an event execution can propagate, necessitating locking, and whether or not there are identifiable cases where locks can be spared.
-	\end{description}
-
-	The second problem is closely related as consensus must be achieved on which peer holds which lock:
-	\begin{description}
-		\item[Consensus] In extension to preventing simultaneous incompatible executions, locking has pushed the issue of concurrency into the locking portion, which now needs to be handled in the sense that peers must agree on who holds the locks.
-		Existing solutions to this problem, such as BFT algorithms and State Machine Replication Algorithms could be applied here, if each peer is responsible for the entirety of the graph.
-		However, as those algorithms they are typically quite costly, as discussed earlier, they do not live up to the requirements specified in this thesis.
-	\end{description}
+	% The second problem is closely related as consensus must be achieved on which peer holds which lock:
+	% \begin{description}
+	% 	\item[Consensus] In extension to preventing simultaneous incompatible executions, locking has pushed the issue of concurrency into the locking portion, which now needs to be handled in the sense that peers must agree on who holds the locks.
+	% 	Existing solutions to this problem, such as BFT algorithms and State Machine Replication Algorithms could be applied here, if each peer is responsible for the entirety of the graph.
+	% 	However, as those algorithms they are typically quite costly, as discussed earlier, they do not live up to the requirements specified in this thesis.
+	% \end{description}
 	
-	With solutions to the problems of locking and consensus, peers are able to progress the graph, but since they will not necessarily be aware of the state of the graph, they would have to aggressively push for an execution for it to possibly happen.
-	This brings us to the problem of obtaining the global state of the graph:
-	\begin{description}		
-		\item[Global state collection] Each peer must be able to, at any time, collect a global state of the graph, with the guarantee that that global state will never be invalidated by a global state collected in the future.
-	\end{description}
+	% With solutions to the problems of locking and consensus, peers are able to progress the graph, but since they will not necessarily be aware of the state of the graph, they would have to aggressively push for an execution for it to possibly happen.
+	% This brings us to the problem of obtaining the global state of the graph:
+	% \begin{description}		
+	% 	\item[Global state collection] Each peer must be able to, at any time, collect a global state of the graph, with the guarantee that that global state will never be invalidated by a global state collected in the future.
+	% \end{description}
 
-	As this is a decentralized peer-to-peer network solution, two key points also have to be considered:
-	\begin{description}
-		\item[Network topology] As the weakest point of the graph will be the event with the fewest peers responsible for it, some consideration must be given to what, if any, events are to be prioritized.
-		Otherwise some distribution must be specified.
-		\item[Peer distribution] As events only lock other events in the vicinity, something could be gained, performance-wise, by distributing the events such that they are responsible for events that would typically be locked during the same execution.
-	\end{description}
+	% As this is a decentralized peer-to-peer network solution, two key points also have to be considered:
+	% \begin{description}
+	% 	\item[Network topology] As the weakest point of the graph will be the event with the fewest peers responsible for it, some consideration must be given to what, if any, events are to be prioritized.
+	% 	Otherwise some distribution must be specified.
+	% 	\item[Peer distribution] As events only lock other events in the vicinity, something could be gained, performance-wise, by distributing the events such that they are responsible for events that would typically be locked during the same execution.
+	% \end{description}
 
-	\subsection{Locking} % Missing a conclusion: When do we lock what? We have only described cases but not what our locking algorithm is.
+	\subsection{Event Locking} % Missing a conclusion: When do we lock what? We have only described cases but not what our locking algorithm is.
 	\label{subsec:locking}
 	As discussed in section \ref{sec:analysis}, the execution of non-independent events must be synchronised.
 	This is achieved through locking of individual events.
@@ -889,7 +893,7 @@ s
 	However, the first option has the disadvantage of potentially taking twice as long, assuming that transporting a message between \texttt{A} and \texttt{C} takes the same amount of time as between \texttt{A} and \texttt{B}.
 	These various advantages of different methods means that finding one optimal solution is not possible, as it is dependent on the specific workflow and the topology of the network at a given time. 
 
-	\subsection{Consensus} % Probably a bad name? Should contain description of messages, lamport diagrams, requirements for when to commit/abort, etc.
+	\subsection{Cluster Consensus}
 
 	% \subsection{Network topology}
 	% Due to the algorithm not requiring the executioner of an event to have the global state of the workflow at the time of execution, any state changes are only propagated to the relevant parties.
@@ -939,7 +943,7 @@ s
 	This is possible due to the locking system regarding some events to be concurrent (as described in REF), as the execution of those events have no competing locks.
 
 	\section{Security analysis}
-	The following is a security analysis of the algorithm described in section~\ref{sec:algorithm}.
+	The following is a security analysis of the algorithm described in section~\ref{sec:analysis}.
 
 		\subsection{Adversary model}
 		We allow for a very strong adversary that can coordinate faulty nodes, delay communication and delay correct nodes, but not indefinitely. 
