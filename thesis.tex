@@ -429,7 +429,7 @@
 
 	\section{Transforming byzantine faults to crashes}
 	\label{sec:transforming-byzantine-faults}
-	We conjecture that the correct use of Intel SGX can transform all byzantine faults in a distributed system with unreliable channels, such that correct processes in the protocol exhibit behaviour equivalent to the faulty processes crashing and losing messages.
+	We conjecture that the correct use of Intel SGX can transform all byzantine faults in a distributed system with unreliable channels, such that correct processes in the protocol exhibit behaviour equivalent to the faulty processes crashing and losing messages. 
 
 	Thereby a crash-fault-tolerant distributed protocol with unreliable channels which will exhibit undocumented behaviour under byzantine-faults (from here on in "crash-resistant protocol") can be transformed into a byzantine-fault-tolerant protocol using Intel SGX and cryptography.
 	We assume that processes exhibiting byzantine faults will not be able to utilize the cryptographic secrets of a correct process.
@@ -697,7 +697,7 @@
 			\caption{Client state machine in CSME, after it has been transformed to handle byzantine faults.\label{fig:CSME-client-NFA-transformed}}
 		\end{figure}
 		\FloatBarrier
-
+s
 		Figure \ref{fig:CSME-client-NFA-transformed} shows the client state machine after the transformation.
 		Whenever the client wants to enter the critical section, the state machine sends the request to $SM_s$ for MAC'ing.
 		When the MAC'ed message is received from $SM_s$, this message is sent to the server process. 
@@ -787,6 +787,7 @@
 	%Having a single leader is, however, not possible while fulfilling the requirements specified in this thesis, as it does not allow a distribution of state.
 
 	To avoid the high number of messages associated with a fully replicated system and the message bottleneck associated with a single-leader system, we propose a multi-leader, partial state system with the following components:
+
 
 	This algorithm solves the problem with performing locking before committing, leading to the first key problem of the algorithm:
 	\begin{description}
@@ -918,7 +919,16 @@
 
 	Even though the executions can be ordered at any given time, there is the possibility of this ordering changing depending on which peer attempts to collect the global state.
 	This is possible due to the locking system regarding some events to be concurrent (as described in REF), as the execution of those events have no competing locks.
-	
+
+	\section{Security analysis}
+	The following is a security analysis of the algorithm described in section~\ref{sec:algorithm}.
+
+		\subsection{Adversary model}
+		We allow for a very strong adversary that can coordinate faulty nodes, delay communication and delay correct nodes, but not indefinitely. 
+		We assume that the adversary is computationally bound, so that they are probabilistically unable to subvert the cryptographic techniques described above.
+		
+		\subsection{Analysis}
+		
 	\section{DCR-TEE Implementation}
 
 	\section{Distributed Smart Contract Engine}
