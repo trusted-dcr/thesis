@@ -891,23 +891,23 @@ s
 
 	\subsection{Consensus} % Probably a bad name? Should contain description of messages, lamport diagrams, requirements for when to commit/abort, etc.
 
-	\subsection{Network topology}
-	Due to the algorithm not requiring the executioner of an event to have the global state of the workflow at the time of execution, any state changes are only propagated to the relevant parties.
-	This means that any single crash could potentially make collecting the global state, or history of executions, impossible, as the localized state of the crashed peer would be lost.
-	To make the system more tolerant to crashes, the state of each event is tracked by a number of peers.
-	This means that all locks need to be made on a subsystem rather than a single peer.
-	As this lock needs to prevent others from locking simultaneously, $\dfrac{m}{2} +1$ locks are required for each peer, where $m$ is the number of peers tracking the state of that event.
+	% \subsection{Network topology}
+	% Due to the algorithm not requiring the executioner of an event to have the global state of the workflow at the time of execution, any state changes are only propagated to the relevant parties.
+	% This means that any single crash could potentially make collecting the global state, or history of executions, impossible, as the localized state of the crashed peer would be lost.
+	% To make the system more tolerant to crashes, the state of each event is tracked by a number of peers.
+	% This means that all locks need to be made on a subsystem rather than a single peer.
+	% As this lock needs to prevent others from locking simultaneously, $\dfrac{m}{2} +1$ locks are required for each peer, where $m$ is the number of peers tracking the state of that event.
 
-	\subsubsection{Peer distribution}
-	Given that the relations of a workflow are fixed at creation, the peers can be distributed efficiently by assigning events frequently locked simultaneously to the same peers.
-	This can be accomplished by the following steps:
-	\begin{itemize}
-		\item Each event is assigned a set of peers, called the primaries of that event, containing at least one peer.
-		\item The primaries of each event are added to each event on which the execution of the event tracked by the primaries could incur a lock. The peers added this way are called secondaries for that event.
-	\end{itemize}
+	% \subsubsection{Peer distribution}
+	% Given that the relations of a workflow are fixed at creation, the peers can be distributed efficiently by assigning events frequently locked simultaneously to the same peers.
+	% This can be accomplished by the following steps:
+	% \begin{itemize}
+	% 	\item Each event is assigned a set of peers, called the primaries of that event, containing at least one peer.
+	% 	\item The primaries of each event are added to each event on which the execution of the event tracked by the primaries could incur a lock. The peers added this way are called secondaries for that event.
+	% \end{itemize}
 
-	The peer-to-peer network is then configured in such a way that each peer is a neighbour to any peer which tracks the same events.
-	This means that the execution of an event can be performed by a primary, by that primary attempting to lock all of its neighbours and checking whether or not the acquired locks are sufficient in order to perform the execution, meaning that the set of locked peers forms a quorum for each event requiring a lock.
+	% The peer-to-peer network is then configured in such a way that each peer is a neighbour to any peer which tracks the same events.
+	% This means that the execution of an event can be performed by a primary, by that primary attempting to lock all of its neighbours and checking whether or not the acquired locks are sufficient in order to perform the execution, meaning that the set of locked peers forms a quorum for each event requiring a lock.
 
 	% Crash recovery
 
