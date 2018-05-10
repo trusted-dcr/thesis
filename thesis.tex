@@ -24,9 +24,9 @@
 \catcode`\,=13
 \def,{%
   \ifmmode%
-    \old@comma\discretionary{}{}{}%
+	\old@comma\discretionary{}{}{}%
   \else%
-    \old@comma%
+	\old@comma%
   \fi%
 }
 \makeatother
@@ -99,7 +99,7 @@
 		\item Support the replication of a decentralized DCR graph, while maintaining a high degree of concurrency as permitted by the specific DCR graph.
 		\item Achieve consensus on a state of a decentralized DCR graph in a number of messages by a factor of less than the number of nodes in the graph.
 		\item Function in a highly malicious environment, where the only guarantees are those based on strong cryptographic security.
-	\end{itemize}	
+	\end{itemize}   
 
 	\subsection{Related works}
 
@@ -122,7 +122,7 @@
 	In PoET a number of nodes who choose to participate as validators each create a timer using Intel SGX.
 	This timer is different per validator and contains a timestamp some time in the future, with a degree of randomness.
 	A validator can also check that a timer is valid, using Intel SGX, and also whether or not that timer has expired.
-	The first validator to distribute a valid and expired timer to the rest of the validators, is elected leader for the current round of decision-making.	
+	The first validator to distribute a valid and expired timer to the rest of the validators, is elected leader for the current round of decision-making.  
 	This is a strong indicator that Intel SGX can be used for efficiently attaining consensus.
 
 \section{Background}
@@ -130,6 +130,7 @@
 % Description of components covered in this section and why they are needed.
 
 	\subsection{DCR}
+	\label{subsec:dcr}
 	A DCR graph, $G$, is a graph representation of a workflow, made up of $v$ nodes, $E=\{e_1, e_2, \dots, e_v\}, v \geq 1$,  called \textit{events}, with a number of edges called \textit{relations} between them.
 	Sometimes an event, $e$, in a graph, $G$, can be \textit{executed}, which will change the state and ability to execute of some events in $G$ according to the rules defined by $e$'s outgoing relations.
 	We denote this execution $E(G,e)=G'$.
@@ -179,13 +180,16 @@
 				\end{description}
 			\end{description}
 
+
+
 			\subsubsection{Enabledness}
 			Since the properties of DCR graphs described so far all affect whether or not a given event can be executed or not, we use the notion of enabledness to describe the sum of these properties.
 			An event which can be executed, meaning it is included and any milestones or conditions targeting it are rendered invalid by the state of the relevant events, it is said to be enabled.
 			If an event cannot be executed, due to the inverse of the aforementioned prerequisites, it is said to be disabled.
 			If an event changes from being enabled to disabled or from disabled to enabled, its enabledness is said to have changed.
-			Formally, we say that $E(G,e_1) = G$ if $e$ is not enabled.
+			We define an execution of a disabled event as $E(G,e_1) = G$, i.e. no events changes state nor enabledness, not even $e_1$ itself.
 
+			%ADD SOME EXECUTION FORMALIZATION AND DEFINITION OF RUN AS EXECUTION SEQUENCE
 			\subsubsection{Formalising \texorpdfstring{$G$}{}}
 			After the previous definitions, we can now formalise the concept of a DCR graph $G$:
 			$G = (E, I, P, Ex, En, R)$, where
@@ -198,24 +202,29 @@
 				\item $R = \{r_1, r_2, \dots r_e\}$ is the set of relations, where each relation, $r$, has the form $r=(e_{from}, e_{to}, Type)$ and $e_{from}$ is the event for which $r$ is directed from, $e_{to}$ is the event for which $r$ is directed to, and $Type$ is one of the relation typed described in section~\ref{subsubsec:relations}.
 			\end{itemize}
 
+			If, in a given state of $G$, an event $e$ changes state or enabledness if event $e'$ is executed, we say that $e$ is in $e'$s \textit{effecting event set}, denoted $E_{eff}(G,e')$. 
+
 			\subsubsection{Concurrency}
 			The notion of concurrency in DCR graphs, described in~\cite{debois_concurrency_2015}, is the property a pair of events is said to have when the graph allows those events to be executed in either order with the same resulting state in graph.
 
 			More formally, given a graph, $G$, and two events $e_1, e_2$ in $G$, we say that $e_1$ and $e_2$ are concurrent if $E(E(G, e_1),e_2)=E(E(G, e_2),e_1)$.
 
 			If two events are concurrent, we say that they are independent.
-			There are two types of independence analyses relevant for this paper:
+			There are two types of independence analyses relevant for this thesis:
 			\begin{description}
 				\item[Dynamic independence] means that for two given events and their current state, are they independent.
 				That is, $e_1$ and $e_2$ are dynamically independent if $E(E(G, e_1),e_2)=E(E(G, e_2),e_1)$ for the current $G$.
 
 				We say that an event, $e$, has a \textit{dynamic independence set}, $I_{dyn}(G,e)$, such that $e' \in I_{dyn}(G,e)$ iff. $e$ and $e'$ are dynamically independent in graph state $G$.
 				Likewise an event, $e$, has a \textit{dynamic dependence set}, $D_{dyn}(G,e) = E \setminus I_{dyn}(G,e)$.
+
+				Notice that the dynamic dependence set is closely related to effecting event set of an event s.t. $e' \in D_{dyn}(G,e) \implies e \in E_{eff}(G,e') \lor e' \in E_{eff}(G,e)$, i.e.  if $e'$ is in the dynamically dependence set of $e$ then then either the execution of $e$ changes the state or the enabledness of $e'$, or the execution of $e'$ changes he state or the enabledness of $e$.
 				\item[Static independence] means that two events, are dynamically independent in every \textit{reachable} state of the graph, where they are both enabled.
-				That is, $e_1$ and $e_2$ are statically independent in $G$, if they are dynamically independent in all states of $G$ that can be reached by a sequence of event executions.
+				That is, $e_1$ and $e_2$ are statically independent in $G$, if they are dynamically independent in all states of $G$ that can be reached by a run. %explain run
 
 				We say that an event, $e$, has a \textit{static independence set}, $I_{stat}(e)$, such that $e' \in I_{stat}(e)$ iff. $e$ and $e'$ are statically independent.
 				Likewise an event, $e$, has a \textit{static dependence set}, $D_{stat}(e) = E \setminus I_{stat}(e)$.
+				Notice that $e$s static dependence set is the set of events that are dependent with $e$ in \textit{some} state of $G$, not all.
 				This problem is NP-hard and an approximation will have to be used instead~\cite{debois_concurrency_2015}.
 			\end{description}
 
@@ -227,12 +236,15 @@
 				\item $e_1$ can exclude some $e$, if $e_2$ can include it, and vice versa.
 				\item $e_1$ can set $e_2$ to pending, unless $e_2$ sets itself to pending, and vice versa.
 			\end{itemize}
-			This approximation is sound, but incomplete, which means that it contains all statically dependent event pairs, but does not guarantee that an event pair in the approximation is not statically independent in the specific graph on which it is run.
+			This approximation is sound, but incomplete, which means that it contains all statically dependent event pairs, but does not guarantee that an event pair in the approximation is not statically independent.
 
 			We say that an event, $e$, has an \textit{approximate static dependence set}, $D_{appr}(e)$, such that $e' \in D_{appr}(e)$ iff. $e$ and $e'$ are approximately statically dependent, according to the above approximation.
 			Likewise an event, $e$, has an \textit{approximate static independence set}, $I_{appr}(e),  = E \setminus D_{appr}(e)$.
 
-			Notice that all the independence- and dependence sets are reflexive: $e' \in S(e) \iff e \in S(e')$, where $S$ is any of the described (in-)dependency sets.
+			All the independence- and dependence sets are reflexive: $e' \in S(e) \iff e \in S(e')$, where $S$ is any of the described (in-)dependency sets.
+
+
+			Notice that in any DCR graph it must hold that $\forall G. \forall e. I_{dyn}(G,e) \geq I_{stat}(e) \geq I_{appr}(e)$, which speaks to the desirability of the different concurrency levels; a system that supports concurrent execution of dynamically independent events allows for more concurrent executions than a one that supports execution of statically independent events, which in turn allows for more concurrent executions than one that supports execution of approximate statically independent events.
 
 			Figure~\ref{fig:concurrency-all} shows examples of independence in DCR graphs.
 
@@ -257,6 +269,7 @@
 
 
 		\subsection{Consensus}
+		\label{subsec:consensus}
 		Consensus is the problem of achieving agreement between the processes in a distributed system. 
 		It is central to the the problem of distributed DCR, as agreement on the states of event must be achieved to ensure that all correct peers adhere to the semantics of the DCR graph. 
 		Take the simple graph $\ev{A} \crel \ev{B}$, and let a subset of peers $p_1$ be responsible for the state of $\ev{A}$, and a subset of peer $p_2$ be responsible for the state of $\ev{B}$.
@@ -285,17 +298,16 @@
 		In order to circumvent this impossibility, the guarantees of a fault-tolerant system that utilizes a consensus protocol are relaxed, for instance by guaranteeing Termination only when no faults are present, as is the case in  the Paxos protocol~\cite{lamport_part-time_1998}. 
 
 		\subsubsection{State Machine Replication}
-		One problem that relates directly to consensus, is \textit{State Machine Replication} (SMR).
+		One problem that relates directly to consensus, is \textit{State Machine Replication} (SMR)~\cite{schneider_implementing_1990}.
 		SMR is the problem of replicating the state of a system on several nodes, called \textit{replicas}.
-		Replicas are modelled as state machine.
+		Replicas are each running an instance of the same state machine, and must take requests and pass them on to the state machine.
 		In SMR systems, \textit{clients} send requests to replicas who must then guarantee:
 		\begin{description}
 			\item[Safety:] all non-faulty replicas execute the requests in the same order.
 			\item[Liveness:] clients eventually receive replies to their requests.
 		\end{description}
-		The state machine replication problem is equivalent to the consensus problem and essentially provides the same guarantees~\cite{schneider_implementing_1990}. 
+		The state machine replication problem is equivalent to the consensus problem and essentially provides the same guarantees~\cite{schneider_implementing_1990}, since a solution to SMR is consensus on a request log. 
 		This is evident in the fact that the safety requirement is essentially an aggregation of the agreement and validity requirements in consensus, while the liveness property is equivalent to termination.  
-		Equivalent to consensus. 
 		As such, FLP impossibility entails that one of the requirements must be relaxed in fault tolerant SMR systems.
 		This is often done by only guaranteeing liveness when no failures are present.
 
@@ -412,19 +424,21 @@
 	We consider a system of $n$ processes $P=\{p_1, p_2, \dots, p_n\}$, that communicate through message passing channels.
 	The system is asynchronous, in the sense that we make no assumptions about the execution speed of processes, or delivery time of messages.
 
-	We assume a byzantine fault model, in that processes may fail by exhibiting arbitrary behaviour, except for enclave components which can only exhibit crash-failures because of the integrity and confidentiality guarantees given by Intel SGX.
-	We also assume that byzantine faults cannot corrupt data that has been cryptographically signed or encrypted by an enclave, in such a way that the data is still correctly signed/encrypted by the same key after the data has been corrupted. 
+	We assume a byzantine fault model, in that processes may fail by exhibiting arbitrary behaviour, except %for enclave components which can only exhibit crash-failures because of the integrity and confidentiality guarantees given by Intel SGX.
+	%We also assume
+	that byzantine faults cannot guess or simulate our cryptographic secrets.
+	%corrupt data that has been cryptographically signed or encrypted by an enclave, in such a way that the data is still correctly signed/encrypted by the same key after the data has been corrupted.
 	Byzantine faults includes, but are not limited to, crashes and arbitrary change of local state.
-	Processes that never fails are \textit{correct}, and processes that are not correct are \textit{faulty}.
-	Notice that after section \ref{sec:transforming-byzantine-faults} we will only consider crash-faults, due to the argument that Intel SGX can, in a system where faulty processes can exhibit byzantine faults, make correct processes exhibit behaviour equivalent to the faulty processes being crashed.
+	Processes that never fail are \textit{correct}, and processes that are not correct are \textit{faulty}.
+	% Notice that after section \ref{sec:transforming-byzantine-faults} we will only consider crash-faults, due to the argument that Intel SGX can, in a system where faulty processes can exhibit byzantine faults, make correct processes exhibit behaviour equivalent to the faulty processes being crashed.
 
-	The system includes a DCR-graph, $G$, which consists of $v$ events $E = \{e_1, e_2, \dots, e_v\}$. %, such that $n > m$. %\geq 3m$??? 
-	Each $p$ stores the state of a subset of the events, $E_p$, such that $E_{p_1} \cup E_{p_2} \cup \dots \cup E_{p_n} = E$.
-	The number of $p$s that stores an $e$'s state is the \textit{replication factor} of $e$, denoted $\rho_e$.
-	$E_{p_1} \cup E_{p_2} \cup \dots \cup E_{p_n} = E \implies \rho_e \geq 1$, for all $e$.
-	Or in other words, each event's state is stored on at least 1 $p$. 
+	% The system includes a DCR-graph, $G$, which consists of $v$ events $E = \{e_1, e_2, \dots, e_v\}$. %, such that $n > m$. %\geq 3m$??? 
+	% Each $p$ stores the state of a subset of the events, $E_p$, such that $E_{p_1} \cup E_{p_2} \cup \dots \cup E_{p_n} = E$.
+	% The number of $p$s that stores an $e$'s state is the \textit{replication factor} of $e$, denoted $\rho_e$.
+	% $E_{p_1} \cup E_{p_2} \cup \dots \cup E_{p_n} = E \implies \rho_e \geq 1$, for all $e$.
+	% Or in other words, each event's state is stored on at least 1 $p$. 
 
-	We will assume that if $p_e$ stores the state of $e$, then $p_e$ has a channel to all $p$s that stores the state of $e$'s approximate static dependence set, $D_{appr}(e)$.
+	% We will assume that if $p_e$ stores the state of $e$, then $p_e$ has a channel to all $p$s that stores the state of $e$'s approximate static dependence set, $D_{appr}(e)$.
 
 
 	\section{Transforming byzantine faults to crashes}
@@ -498,8 +512,8 @@
 			\end{itemize}
 		\item For each endpoint state machine in unreliable channels between processes, add a new state machine in the unprotected area of each of the processes (called a wrapper state machine), connect a new unreliable channel between these and add a reliable channel from the old endpoint state machines to the new.
 			\begin{itemize}
-			   	\item This is equivalent to adding unprotected wrapper components for the enclaves, which will have access to the network, an thus can act as a middle-man for communicating with other processes.
-		    \end{itemize}
+				\item This is equivalent to adding unprotected wrapper components for the enclaves, which will have access to the network, an thus can act as a middle-man for communicating with other processes.
+			\end{itemize}
 		\item Add reliable channels from all state machines in the integrity protected area of the process to the cryptographic secret state machine $SM_s$.
 		\item Add an Attestation state machines, $SM_A$, to each process and a Remote Attestation process, $P_{RA}$ to the protocol.
 	\end{enumerate}
@@ -508,19 +522,19 @@
 		\center
 		\includegraphics[scale=0.39]{figures/state-machines/distributed-protocol-model-transformation0.pdf}
 	\end{figure}
-	\begin{figure}[ht!]	
+	\begin{figure}[ht!] 
 		\center
 		\includegraphics[scale=0.39]{figures/state-machines/distributed-protocol-model-transformation1.pdf}
 	\end{figure}
-	\begin{figure}[ht!]	
+	\begin{figure}[ht!] 
 		\center
 		\includegraphics[scale=0.39]{figures/state-machines/distributed-protocol-model-transformation2.pdf}
 	\end{figure}
-	\begin{figure}[ht!]	
+	\begin{figure}[ht!] 
 		\center
 		\includegraphics[scale=0.39]{figures/state-machines/distributed-protocol-model-transformation3.pdf}
 	\end{figure}
-	\begin{figure}[ht!]	
+	\begin{figure}[ht!] 
 		\center
 		\includegraphics[scale=0.39]{figures/state-machines/distributed-protocol-model-transformation4.pdf}
 		\caption{Transformation of figure \ref{fig:simple-model} from crash-resistant protocol to byzantine fault-tolerant protocol.\label{fig:tranformation-model}}
@@ -567,22 +581,22 @@
 	\begin{table}[ht!]
 	\centering
 	\makebox[\textwidth][c]{\begin{tabular}{l|l}
-	\textbf{Number of messages} 	& \textbf{Origin} \\ \hline
-	$m$                           	&  MAC-request outputs to $SM_s$                						\\ \hline
-	$m$                           	&  MAC-response inputs from $SM_s$               						\\ \hline
-	$m$                           	&  messages sent to the wrapper state machine on the sending process    \\ \hline
-	$m$                           	&  messages sent between processes               						\\ \hline
-	$m$                           	&  messages sent from the wrapper state machine on the receiving process               																					 \\ \hline
-	$m$                           	&  input MAC verification requests to $SM_s$               				\\ \hline
-	$m$                           	&  verification responses from $SM_s$                					\\ \hline\hline
-	$7m$                          	&  total messages            
+	\textbf{Number of messages}     & \textbf{Origin} \\ \hline
+	$m$                             &  MAC-request outputs to $SM_s$                                        \\ \hline
+	$m$                             &  MAC-response inputs from $SM_s$                                      \\ \hline
+	$m$                             &  messages sent to the wrapper state machine on the sending process    \\ \hline
+	$m$                             &  messages sent between processes                                      \\ \hline
+	$m$                             &  messages sent from the wrapper state machine on the receiving process                                                                                                 \\ \hline
+	$m$                             &  input MAC verification requests to $SM_s$                            \\ \hline
+	$m$                             &  verification responses from $SM_s$                                   \\ \hline\hline
+	$7m$                            &  total messages            
 	\end{tabular}}
 	\caption{Number of messages after the transformation}
 	\label{tab:number-of-messages-transformed}
 	\end{table}
 
 	\FloatBarrier
-	\begin{figure}[ht!]	
+	\begin{figure}[ht!] 
 		\center
 		\makebox[\textwidth][c]{\includegraphics[scale=0.6]{figures/state-machines/NFA-transformation.pdf}}
 		\caption{Transformation of figure \ref{fig:simple-nfa} from state machine in crash-resistant protocol to integrity protected state machine in byzantine fault-tolerant protocol, if all channels are to other processes.\label{fig:nfa-transformation}}
@@ -616,7 +630,7 @@
 	\end{itemize}
 		
 	This concludes the argument that Intel SGX and cryptography can change correct process behaviour under byzantine faults to behaviour equivalent that under crash faults, and thereby, using the above transformation, make a crash-resistant protocol into a byzantine-fault-tolerant protocol.
-	As we will apply this transformation to our solution, we will therefore from here on in, only consider a fault model of crashing processes.
+	As we will apply this transformation to our solution, we will therefore, from here on in, only consider a fault model of crashing processes.
 
 		\subsection{Example: Central Server Mutual Exclusion}
 		We will now show a practical example of how the transformation in section \ref{sec:transforming-byzantine-faults} can be utilised.
@@ -653,7 +667,7 @@
 		We model two different state machines: a client state machine, and a server state machine.
 
 		\FloatBarrier
-		\begin{figure}[ht!]	
+		\begin{figure}[ht!] 
 			\center
 			\includegraphics[scale=0.6]{figures/state-machines/CSME-client-NFA.pdf}
 			\caption{Client state machine from the central server protocol for mutual exclusion. Note that the channel $c_s$ represents the unreliable channel to the server, and is different across client instances.\label{fig:CSME-client-NFA}}
@@ -665,7 +679,7 @@
 		Naturally it can also crash ($s_{error}$).
 
 		\FloatBarrier
-		\begin{figure}[ht!]	
+		\begin{figure}[ht!] 
 			\center
 			\includegraphics[scale=0.6]{figures/state-machines/CSME-server-NFA.pdf}
 			\caption{Server state machine from the central server protocol for mutual exclusion. Note that this server state machine can only handle two client processes.\label{fig:CSME-server-NFA}}
@@ -677,7 +691,7 @@
 		It encompasses 6 states: $s_0$ where no client has access to the critical section, and no requests has been , $s_1$ where client $1$ has requested the token and the token has been sent, $s_2$ where client $2$ has requested the token and the token has been sent, $s_3$ where client $1$ has the token and client $2$ has requested the token, $s_4$ where client $2$ has the token and client $1$ has requested the token and $s_{error}$ where the state machine has crashed.
 
 		\FloatBarrier
-		\begin{figure}[ht!]	
+		\begin{figure}[ht!] 
 			\center
 			\includegraphics[scale=0.6]{figures/state-machines/CSME-protocol.pdf}
 			\caption{Processes and channels in the central server protocol for mutual exclusion, with one server and two clients.\label{fig:CSME-protocol}}
@@ -691,13 +705,13 @@
 		This is done by rules for state machine transformation in section \ref{sec:transforming-byzantine-faults}. 
 
 		\FloatBarrier
-		\begin{figure}[ht!]	
+		\begin{figure}[ht!] 
 			\center
 			\includegraphics[scale=0.6]{figures/state-machines/CSME-client-NFA-transformed.pdf}
 			\caption{Client state machine in CSME, after it has been transformed to handle byzantine faults.\label{fig:CSME-client-NFA-transformed}}
 		\end{figure}
 		\FloatBarrier
-s
+
 		Figure \ref{fig:CSME-client-NFA-transformed} shows the client state machine after the transformation.
 		Whenever the client wants to enter the critical section, the state machine sends the request to $SM_s$ for MAC'ing.
 		When the MAC'ed message is received from $SM_s$, this message is sent to the server process. 
@@ -708,7 +722,7 @@ s
 		Before exiting the critical section, the exit message is sent to $SM_s$ for MAC'ing, and when the appropriate MAC is received from $SM_s$, the exit message is sent to the wrapper state machine for redirection to the server process.
 
 		\FloatBarrier
-		\begin{figure}[ht!]	
+		\begin{figure}[ht!] 
 			\center
 			\makebox[\textwidth][c]{\includegraphics[scale=0.6]{figures/state-machines/CSME-server-NFA-transformed.pdf}}
 			\caption{Server state machine in the central server protocol for mutual exclusion, after it has been transformed to handle byzantine errors. Note that $s_{error}$ has been omitted for (some) readability.\label{fig:CSME-server-NFA-transformed}}
@@ -727,7 +741,7 @@ s
 		$s_4$ is equivalent to $s_3$, except with the clients reversed (client $2$ has the token, client $1$ has requested it, when client $2$ releases the token).  
 
 		\FloatBarrier
-		\begin{figure}[ht!]	
+		\begin{figure}[ht!] 
 			\center
 			\includegraphics[scale=0.6]{figures/state-machines/CSME-protocol-transformed.pdf}
 			\caption{Processes and channels in the central server protocol for mutual exclusion, after they have been transformed to handle byzantine errors.\label{fig:CSME-protocol-transformed}}
@@ -743,7 +757,7 @@ s
 		Having transformed the CSME protocol, the correct processes will exhibit the same behaviour when other processes suffer byzantine faults, as the correct processes do in the untransformed protocol when other processes suffer crash faults.
 
 		\FloatBarrier
-		\begin{figure}[ht!]	
+		\begin{figure}[ht!] 
 			\center
 			\includegraphics[scale=0.6]{figures/state-machines/CSME-protocol-transformed-byzantine.pdf}
 			\caption{Processes and channels in the transformed central server protocol for mutual exclusion, with a byzantine fault on the server process.\label{fig:CSME-protocol-transformed-byzantine}}
@@ -756,7 +770,7 @@ s
 		$P_{byz}$ (see figure \ref{fig:CSME-protocol-transformed-byzantine}) is exactly equal to $P_0$, except that $SM_0$ has been exchanged with $SM_{byz}$ (see figure \ref{fig:CSME-server-NFA-transformed-byzantine}), which serves a token to any request by the clients.
 
 		\FloatBarrier
-		\begin{figure}[ht!]	
+		\begin{figure}[ht!] 
 			\center
 			\includegraphics[scale=0.6]{figures/state-machines/CSME-server-NFA-transformed-byzantine.pdf}
 			\caption{The byzantine fault state machine $SM_{byz}$ on the server process.\label{fig:CSME-server-NFA-transformed-byzantine}}
@@ -769,42 +783,115 @@ s
 
 	\section{Analysis}
 	\label{sec:analysis}
+	Recall the problem:
+	We have $n$ peers $\{p_1, p_2 \dots p_n\}$, and a DCR graph $G$, which consists of $v$ events $E = \{e_1, e_2, \dots, e_v\}$.
+	Each peer is responsible for $1$ or more events, where being responsible for $e$ means storing the current and previous states of $e$. 
+	Effectively, responsibility for $e$ entails involvement in executions of $e$ and executions of other events $e'$ s.t. $e \in D_{dyn}(G,e')$, as the state of $e$ must be agreed upon by all responsible peers.
+	A client can contact any peer responsible for $e$, requesting an execution of $e$, provided that that client has the correct credentials with regards to access control.
+	Furthermore the system must have the following properties:
+	\begin{description}
+		\item[Safety] all peers responsible for $e$ execute the requests on $e$ in the same order.
+		\item[Liveness] The sender of a request eventually receives a reply to that request.
+		\item[DCR linearisability] At any time before and after event executions, the states of $e_1-e_v$ must be equivalent to at least one run $R_G$ of $G$, such that $R_G$ contains only all successful execution requests.
+		\item[Dependence synchronisation] Any two concurrent executions of events $e$ and $e'$ must be synchronised if $e$ and $e'$ are dynamically dependent.
+	\end{description}
 
-	Consider a solution where a DCR graph is distributed among peers, such that each peer is responsible for one or more events.
-	Responsible meaning that that peer maintains the state of that event along with the other peers responsible for the same event.
-	Effectively, responsibility entails involvement in executions of the event and executions of event which could affect that event, as the state of the event must be agreed upon by all responsible peers.
+	% To achieve a solution to this problem there are several 
 
-	Any client can contact a peer, requesting an execution of an event, provided that that client has the correct credentials, with regards to access control.
-	The first issue thereby presents itself, in that simultaneous client requests can lead to execution of dynamically dependent events.
-	Since the executed events are dependent, the order in which the executions are attempted is not inconsequential, as they can be mutually exclusive, or dependent on one another, such that one can be executed followed by the other, but not vice versa.
-	To solve this, the involved parties must agree on which order these executions are applied, to avoid inconsistencies in the state of the events.
+	% The problem can be solved by solving two somewhat independent sub-problems: state-machine replication (SMR) and distributed DCR graph execution.
+	% We need to solve consensus on a request log to ensure safety and liveness, and we need to solve distributed DCR graph execution to solve DCR linearisability and dependence synchronisation.
+	% To some extend, some SMR solutions also solve distributed DCR execution, in that they synchronise all requests from clients.
+	% As mentioned in section \ref{subsec:consensus} a solution to SMR is consensus on a log, and consensus and SMR are equivalent problems.
 
-	Synchronizing state changes is a well-known problem and one solution is the election of a leader which orders the messages, such as in most BFT algorithms~\cite{castro_practical_1999,veronese_efficient_2013,kapitza_cheapbft_2012,liu_scalable_2016}.
-	%A single-leader system does however neccesitate that each peer in the system manages the entire subject state | in the case of this project the entirety of the DCR graph.
+	% There exist several solutions to both consensus and SMR, for instance \cite{bracha_asynchronous_1985,lamport_part-time_1998,castro_practical_1999,kotla_zyzzyva_2007,kapitza_cheapbft_2012,veronese_efficient_2013,ongaro_search_2014,liu_scalable_2016}. 
+	% With regards to distributed DCR execution, there are only a few solutions: \cite{hildebrandt_safe_2011,hildebrandt_declarative_2012}. 
+
+
+	% For the moment, we will just use an abstract solution to SMR with 2f+1 crash fault tolerance for liveness.
+
+
+
+	% The first issue thereby presents itself, in that simultaneous client requests can lead to execution of dynamically dependent events.
+	% Since the executed events are dependent, the order in which the executions are attempted is not inconsequential, as they can be mutually exclusive, or dependent on one another, such that one can be executed followed by the other, but not vice versa.
+	% To solve this, the involved parties must agree on which order these executions are applied, to avoid inconsistencies in the state of the events.
+
+	% Synchronizing state changes is a well-known problem and one solution is the election of a leader which orders the messages, such as in most BFT algorithms~\cite{castro_practical_1999,kapitza_cheapbft_2012,veronese_efficient_2013,liu_scalable_2016}.
+	% %A single-leader system does however neccesitate that each peer in the system manages the entire subject state | in the case of this project the entirety of the DCR graph.
 	\begin{table}[!ht]
 	\centering
-	\makebox[\textwidth][c]{\begin{tabular}{|p{0.2cm}|p{1.5cm}|p{1.5cm}|p{1.7cm}|p{2cm}|p{2cm}|p{1.5cm}|}
+	\makebox[\textwidth][c]{\begin{tabular}{|p{0.2cm}|p{1.5cm}|p{1.5cm}|p{1.7cm}|p{1.5cm}|p{2.5cm}|p{2.3cm}|p{1.5cm}|}
 	\hline
-	\#   & Fault tolerance (Availability) & Fault tolerance (Safety) & Fault tolerance (Data loss) & Nb. of messages for state change (Best case)       & Concurrency      & Request Bottleneck    \\ \hline
-	\textit{1} & $0$                            & n/a ($0$)                & $0$                         & $2$                                                & None             & $S$                   \\ \hline
-	\textit{2} & $f$                            & $n$                      & $n$                         & $2(f+1)$                                           & Total            & $L$                   \\ \hline
-	\textit{3} & $\frac{(m-1)}{2}$ (partly)     & $n$                      & $m-1$                       & $2 \cdot \frac{(m-1)}{2}$                          & Total            & $L$                   \\ \hline
-	\textit{4} & $\frac{(m-1)}{2}$ (partly)     & $n$                      & $m-1$                       & $2 \cdot \frac{(m-1)}{2}$                          & DCR concurrency & $L \cdot \frac{n}{m}$ \\ \hline
-	\textit{5} & $0$ (partly)                   & $n$                      & $0$                         & $2 \cdot D_{dyn}(G,e)$ ($e$ executing)			  & DCR concurrency & $L$                   \\ \hline
+	\#         & Fault tolerance (Availability)             & Fault tolerance (Safety) & Fault tolerance (Data loss) & Crash recovery (messages) & Message complexity for executing $e$ (Best case) & Concurrency                 & Request Bottleneck    \\ \hline
+	\textit{1} & $0$                                        & $n$                      & $0$                         & n/a                       & $2 = O(k)$                                       & $\leq$ Dynamic independence & $L$ \\ \hline
+	\textit{2} & $\lfloor \frac{(n-1)}{2} \rfloor$          & $n$                      & $n-1$                       & $n^2$                     & $2\cdot\lfloor\frac{(n-1)}{2}\rfloor =O(n)$      & $\leq$ Dynamic independence & $L$ \\ \hline
+	\textit{3} & $\lfloor \frac{(m-1)}{2} \rfloor$ (partly) & $n$                      & $m-1$                       & $n^2$                     & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor =O(m)$      & Dynamic independence        & $L$ \\ \hline
+	\textit{4} & $\lfloor \frac{(m-1)}{2} \rfloor$ (partly) & $n$                      & $m-1$                       & $m^2$                     & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor =O(m)$      & Dynamic independence        & $L\cdot \frac{n}{m}$ \\ \hline
+	\textit{5} & $0$ (partly)                               & $n$                      & $0$                         & n/a                       & $2\cdot D_{dyn}(G,e) =O(D_{dyn}(G,e))$           & Dynamic independence        & $L\cdot n$ \\ \hline
 	\end{tabular}}
 	\caption{Comparison of different approaches.
 	\textit{1}: Central Server.
 	\textit{2}: State Machine Replication.
-	\textit{3}: Event state distributed and replicated with full consensus.
-	\textit{4}: Event state distributed and replicated with dependency consensus.
-	\textit{5}: Event state distinctly distributed (2PC).}
+	\textit{3}: Event state clusters with strong leader.
+	\textit{4}: Event state clusters with no common leader.
+	\textit{5}: One-to-one mapping of peers and events, with no leader.}
 	\label{tab:approcach-comparison}
 	\end{table}
+
+	We wish to create a system in which the state of an event is agreed upon in less that $O(n)$ messages (for sufficiently large and loosely connected graphs)\footnote{Trivially, a DCR graph with a single event must require $O(n)$ messages, as each peer must have responsibility for that event.} while maintaining fault tolerance, and enabling dynamic independence concurrency of event executions.
+	Table~\ref{tab:approcach-comparison} shows different approaches to solving the problem under these conditions in a stepwise fashion.
+	
+	Approach number \textit{1} is a simple central server algorithm. 
+	There is a single leader, $L$, each of the other peers replicate some subset of $E$ and can redirect requests to the leader. 
+	When the leader receives a request, it is queued in the order they are received in, and applied to $G$ in that order.
+	After an execution of an event $e$, each of the peers replicating $e$ and $e$'s dynamic dependency set is informed by $L$ of that execution, with a monotonic counter value that enables ordering of the events' execution.
+	This ensures safety, since each of the peers will apply the executions in the same order as $L$.
+	Since every request is managed by a single leader, we are automatically given DCR linearisability and dependence synchronisation, since the executions can be totally ordered. 
+	However, this solution does not ensure any concurrency, since $L$ needs to apply each previous execution before the next.
+	If some concurrency is desired, $L$ can execute requests in parallel, while keeping track of current executions.
+	When an execution request is received of an event that is dynamically dependent on one of the currently executing events, it is queued, and so is all other requests that are not in the approximate static independence set of all the currently executing and queued events.
+	Furthermore, there is no fault tolerance because under a leader crash, there is no guarantee that the remaining peers can recreate the last state.
+
+	Approach number \textit{2} is an approach that tries to improve on the fault tolerance of approach number \textit{1}.
+	This is a classic SMR/consensus solution with crash fault tolerance.
+	There are several protocols that fits this description, for instance in~\cite{bracha_asynchronous_1985,lamport_part-time_1998,lamport_lower_2006,ongaro_search_2014}, but for the purposes of this comparison, an abstract solution that utilizes a leader, $L$, to achieve an optimal crash fault tolerance of $f = \lfloor \frac{(n-1)}{2} \rfloor$ is enough.
+	In this approach, every peer must replicate all events, as all executions must be committed to at least $f+1$ replicas.
+	This ensures that if a leader dies, a new leader can be chosen (using $O(n^2)$ messages), which gives us the aforementioned fault tolerance.
+	However, now $L$ must synchronise all request, to ensure that they are applied in the same order by all replicas, which translates to no DCR concurrency
+	Some SMR protocols (e.g.~\cite{castro_practical_1999}) allow for concurrent request commits, under the constraint that requests that are committed must not be applied to the underlying state machine before any uncommitted request that happened-before on $L$.
+	This constraint could be relaxed to allow for applying the execution of $e$ when the request has committed, if the peer is aware of which events is in the previous uncommitted execution requests, and none of these events are in $D_{dyn}(e)$.
+	Because the peer needs to know the previous uncommitted requests, this results in worse concurrency than dynamic independence.
+	Furthermore, the solution still needs $O(n)$ messages to execute a single event, no matter how the graph is constructed.
+
+	Approach number \textit{3} is an attempt to reduce the amount of messages needed for executing an event.
+	The basic idea is to distribute the event responsibility out to a subset of peers, which will then only be responsible for that event.
+	We name these subsets \textit{clusters} and denote the size of these clusters $m$. 
+	The system still utilizes a single leader, which synchronises all requests.
+	When event $e$ is requested executed, the leader runs an SMR algorithm similar to the one described in approach \textit{2}, but only with cluster for $e$, and the clusters of $E_{eff}(G,e)$ -- to ensure that the clusters of $E_{eff}(G,e)$ has updated the state/enabledness of the events they are responsible for.
+	This ensures a lesser message complexity than approach \textit{2}, given $n > m * (|E_{eff}(G,e)|+1)$.
+	Notice that $n = m \cdot v \geq m * (|E_{eff}(G,e)|+1)$).
+	$L$ must still synchronise all requests, and worse, cannot allow for concurrent request commits, since the peers would not necessarily be able to recreate the synchronisation between these.
+	The one exception is dynamically independent events, since the order of these does not matter.
+	Another improvement is the fact that if more than half of a cluster crashes, only part of the availability is effected, since the statically independent clusters can continue operating normally.
+	There is an argument that one could simply reduce $n$ in approach \textit{2} to achieve the exact same message complexity.
+	While this is true for a system where we control the number of peers, it does not hold in system where the number of initial peers are constant (e.g. a system where all participants in a large DCR graph requires to be in control of some constant amount of peers), or systems where the peers independently join the network (in which case we do not control the number of peers).
+
+	Approach number \textit{4} is our chosen approach, and we will go into detail with it below.
+	Suffice it to say that it is build upon approach number \textit{3}, except that the strong common leader is replaced with inter-cluster synchronisation using locks.
+	This has the benefit that even if a leader dies, the recovery has message complexity $m^2$ (instead of $O(n^2)$), and the number of concurrent client requests are no longer bounded by the speed of a single process.
+
+	Approach number \textit{5} is heavily inspired by~\cite{hildebrandt_safe_2011}.
+	In it $n = v$, and each peer has responsibility for only a single event.
+	There is no leader, and an execution is done through synchronisation between peers.
+	I.e. if event $e$ is to be executed, the responsible peer will use a synchronisation technique (e.g. 2 phase locking) with all the peers responsible for the events in $E_{eff}(G,e)$, who will update their state accordingly.
+	This guarantees DCR linearisability and dependence synchronisation. 
+	The fault tolerance of this approach is quite bad, as any peer crashing will result in a data loss, and effect availability, even though it has the same property as approach \textit{3} and \textit{4} of not effecting the events in $I_stat\{e\}$
+
+	From here on in, we will primarily concern ourselves with the details of approach \textit{4}:
 
 	To avoid the high number of messages associated with a fully replicated system and the message bottleneck associated with a single-leader system, we propose a multi-leader, partial state system.
 	Each event is represented by a leader, who can initiate execution of that event at any given time.
 	Since events can affect each other and this system is in an asynchronous setting where messages can be delayed arbitrarily, having multiple leaders can potentially lead to situations where leaders disagree on which order events have been executed in, resulting in inconsistent states.
-	The issue of synchronizing the ordering of simultaneous and incompatible executions, across multiple leaders is solved with the locking of events.	
+	The issue of synchronizing the ordering of simultaneous and incompatible executions, across multiple leaders is solved with the locking of events.  
 	As locking is expensive both in regards to concurrency and the number of messages required, a minimal number of locks is desired.
 	Evaluating the need for locking is concerned with how far changes from an event execution can propagate, necessitating locking, and whether or not there are identifiable cases where locks can be spared.
 	A method of discerning which events need to be locked and when is described in the subsection | \textbf{Event Locking}.
@@ -819,22 +906,22 @@ s
 
 	% The second problem is closely related as consensus must be achieved on which peer holds which lock:
 	% \begin{description}
-	% 	\item[Consensus] In extension to preventing simultaneous incompatible executions, locking has pushed the issue of concurrency into the locking portion, which now needs to be handled in the sense that peers must agree on who holds the locks.
-	% 	Existing solutions to this problem, such as BFT algorithms and State Machine Replication Algorithms could be applied here, if each peer is responsible for the entirety of the graph.
-	% 	However, as those algorithms they are typically quite costly, as discussed earlier, they do not live up to the requirements specified in this thesis.
+	%   \item[Consensus] In extension to preventing simultaneous incompatible executions, locking has pushed the issue of concurrency into the locking portion, which now needs to be handled in the sense that peers must agree on who holds the locks.
+	%   Existing solutions to this problem, such as BFT algorithms and State Machine Replication Algorithms could be applied here, if each peer is responsible for the entirety of the graph.
+	%   However, as those algorithms they are typically quite costly, as discussed earlier, they do not live up to the requirements specified in this thesis.
 	% \end{description}
 	
 	% With solutions to the problems of locking and consensus, peers are able to progress the graph, but since they will not necessarily be aware of the state of the graph, they would have to aggressively push for an execution for it to possibly happen.
 	% This brings us to the problem of obtaining the global state of the graph:
-	% \begin{description}		
-	% 	\item[Global state collection] Each peer must be able to, at any time, collect a global state of the graph, with the guarantee that that global state will never be invalidated by a global state collected in the future.
+	% \begin{description}       
+	%   \item[Global state collection] Each peer must be able to, at any time, collect a global state of the graph, with the guarantee that that global state will never be invalidated by a global state collected in the future.
 	% \end{description}
 
 	% As this is a decentralized peer-to-peer network solution, two key points also have to be considered:
 	% \begin{description}
-	% 	\item[Network topology] As the weakest point of the graph will be the event with the fewest peers responsible for it, some consideration must be given to what, if any, events are to be prioritized.
-	% 	Otherwise some distribution must be specified.
-	% 	\item[Peer distribution] As events only lock other events in the vicinity, something could be gained, performance-wise, by distributing the events such that they are responsible for events that would typically be locked during the same execution.
+	%   \item[Network topology] As the weakest point of the graph will be the event with the fewest peers responsible for it, some consideration must be given to what, if any, events are to be prioritized.
+	%   Otherwise some distribution must be specified.
+	%   \item[Peer distribution] As events only lock other events in the vicinity, something could be gained, performance-wise, by distributing the events such that they are responsible for events that would typically be locked during the same execution.
 	% \end{description}
 
 	\subsection{Event Locking} % Missing a conclusion: When do we lock what? We have only described cases but not what our locking algorithm is.
@@ -855,7 +942,7 @@ s
 	Locking can be performed on the entirety of $L(v)\ =\ N(N(v))\ \cup\ N(v)\ \cup\ v$ on the execution of $v$, guaranteeing synchronization in the case of competing event executions.
 	However, since locking two neighbourhoods actually gives a range of four, locking some subset could be just as correct and more efficient.
 
-	\begin{figure}[ht!]	
+	\begin{figure}[ht!] 
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/race-condition.pdf}
 		\caption{Graph illustrating the need for locking within $N_{out}(v)$.}
@@ -864,7 +951,7 @@ s
 
 	In the graph shown in figure \ref{fig:race-condition} it is shown that at least part of the locking set has to be $N_{out}(v)$ so as to avoid a race condition in this case.
 
-	\begin{figure}[ht!]	
+	\begin{figure}[ht!] 
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/second-degree-effect.pdf}
 		\caption{Graph illustrating the need for locking in either $N_{out}(N_{out}(v))$ or $N_{in}(v) \cup N_{out}(v)$.}
@@ -873,15 +960,15 @@ s
 
 	In the graph shown in figure \ref{fig:second-degree-effect} it is shown that the locking set has to include either $N_{out}(N_{out}(v))$ or $N_{in}(v) \cup N_{out}(v)$, in order to prevent the graph from ending in a state where both \texttt{A} and \texttt{B} has been executed, which should be impossible due to the execution of either including a condition on the other.
 
-	\begin{figure}[ht!]	
+	\begin{figure}[ht!] 
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/second-degree-no-effect.pdf}
 		\caption{Graph illustrating the advantage of locking in $N_{out}(N_{out}(v))$ rather than $N_{in}(v) \cup N_{out}(v)$.}
 		\label{fig:second-degree-no-effect}
 	\end{figure}
 
- 	In the graph shown in figure \ref{fig:second-degree-no-effect} an execution of \texttt{A} no longer has an effect on the enabledness of \texttt{B}, as \texttt{C} has the same state before and after the execution of \texttt{A}.
- 	If the locking scheme of $L(v) = N_{in}(v) \cup N_{out}(v) \cup v$ is applied, this has no effect, but if the locking scheme of $L(v) = N_{out}(N_{out}(v)) \cup N_{out}(v) \cup v$ is used, the lock on \texttt{B} can be foregone.
+	In the graph shown in figure \ref{fig:second-degree-no-effect} an execution of \texttt{A} no longer has an effect on the enabledness of \texttt{B}, as \texttt{C} has the same state before and after the execution of \texttt{A}.
+	If the locking scheme of $L(v) = N_{in}(v) \cup N_{out}(v) \cup v$ is applied, this has no effect, but if the locking scheme of $L(v) = N_{out}(N_{out}(v)) \cup N_{out}(v) \cup v$ is used, the lock on \texttt{B} can be foregone.
 	This optimization is, however, only possible when the state of \texttt{C} is known and since locking is only performed forwards, there is no implicit way to propagate executions backwards.
 	This means that \texttt{A} does not know the state of \texttt{C} on execution and would have to do one of two options when executing:
 	\begin{itemize}
@@ -905,8 +992,8 @@ s
 	% Given that the relations of a workflow are fixed at creation, the peers can be distributed efficiently by assigning events frequently locked simultaneously to the same peers.
 	% This can be accomplished by the following steps:
 	% \begin{itemize}
-	% 	\item Each event is assigned a set of peers, called the primaries of that event, containing at least one peer.
-	% 	\item The primaries of each event are added to each event on which the execution of the event tracked by the primaries could incur a lock. The peers added this way are called secondaries for that event.
+	%   \item Each event is assigned a set of peers, called the primaries of that event, containing at least one peer.
+	%   \item The primaries of each event are added to each event on which the execution of the event tracked by the primaries could incur a lock. The peers added this way are called secondaries for that event.
 	% \end{itemize}
 
 	% The peer-to-peer network is then configured in such a way that each peer is a neighbour to any peer which tracks the same events.
@@ -957,25 +1044,25 @@ s
 	\section{Discussion}
 
 		\subsection{SGX security}
-	    All aforementioned hardware guarantees are given by Intel, but since very little of the proprietary technology is documented, all security properties of SGX rely on the correctness of Intel's hardware implementation.
-	    Historically Intel has had vulnerabilities in similar hardware components, like the CVE-2017-5689 security incident exposed in~\cite{silent_bob}, allowed unprivileged access to the Intel Active Management Technology.
+		All aforementioned hardware guarantees are given by Intel, but since very little of the proprietary technology is documented, all security properties of SGX rely on the correctness of Intel's hardware implementation.
+		Historically Intel has had vulnerabilities in similar hardware components, like the CVE-2017-5689 security incident exposed in~\cite{silent_bob}, allowed unprivileged access to the Intel Active Management Technology.
 
-	    SGX claims to provide confidentiality and integrity for running enclaves.
-	    This is ensured by preventing untrusted software access to the PRM and enclaves access to other regions of the PRM besides their exclusive region.
-	    However, while it is not possible to breach the integrity of PRM,~\cite{costan_intel_2016} shows several issues regarding confidentiality.
-	    Because enclaves use the system page table even for data residing on PRM, it is possible for untrusted software to learn the page access order by manipulating the OS controlled page table.
-	    Another possible attack vector is to perform cache timing by cleverly choosing the physical memory position of enclave memory pages on set associative caches.
-	    By mapping snooping software to the same cache set as the enclave, the snooping software can evict the enclave's memory from the cache and use timing to figure out if it is accessed again.
-	    Lastly, processors with hyper-threading support are vulnerable to instruction snooping, as a snooping process sharing physical core with an enclave can use performance counters to determine which instructions the out-of-order scheduler is able to run in parallel with the enclave.
-	    The presence of these attacks means that enclaves using data-dependent memory access will likely not ensure confidentiality.
-	    However, to our knowledge, no publicly known vulnerabilities exist on the integrity guarantee. 
-	    And since our system has very few confidentiality requirements, the known vulnerabilities do not seem problematic for the purposes of this project.
+		SGX claims to provide confidentiality and integrity for running enclaves.
+		This is ensured by preventing untrusted software access to the PRM and enclaves access to other regions of the PRM besides their exclusive region.
+		However, while it is not possible to breach the integrity of PRM,~\cite{costan_intel_2016} shows several issues regarding confidentiality.
+		Because enclaves use the system page table even for data residing on PRM, it is possible for untrusted software to learn the page access order by manipulating the OS controlled page table.
+		Another possible attack vector is to perform cache timing by cleverly choosing the physical memory position of enclave memory pages on set associative caches.
+		By mapping snooping software to the same cache set as the enclave, the snooping software can evict the enclave's memory from the cache and use timing to figure out if it is accessed again.
+		Lastly, processors with hyper-threading support are vulnerable to instruction snooping, as a snooping process sharing physical core with an enclave can use performance counters to determine which instructions the out-of-order scheduler is able to run in parallel with the enclave.
+		The presence of these attacks means that enclaves using data-dependent memory access will likely not ensure confidentiality.
+		However, to our knowledge, no publicly known vulnerabilities exist on the integrity guarantee. 
+		And since our system has very few confidentiality requirements, the known vulnerabilities do not seem problematic for the purposes of this project.
 
-	    As mentioned SGX does not protect against flawed software, so it is up to the developer to prevent side-channel attacks through OCALLs that might expose secret data.
-	    A noteworthy mention to illustrate the vigor needed is the common pitfall mentioned in~\cite{intel_sgx_guide} when using ECALLs and OCALLs.
-	    Because enclaves are compiled using a standard \cpp-compiler, structure padding is likely to happen.
-	    The SGX environment does not protect against leaking secret information through uninitialized structure padding when passing structures in ECALLs and OCALLs -- this, and other common security pitfalls, are not part of any SGX security guarantees.
-	    Intel recommends to always clear secrets from the enclave memory after use in~\cite{intel_sgx_guide}, regardless of the guarantees given by the PRM, underlining the risk of unintended vulnerabilities.
+		As mentioned SGX does not protect against flawed software, so it is up to the developer to prevent side-channel attacks through OCALLs that might expose secret data.
+		A noteworthy mention to illustrate the vigor needed is the common pitfall mentioned in~\cite{intel_sgx_guide} when using ECALLs and OCALLs.
+		Because enclaves are compiled using a standard \cpp-compiler, structure padding is likely to happen.
+		The SGX environment does not protect against leaking secret information through uninitialized structure padding when passing structures in ECALLs and OCALLs -- this, and other common security pitfalls, are not part of any SGX security guarantees.
+		Intel recommends to always clear secrets from the enclave memory after use in~\cite{intel_sgx_guide}, regardless of the guarantees given by the PRM, underlining the risk of unintended vulnerabilities.
 
 	\section{Conclusion}
 

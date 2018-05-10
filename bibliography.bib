@@ -346,4 +346,82 @@
   pages = {298-309}
 }
 
+@article{ongaro_search_2014,
+  title = {In {{Search}} of an {{Understandable Consensus Algorithm}}},
+  abstract = {Raft is a consensus algorithm for managing a replicated log. It produces a result equivalent to (multi-)Paxos, and it is as efficient as Paxos, but its structure is different from Paxos; this makes Raft more understandable than Paxos and also provides a better foundation for building practical systems. In order to enhance understandability, Raft separates the key elements of consensus, such as leader election, log replication, and safety, and it enforces a stronger degree of coherency to reduce the number of states that must be considered. Results from a user study demonstrate that Raft is easier for students to learn than Paxos. Raft also includes a new mechanism for changing the cluster membership, which uses overlapping majorities to guarantee safety.},
+  language = {en},
+  author = {Ongaro, Diego and Ousterhout, John},
+  year = {2014},
+  pages = {18}
+}
+
+@incollection{debois_safety_2015,
+  address = {Cham},
+  title = {Safety, {{Liveness}} and {{Run}}-{{Time Refinement}} for {{Modular Process}}-{{Aware Information Systems}} with {{Dynamic Sub Processes}}},
+  volume = {9109},
+  isbn = {978-3-319-19248-2 978-3-319-19249-9},
+  abstract = {We study modularity, run-time adaptation and refinement under safety and liveness constraints in event-based process models with dynamic sub-process instantiation. The study is part of a larger programme to provide semantically well-founded technologies for modelling, implementation and verification of flexible, run-time adaptable processaware information systems, moved into practice via the Dynamic Condition Response (DCR) Graphs notation co-developed with our industrial partner. Our key contributions are: (1) A formal theory of dynamic subprocess instantiation for declarative, event-based processes under safety and liveness constraints, given as the DCR* process language, equipped with a compositional operational semantics and conservatively extending the DCR Graphs notation; (2) an expressiveness analysis revealing that the DCR* process language is Turing-complete, while the fragment corresponding to DCR Graphs (without dynamic sub-process instantiation) characterises exactly the languages that are the union of a regular and an omega-regular language; (3) a formalisation of run-time refinement and adaptation by composition for DCR* processes and a proof that such refinement is undecidable in general; and finally (4) a decidable and practically useful sub-class of run-time refinements. Our results are illustrated by a running example inspired by a recent Electronic Case Management solution based on DCR Graphs and delivered by our industrial partner. An online prototype implementation of the DCR* language (including examples from the paper) and its visualisation as DCR Graphs can be found at http://tiger.itu.dk:8020/.},
+  language = {en},
+  booktitle = {{{FM}} 2015: {{Formal Methods}}},
+  publisher = {{Springer International Publishing}},
+  author = {Debois, S{\o}ren and Hildebrandt, Thomas and Slaats, Tijs},
+  year = {2015},
+  pages = {143-160},
+  doi = {10.1007/978-3-319-19249-9_10}
+}
+
+@incollection{hildebrandt_declarative_2012,
+  address = {Berlin, Heidelberg},
+  title = {Declarative {{Modelling}} and {{Safe Distribution}} of {{Healthcare Workflows}}},
+  volume = {7151},
+  isbn = {978-3-642-32354-6 978-3-642-32355-3},
+  abstract = {We present a formal technique for safe distribution of workflow processes described declaratively as nested Dynamic Condition Response (DCR) Graphs and apply the technique to a distributed healthcare workflow. Concretely, we provide a method to synthesize from a nested DCR Graph and any distribution of its atomic events a set of local process graphs communicating by shared events, such that the distributed execution of the local processes is equivalent to executing the original process. The technique extends our recent work on safe distribution of non-nested DCR Graphs applied to cross-organizational case management. The main contributions of the present paper is to adapt the technique to allow for nested processes and milestones and to apply it to a healthcare workflow identified in a previous field study at danish hospitals. We also provide a new formalization of the semantics of DCR Graphs which highlights its declarative nature.},
+  language = {en},
+  booktitle = {Foundations of {{Health Informatics Engineering}} and {{Systems}}},
+  publisher = {{Springer Berlin Heidelberg}},
+  author = {Hildebrandt, Thomas and Mukkamala, Raghava Rao and Slaats, Tijs},
+  year = {2012},
+  pages = {39-56},
+  doi = {10.1007/978-3-642-32355-3_3}
+}
+
+@article{dwork_consensus_1988,
+  title = {Consensus in the Presence of Partial Synchrony},
+  volume = {35},
+  number = {2},
+  journal = {Journal of the ACM (JACM)},
+  author = {Dwork, Cynthia and Lynch, Nancy and Stockmeyer, Larry},
+  year = {1988},
+  pages = {288--323}
+}
+
+@article{lamport_lower_2006,
+  title = {Lower Bounds for Asynchronous Consensus},
+  volume = {19},
+  number = {2},
+  journal = {Distributed Computing},
+  author = {Lamport, Leslie},
+  year = {2006},
+  pages = {104--125}
+}
+
+@inproceedings{guerraoui_revisiting_1995,
+  title = {Revisiting the Relationship between Non-Blocking Atomic Commitment and Consensus},
+  booktitle = {International {{Workshop}} on {{Distributed Algorithms}}},
+  publisher = {{Springer}},
+  author = {Guerraoui, Rachid},
+  year = {1995},
+  pages = {87--100}
+}
+
+@article{chandra_unreliable_1996,
+  title = {Unreliable Failure Detectors for Reliable Distributed Systems},
+  volume = {43},
+  number = {2},
+  journal = {Journal of the ACM (JACM)},
+  author = {Chandra, Tushar Deepak and Toueg, Sam},
+  year = {1996},
+  pages = {225--267}
+}
+
 
