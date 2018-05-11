@@ -986,6 +986,21 @@
 	These various advantages of different methods means that finding one optimal solution is not possible, as it is dependent on the specific workflow and the topology of the network at a given time. 
 
 	\subsection{Cluster Consensus}
+	\begin{table}[]
+	\centering
+	\makebox[\textwidth][c]{\begin{tabular}{|l|p{1.7cm}|p{1.5cm}|l|p{1.7cm}|}
+	\hline
+	\textbf{Algorithm} & \textbf{Fault tolerance (liveness)} & \textbf{Crash recovery} & \textbf{Messages/execution}  & \textbf{Fault type tolerance} \\ \hline
+	PBFT               & $\lfloor \frac{n-1}{3} \rfloor = f$ & $2(2f+1)$               & $(2f+1)+(2f+1)^2$            & Byzantine 				     \\ \hline
+	MinBFT             & $\lfloor \frac{n-1}{2} \rfloor = f$ & $(f+1)^2$               & $2(f+1)+(f+1)^2$             & Byzantine 				     \\ \hline
+	FastBFT            & $\lfloor \frac{n-1}{2} \rfloor = f$ & $(f+1)^2$               & $4(f+1)$                     & Byzantine 				     \\ \hline
+	Chandra-Toueg      & $\lfloor \frac{n-1}{2} \rfloor = f$ &                         & $4(f+1)+(f+1)^2$             & Crash                         \\ \hline
+	Multi-Paxos        & $\lfloor \frac{n-1}{2} \rfloor = f$ &                         & $\sim3(f+1)$ to $\sim5(f+1)$ & Crash                         \\ \hline
+	Raft               & $\lfloor \frac{n-1}{2} \rfloor = f$ & $2(f+1)$                & $2(f+1)$                     & Crash                         \\ \hline
+	\end{tabular}}
+	\caption{Comparison of different consensus algorithms}
+	\label{tab:comparison-consensus-algorithms}
+	\end{table}
 
 	% \subsection{Network topology}
 	% Due to the algorithm not requiring the executioner of an event to have the global state of the workflow at the time of execution, any state changes are only propagated to the relevant parties.
