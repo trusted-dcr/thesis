@@ -823,9 +823,9 @@
 	\hline
 	\#         & Fault tolerance (Availability)             & Fault tolerance (Safety) & Fault tolerance (Data loss) & Crash recovery (messages) & Message complexity for executing $e$ (Best case) & Concurrency                 & Request Bottleneck    \\ \hline
 	\textit{1} & $0$                                        & $n$                      & $0$                         & n/a                       & $2 = O(k)$                                       & $\leq$ Dynamic independence & $L$ \\ \hline
-	\textit{2} & $\lfloor \frac{(n-1)}{2} \rfloor$          & $n$                      & $n-1$                       & $n^2$                     & $2\cdot\lfloor\frac{(n-1)}{2}\rfloor =O(n)$      & $\leq$ Dynamic independence & $L$ \\ \hline
-	\textit{3} & $\lfloor \frac{(m-1)}{2} \rfloor$ (partly) & $n$                      & $m-1$                       & $n^2$                     & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor =O(m)$      & Dynamic independence        & $L$ \\ \hline
-	\textit{4} & $\lfloor \frac{(m-1)}{2} \rfloor$ (partly) & $n$                      & $m-1$                       & $m^2$                     & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor =O(m)$      & Dynamic independence        & $L\cdot \frac{n}{m}$ \\ \hline
+	\textit{2} & $\lfloor \frac{(n-1)}{2} \rfloor$          & $n$                      & $n-1$                       & $O(n)$                     & $2\cdot\lfloor\frac{(n-1)}{2}\rfloor =O(n)$      & $\leq$ Dynamic independence & $L$ \\ \hline
+	\textit{3} & $\lfloor \frac{(m-1)}{2} \rfloor$ (partly) & $n$                      & $m-1$                       & $O(n^2)$                     & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor =O(m)$      & Dynamic independence        & $L$ \\ \hline
+	\textit{4} & $\lfloor \frac{(m-1)}{2} \rfloor$ (partly) & $n$                      & $m-1$                       & $O(m)$                     & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor =O(m)$      & Dynamic independence        & $L\cdot \frac{n}{m}$ \\ \hline
 	\textit{5} & $0$ (partly)                               & $n$                      & $0$                         & n/a                       & $2\cdot D_{dyn}(G,e) =O(D_{dyn}(G,e))$           & Dynamic independence        & $L\cdot n$ \\ \hline
 	\end{tabular}}
 	\caption{Comparison of different approaches.
@@ -843,7 +843,7 @@
 	Approach number \textit{1} is a simple central server algorithm. 
 	There is a single leader, $L$, each of the other peers replicate some subset of $E$ and can redirect requests to the leader. 
 	When the leader receives a request, it is queued in the order they are received in, and applied to $G$ in that order.
-	After an execution of an event $e$, each of the peers replicating $e$ and $e$'s dynamic dependency set is informed by $L$ of that execution, with a monotonic counter value that enables ordering of the events' execution.
+	After an execution of an event $e$, each of the peers replicating $e$ or an event in $E_{eff}(G,e)$ is informed by $L$ of that execution, with a monotonic counter value that enables ordering of the events' execution.
 	This ensures safety, since each of the peers will apply the executions in the same order as $L$.
 	Since every request is managed by a single leader, we are automatically given DCR linearisability and dependence synchronisation, since the executions can be totally ordered. 
 	However, this solution does not ensure any concurrency, since $L$ needs to apply each previous execution before the next.
@@ -855,8 +855,8 @@
 	This is a classic SMR/consensus solution with crash fault tolerance.
 	There are several protocols that fits this description, for instance in~\cite{bracha_asynchronous_1985,lamport_part-time_1998,lamport_lower_2006,ongaro_search_2014}, but for the purposes of this comparison, an abstract solution that utilizes a leader, $L$, to achieve an optimal crash fault tolerance of $f = \lfloor \frac{(n-1)}{2} \rfloor$ is enough.
 	In this approach, every peer must replicate all events, as all executions must be committed to at least $f+1$ replicas.
-	This ensures that if a leader dies, a new leader can be chosen (using $O(n^2)$ messages), which gives us the aforementioned fault tolerance.
-	However, now $L$ must synchronise all request, to ensure that they are applied in the same order by all replicas, which translates to no DCR concurrency
+	This ensures that if a leader dies, a new leader can be chosen (using $O(n)$ messages), which gives us the aforementioned fault tolerance.
+	However, now $L$ must synchronise all request, to ensure that they are applied in the same order by all replicas, which translates to no DCR concurrency.
 	Some SMR protocols (e.g.~\cite{castro_practical_1999}) allow for concurrent request commits, under the constraint that requests that are committed must not be applied to the underlying state machine before any uncommitted request that happened-before on $L$.
 	This constraint could be relaxed to allow for applying the execution of $e$ when the request has committed, if the peer is aware of which events is in the previous uncommitted execution requests, and none of these events are in $D_{dyn}(e)$.
 	Because the peer needs to know the previous uncommitted requests, this results in worse concurrency than dynamic independence.
@@ -865,28 +865,31 @@
 	Approach number \textit{3} is an attempt to reduce the amount of messages needed for executing an event.
 	The basic idea is to distribute the event responsibility out to a subset of peers, which will then only be responsible for that event.
 	We name these subsets \textit{clusters} and denote the size of these clusters $m$. 
-	The system still utilizes a single leader, which synchronises all requests.
-	When event $e$ is requested executed, the leader runs an SMR algorithm similar to the one described in approach \textit{2}, but only with cluster for $e$, and the clusters of $E_{eff}(G,e)$ -- to ensure that the clusters of $E_{eff}(G,e)$ has updated the state/enabledness of the events they are responsible for.
+	The system still utilizes a single leader, which synchronises the requests.
+	When event $e$ is requested executed, the leader runs an SMR algorithm similar to the one described in approach \textit{2}, but only with the cluster for $e$, and the clusters of $E_{eff}(G,e)$ -- to ensure that the clusters of $E_{eff}(G,e)$ has updated the state/enabledness of the events they are responsible for.
 	This ensures a lesser message complexity than approach \textit{2}, given $n > m * (|E_{eff}(G,e)|+1)$.
-	Notice that $n = m \cdot v \geq m * (|E_{eff}(G,e)|+1)$).
-	$L$ must still synchronise all requests, and worse, cannot allow for concurrent request commits, since the peers would not necessarily be able to recreate the synchronisation between these.
-	The one exception is dynamically independent events, since the order of these does not matter.
+	Notice that $\forall e. n = m \cdot v \geq m * (|E_{eff}(G,e)|+1)$).
 	Another improvement is the fact that if more than half of a cluster crashes, only part of the availability is effected, since the statically independent clusters can continue operating normally.
+	However, $L$ must still synchronise all requests, and worse, cannot allow for concurrent request commits, since the peers would not necessarily be able to recreate the synchronisation between these.
+	The one exception is dynamically independent events, since the order of these does not matter.
+	Under leader crashes, all clusters need to synchronise their logs, which requires $O(n^2)$ messages.
 	There is an argument that one could simply reduce $n$ in approach \textit{2} to achieve the exact same message complexity.
 	While this is true for a system where we control the number of peers, it does not hold in system where the number of initial peers are constant (e.g. a system where all participants in a large DCR graph requires to be in control of some constant amount of peers), or systems where the peers independently join the network (in which case we do not control the number of peers).
 
 	Approach number \textit{4} is our chosen approach, and we will go into detail with it below.
 	Suffice it to say that it is build upon approach number \textit{3}, except that the strong common leader is replaced with inter-cluster synchronisation using locks.
-	This has the benefit that even if a leader dies, the recovery has message complexity $m^2$ (instead of $O(n^2)$), and the number of concurrent client requests are no longer bounded by the speed of a single process.
+	This has the benefit that even if a leader dies, the recovery has message complexity $O(m)$ (instead of $O(n^2)$ in approach \textit{3} and $O(n)$ in approach \textit{2}), and the number of concurrent client requests are no longer bounded by the speed of a single process.
 
 	Approach number \textit{5} is heavily inspired by~\cite{hildebrandt_safe_2011}.
 	In it $n = v$, and each peer has responsibility for only a single event.
 	There is no leader, and an execution is done through synchronisation between peers.
 	I.e. if event $e$ is to be executed, the responsible peer will use a synchronisation technique (e.g. 2 phase locking) with all the peers responsible for the events in $E_{eff}(G,e)$, who will update their state accordingly.
 	This guarantees DCR linearisability and dependence synchronisation. 
-	The fault tolerance of this approach is quite bad, as any peer crashing will result in a data loss, and effect availability, even though it has the same property as approach \textit{3} and \textit{4} of not effecting the events in $I_stat\{e\}$
+	The fault tolerance of this approach is quite bad, as any peer crashing will result in a data loss, and effect availability, even though it has the same property as approach \textit{3} and \textit{4} of not effecting the events in $I_{stat}\{e\}$
 
 	From here on in, we will primarily concern ourselves with the details of approach \textit{4}:
+
+	\subsection{Algorithm}
 
 	To avoid the high number of messages associated with a fully replicated system and the message bottleneck associated with a single-leader system, we propose a multi-leader, partial state system.
 	Each event is represented by a leader, who can initiate execution of that event at any given time.
@@ -989,11 +992,11 @@
 	\makebox[\textwidth][c]{\begin{tabular}{|l|p{1.7cm}|p{1.5cm}|l|p{1.7cm}|}
 	\hline
 	\textbf{Algorithm} & \textbf{Fault tolerance (liveness)} & \textbf{Crash recovery} & \textbf{Messages/execution}  & \textbf{Fault type tolerance} \\ \hline
-	PBFT               & $\lfloor \frac{n-1}{3} \rfloor = f$ & $2(2f+1)$               & $(2f+1)+(2f+1)^2$            & Byzantine 				     \\ \hline
+	PBFT               & $\lfloor \frac{n-1}{3} \rfloor = f$ & $(2f+1)^2$              & $(2f+1)+(2f+1)^2$            & Byzantine 				     \\ \hline
 	MinBFT             & $\lfloor \frac{n-1}{2} \rfloor = f$ & $(f+1)^2$               & $2(f+1)+(f+1)^2$             & Byzantine 				     \\ \hline
 	FastBFT            & $\lfloor \frac{n-1}{2} \rfloor = f$ & $(f+1)^2$               & $4(f+1)$                     & Byzantine 				     \\ \hline
-	Chandra-Toueg      & $\lfloor \frac{n-1}{2} \rfloor = f$ &                         & $4(f+1)+(f+1)^2$             & Crash                         \\ \hline
-	Multi-Paxos        & $\lfloor \frac{n-1}{2} \rfloor = f$ &                         & $\sim3(f+1)$ to $\sim5(f+1)$ & Crash                         \\ \hline
+	Chandra-Toueg      & $\lfloor \frac{n-1}{2} \rfloor = f$ & $0$                     & $4(f+1)+(f+1)^2$             & Crash                         \\ \hline
+	Paxos  			   & $\lfloor \frac{n-1}{2} \rfloor = f$ & $0$                     & $4(f+1) + 2$                 & Crash                         \\ \hline
 	Raft               & $\lfloor \frac{n-1}{2} \rfloor = f$ & $2(f+1)$                & $2(f+1)$                     & Crash                         \\ \hline
 	\end{tabular}}
 	\caption{Comparison of different consensus algorithms}
