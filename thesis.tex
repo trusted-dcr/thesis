@@ -941,21 +941,25 @@
 		\item[Out-neighbourhood] denoted $N_{out}(v)$ and defined as the set of relations targeting the event $v$.
 		\item[In-neighbourhood] denoted $N_{in}(v)$ and defined as the set of relations originating from the event $v$.
 	\end{description}
-	For all definitions of neighbourhoods, we denote it as closed or open, if it includes the event $v$ or not, respectfully. \\
+	% For all definitions of neighbourhoods, we denote it as closed or open, if it includes the event $v$ or not, respectfully. \\
 		
 	In a graph, $G(E,V)$, we define the set of locked events, $L$, on the execution of an event, $v$, as $L(v)$.
-	As DCR only allows the execution of an activity to affect events in the neighbourhood, and that neighbourhoods neighbourhood, of the executing event, locking need only be performed within this set.
-	Locking can be performed on the entirety of $L(v)\ =\ N(N(v))\ \cup\ N(v)\ \cup\ v$ on the execution of $v$, guaranteeing synchronization in the case of competing event executions.
-	However, since locking two neighbourhoods actually gives a range of four, locking some subset could be just as correct and more efficient.
+	As the way DCR propogates changes from an execution by relations and one execution can not set any other than the executed event to executed, the locking semantics must adhere to the rules of the relations.
+	Consider an event, \texttt{A}, which has only constraints originating from it.
+	Since constraints can not modify states, there is no need for \texttt{A} to lock any other event than itself.
 
 	\begin{figure}[ht!] 
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/race-condition.pdf}
-		\caption{Graph illustrating the need for locking within $N_{out}(v)$.}
+		\caption{Graph illustrating the need for locking effects in $N_{out}(v)$.}
 		\label{fig:race-condition}
 	\end{figure}
 
-	In the graph shown in figure \ref{fig:race-condition} it is shown that at least part of the locking set has to be $N_{out}(v)$ so as to avoid a race condition in this case.
+	If \texttt{A} has effects originating from it, the need for synchronization arises as shown in \ref{fig:race-condition}.
+	In the graph events \texttt{A} and \texttt{B} both modify the same states and a race condition might arise if they are not synchronized.
+	This means that events with effects targeting events within $N_{out}(v)$, where $v$ is the event being executed, need to lock the targeted events.
+
+	Since effects can modify events which in turn have constraints originating from it, there are situations where locking in the neighbourhood of the executed event is no longer sufficient.
 
 	\begin{figure}[ht!] 
 		\center
@@ -964,7 +968,19 @@
 		\label{fig:second-degree-effect}
 	\end{figure}
 
-	In the graph shown in figure \ref{fig:second-degree-effect} it is shown that the locking set has to include either $N_{out}(N_{out}(v))$ or $N_{in}(v) \cup N_{out}(v)$, in order to prevent the graph from ending in a state where both \texttt{A} and \texttt{B} has been executed, which should be impossible due to the execution of either including a condition on the other.
+	In the graph shown in figure \ref{fig:second-degree-effect} it is shown that the locking set has to include either $N_{out}(N_{out}(v))$ or $N_{in}(v) \cup N_{out}(v)$, in order to prevent the graph from ending in a state where both \texttt{A} and \texttt{B} have been executed, which should be impossible due to the execution of either including a condition on the other.
+	In this case, the two locking methods have the same results and as no strong argument for one over the other can be formed from this basis, the simplest method is chosen, namely the locking scheme of $N_{out}(N_{out}(v))$.
+
+	Summarized we have the following cases where locking must occur:
+	\begin{description}
+		\item[Effect] Consider a graph of two events: \ev{A} and \ev{B}, with an effect originating from \texttt{A}, targeting \texttt{B}. 
+		If \texttt{A} is executed, \texttt{B} must first be locked.
+		\item[Effect-Condition] Consider a graph of three events: \ev{A}, \ev{B} and \ev{C}, with an effect originating from \texttt{A}, targeting \texttt{B} and a constraint originating from \texttt{B}, targeting \texttt{C}. 
+		If \texttt{A} is executed, \texttt{B} and \texttt{C} must first be locked.
+	\end{description}
+
+	Given these two rules, all cases where locking is needed is covered.
+	However there are special cases where locking can be omitted, due to the actual effect of the an effect-relation, for example when executing an event which includes another event that is already included.
 
 	\begin{figure}[ht!] 
 		\center
@@ -974,8 +990,8 @@
 	\end{figure}
 
 	In the graph shown in figure \ref{fig:second-degree-no-effect} an execution of \texttt{A} no longer has an effect on the enabledness of \texttt{B}, as \texttt{C} has the same state before and after the execution of \texttt{A}.
-	If the locking scheme of $L(v) = N_{in}(v) \cup N_{out}(v) \cup v$ is applied, this has no effect, but if the locking scheme of $L(v) = N_{out}(N_{out}(v)) \cup N_{out}(v) \cup v$ is used, the lock on \texttt{B} can be foregone.
-	This optimization is, however, only possible when the state of \texttt{C} is known and since locking is only performed forwards, there is no implicit way to propagate executions backwards.
+	An argument can be made here for the chosen locking scheme over $N_{in}(v) \cup N_{out}(v)$, as it allows for optimizations in that \texttt{B} strictly does not need to be locked.
+	This optimization is only possible when the state of \texttt{C} is known and since locking is only performed forwards, there is no implicit way to propagate executions backwards.
 	This means that \texttt{A} does not know the state of \texttt{C} on execution and would have to do one of two options when executing:
 	\begin{itemize}
 		\item \texttt{A} sends a locking message to \texttt{C}, telling it to lock \texttt{B} if necessary.
@@ -983,7 +999,10 @@
 	\end{itemize}
 	Both options result in the minimum amount of locks, but the first option has fewer messages, as it only results in two messages.
 	However, the first option has the disadvantage of potentially taking twice as long, assuming that transporting a message between \texttt{A} and \texttt{C} takes the same amount of time as between \texttt{A} and \texttt{B}.
-	These various advantages of different methods means that finding one optimal solution is not possible, as it is dependent on the specific workflow and the topology of the network at a given time. 
+	An additional consideration, incidentally with the same trade-ofs, is locking each individual event in lexicographical order, thereby minimizing the number of locks which have to be aborted, if leader collsion occurs.
+	Both of these solutions aim to maximize concurrency, but at the cost of messages and round-trips, which could in practice be very time consuming.
+
+	% Decision
 
 	\subsection{Cluster Consensus}
 	\begin{table}[ht!]
