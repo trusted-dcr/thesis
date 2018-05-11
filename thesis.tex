@@ -910,27 +910,7 @@
 	Additionally, it is useful to know the entire state of the graph, when evaluating whether or not the graph has served its purpose.
 	For these reasons, we present a simple method of collecting the global state of a DCR graph in the subsection | \textbf{Global State Collection}.
 
-	% The second problem is closely related as consensus must be achieved on which peer holds which lock:
-	% \begin{description}
-	%   \item[Consensus] In extension to preventing simultaneous incompatible executions, locking has pushed the issue of concurrency into the locking portion, which now needs to be handled in the sense that peers must agree on who holds the locks.
-	%   Existing solutions to this problem, such as BFT algorithms and State Machine Replication Algorithms could be applied here, if each peer is responsible for the entirety of the graph.
-	%   However, as those algorithms they are typically quite costly, as discussed earlier, they do not live up to the requirements specified in this thesis.
-	% \end{description}
-	
-	% With solutions to the problems of locking and consensus, peers are able to progress the graph, but since they will not necessarily be aware of the state of the graph, they would have to aggressively push for an execution for it to possibly happen.
-	% This brings us to the problem of obtaining the global state of the graph:
-	% \begin{description}       
-	%   \item[Global state collection] Each peer must be able to, at any time, collect a global state of the graph, with the guarantee that that global state will never be invalidated by a global state collected in the future.
-	% \end{description}
-
-	% As this is a decentralized peer-to-peer network solution, two key points also have to be considered:
-	% \begin{description}
-	%   \item[Network topology] As the weakest point of the graph will be the event with the fewest peers responsible for it, some consideration must be given to what, if any, events are to be prioritized.
-	%   Otherwise some distribution must be specified.
-	%   \item[Peer distribution] As events only lock other events in the vicinity, something could be gained, performance-wise, by distributing the events such that they are responsible for events that would typically be locked during the same execution.
-	% \end{description}
-
-	\subsection{Event Locking} % Missing a conclusion: When do we lock what? We have only described cases but not what our locking algorithm is.
+	\subsection{Event Locking}
 	\label{subsec:locking}
 	As discussed in section \ref{sec:analysis}, the execution of non-independent events must be synchronised.
 	This is achieved through locking of individual events.
@@ -941,7 +921,6 @@
 		\item[Out-neighbourhood] denoted $N_{out}(v)$ and defined as the set of relations targeting the event $v$.
 		\item[In-neighbourhood] denoted $N_{in}(v)$ and defined as the set of relations originating from the event $v$.
 	\end{description}
-	% For all definitions of neighbourhoods, we denote it as closed or open, if it includes the event $v$ or not, respectfully. \\
 		
 	In a graph, $G(E,V)$, we define the set of locked events, $L$, on the execution of an event, $v$, as $L(v)$.
 	As the way DCR propogates changes from an execution by relations and one execution can not set any other than the executed event to executed, the locking semantics must adhere to the rules of the relations.
@@ -1021,29 +1000,6 @@
 	\label{tab:comparison-consensus-algorithms}
 	\end{table}
 
-	% \subsection{Network topology}
-	% Due to the algorithm not requiring the executioner of an event to have the global state of the workflow at the time of execution, any state changes are only propagated to the relevant parties.
-	% This means that any single crash could potentially make collecting the global state, or history of executions, impossible, as the localized state of the crashed peer would be lost.
-	% To make the system more tolerant to crashes, the state of each event is tracked by a number of peers.
-	% This means that all locks need to be made on a subsystem rather than a single peer.
-	% As this lock needs to prevent others from locking simultaneously, $\dfrac{m}{2} +1$ locks are required for each peer, where $m$ is the number of peers tracking the state of that event.
-
-	% \subsubsection{Peer distribution}
-	% Given that the relations of a workflow are fixed at creation, the peers can be distributed efficiently by assigning events frequently locked simultaneously to the same peers.
-	% This can be accomplished by the following steps:
-	% \begin{itemize}
-	%   \item Each event is assigned a set of peers, called the primaries of that event, containing at least one peer.
-	%   \item The primaries of each event are added to each event on which the execution of the event tracked by the primaries could incur a lock. The peers added this way are called secondaries for that event.
-	% \end{itemize}
-
-	% The peer-to-peer network is then configured in such a way that each peer is a neighbour to any peer which tracks the same events.
-	% This means that the execution of an event can be performed by a primary, by that primary attempting to lock all of its neighbours and checking whether or not the acquired locks are sufficient in order to perform the execution, meaning that the set of locked peers forms a quorum for each event requiring a lock.
-
-	% Crash recovery
-
-	% \subsection{Message composition}
-	% In order to reduce the amount of messages needed in the system, the locking of an event can incorporate. 
-
 	\subsection{Global state collection}
 	Because of the way that changes are propagated through the network, at no point can the state of the entire workflow be ascertained.
 	Both as documentation of the process at deprecation of the workflow and during the life cycle of the workflow, the global state is relevant.
@@ -1106,6 +1062,31 @@
 
 	\section{Conclusion}
 
+	\subsection{Future Works}
+
+	% \subsection{Network topology}
+	% Due to the algorithm not requiring the executioner of an event to have the global state of the workflow at the time of execution, any state changes are only propagated to the relevant parties.
+	% This means that any single crash could potentially make collecting the global state, or history of executions, impossible, as the localized state of the crashed peer would be lost.
+	% To make the system more tolerant to crashes, the state of each event is tracked by a number of peers.
+	% This means that all locks need to be made on a subsystem rather than a single peer.
+	% As this lock needs to prevent others from locking simultaneously, $\dfrac{m}{2} +1$ locks are required for each peer, where $m$ is the number of peers tracking the state of that event.
+
+	% \subsubsection{Peer distribution}
+	% Given that the relations of a workflow are fixed at creation, the peers can be distributed efficiently by assigning events frequently locked simultaneously to the same peers.
+	% This can be accomplished by the following steps:
+	% \begin{itemize}
+	%   \item Each event is assigned a set of peers, called the primaries of that event, containing at least one peer.
+	%   \item The primaries of each event are added to each event on which the execution of the event tracked by the primaries could incur a lock. The peers added this way are called secondaries for that event.
+	% \end{itemize}
+
+	% The peer-to-peer network is then configured in such a way that each peer is a neighbour to any peer which tracks the same events.
+	% This means that the execution of an event can be performed by a primary, by that primary attempting to lock all of its neighbours and checking whether or not the acquired locks are sufficient in order to perform the execution, meaning that the set of locked peers forms a quorum for each event requiring a lock.
+
+	% Crash recovery
+
+	% \subsection{Message composition}
+	% In order to reduce the amount of messages needed in the system, the locking of an event can incorporate. 
+
 	\newpage
 	\bibliography{bibliography}{}
 	\bibliographystyle{plain}
@@ -1113,6 +1094,5 @@
 	\newpage
 
 	\appendix
-	% \section{Code}
 
 \end{document}
