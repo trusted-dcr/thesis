@@ -11,6 +11,10 @@
 \usepackage{xstring}
 \usepackage{cite}
 \usepackage{placeins}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{bold-extra}
+\usepackage{amssymb}
 
 \include{dcr-preamble}
 
@@ -33,9 +37,32 @@
 
 % C++ command
 \newcommand\cpp{C\nolinebreak[4]\hspace{-.05em}\raisebox{.4ex}{\relsize{-1}{\textbf{++}}}}
+\newcommand{\STATE}[1]{\texttt{#1}}
+\newcommand{\MSG}[1]{\langle{#1}\rangle}
+\newcommand{\REQ}[1]{\overrightarrow{#1}}
+\newcommand{\RSP}[1]{\overleftarrow{#1}}
+\newcommand{\COMMAND}{\texttt{COMMAND}}
+\newcommand{\APPEND}{\texttt{APPEND}}
+\newcommand{\CAMPAIGN}{\texttt{CAMPAIGN}}
+
+
 
 \begin{document}
 \sloppy
+
+\lstset{                       
+  captionpos=b
+ }
+
+\lstdefinestyle{pseudo}{
+  mathescape=true,
+  morekeywords={function, send, to, receive, from, broadcast, unreceive, timeout, match, with, when, and, or, if, else},
+  morecomment=[l]{//},
+  keepspaces=true,
+  basicstyle=\small\ttfamily,
+  commentstyle=\color{darkgray},
+  keywordstyle=\color{blue}\bfseries
+}
 
 \begin{titlepage}
 	\maketitle
@@ -1000,6 +1027,87 @@
 	\caption{Comparison of different consensus algorithms}
 	\label{tab:comparison-consensus-algorithms}
 	\end{table}
+	Each cluster requires a SMR/consensus algorithm to achieve consensus on the state of their shares event.
+	Table~\ref{tab:comparison-consensus-algorithms} shows a comparison between some classical SMR/consensus algorithms.
+	Notice that each of the crash tolerant algorithms can be made into byzantine resistant algorithms using the transformation from section~\ref{sec:transforming-byzantine-faults}\footnote{MinBFT and FastBFT already uses TEE elements, which is why they can offer better fault tolerance than $3f+1$ under byzantine errors.}.
+	We have chosen to use the \textit{Raft} algorithm from~\cite{ongaro_search_2014}, due to its relative simple implementation, and low message requirements for execution and crash recovery\footnote{Raft gives the same guarantees as \textit{Multi Paxos}~\cite{lamport_part-time_1998}, but due to the separation of leader elections and request commits, it has worse crash recovery and better commit message complexity.}.
+	Basic Raft is vulnerable to DDoS attack if two peers cannot receive messages from each other.
+	We have therefore extended the basic algorithm slightly, to protect against this vulnerability.
+	We have done so, since we assume byzantine errors on the SGX-transformed algorithm, which means that the byzantine errors can effect the channel-wrappers on each peers, and cause coordinated message omission.
+	The pseudo code for the extended Raft implementation can be viewed below.
+
+% 	\hrule
+% \begin{lstlisting}[style=pseudo,caption={},captionpos=b]
+% $\MSG{\REQ\COMMAND, tag, event, type}$
+% $\MSG{\RSP\COMMAND, tag, success, leader}$
+
+% $\MSG{\REQ\APPEND, t, prev_t, prev_i, commit_i, entries}$
+% $\MSG{\RSP\APPEND, term, prev_t, prev_i, success}$
+
+% $\MSG{\REQ\CAMPAIGN, t, prev_t, prev_i}$
+% $\MSG{\RSP\CAMPAIGN, term, t, success}$
+
+% \end{lstlisting}
+% \hrule
+\begin{lstlisting}[style=pseudo]
+$state \leftarrow \STATE{F}$
+$log \leftarrow \emptyset$
+
+$term \leftarrow 0$
+$index \leftarrow 0$
+$committed \leftarrow 0$
+$indices[1 \dots n] \leftarrow 0$ // define n as size of quorum
+
+$vote \leftarrow nil$
+$p_l \leftarrow nil$
+
+-- loop --
+receive $m$ from $p_s$ or time
+accept($m$)
+
+function accept($m$)
+  match $m$ with
+  // client commands
+  | $\MSG{\REQ\COMMAND, tag, \_, \_}$ when $state \ne \STATE{L}$ $\longrightarrow$
+    send $\MSG{\RSP\COMMAND, tag, false, p_l}$ to $p_s$
+  | $\MSG{\REQ\COMMAND, tag, event, type}$ $\longrightarrow$
+    $index \leftarrow index + 1$
+    $entry \leftarrow (term, index, event, type)$
+    $log \leftarrow log \cup \{entry\}$
+    broadcast $\MSG{\REQ\APPEND, term, index, \{entry\}}$
+
+  // peer surpassed our term
+  | $\MSG{\REQ\APPEND, t, \_, \_, \_, \_}$ when $t > term$ $\longrightarrow$
+    $state \leftarrow \STATE{F}$
+    $term \leftarrow t$
+    $p_l \leftarrow p_s$
+    accept($m$)
+  | $\MSG{\RSP\APPEND, t, \_, \_, \_}$ when $t > term$
+  | $\MSG{\REQ\CAMPAIGN, t, \_, \_}$ when $t > term$
+  | $\MSG{\RSP\CAMPAIGN, t, \_, \_}$ when $t > term$ $\longrightarrow$
+    $state \leftarrow \STATE{F}$
+    $term \leftarrow t$
+    accept($m$)
+
+  // leader is in old term or
+  // log mismatch during append
+  | $\MSG{\REQ\APPEND, t, prev_t, prev_i, \_, \_}$ when $t < term$
+  | $\MSG{\REQ\APPEND, \_, prev_t, prev_i, \_, \_}$ when $\nexists l \in log, l_{term} = prev_t \land l_{index} = prev_i$ $\longrightarrow$
+    send $\MSG{\RSP\APPEND, term, prev_t, prev_i, false}$ to $p_s$
+
+  // candidate is in old term
+  | $\MSG{\REQ\CAMPAIGN, t, \_, \_}$ when $t < term$ $\longrightarrow$
+    send $\MSG{\RSP\CAMPAIGN, term, t, false}$ to $p_s$
+
+  // remove mismatching entries from log
+  // and append new entries
+  | $\MSG{\REQ\APPEND, \_, prev_t, prev_i, c, entries}$ $\longrightarrow$
+    $log \leftarrow entries\cup \{l \in log | l_{term} \le prev_t \land l_{index} \le prev_i\}$
+    $committed \leftarrow c$
+    send $\MSG{\RSP\APPEND, term, prev_t, prev_i, true}$ to $p_s$
+
+\end{lstlisting}
+
 
 	\subsection{Global state collection}
 	Because of the way that changes are propagated through the network, at no point can the state of the entire workflow be ascertained.
