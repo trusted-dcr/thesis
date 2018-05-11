@@ -984,8 +984,6 @@
 	An additional consideration, incidentally with the same trade-ofs, is locking each individual event in lexicographical order, thereby minimizing the number of locks which have to be aborted, if leader collsion occurs.
 	Both of these solutions aim to maximize concurrency, but at the cost of messages and round-trips, which could in practice be very time consuming.
 
-	% Decision
-
 	\subsection{Cluster Consensus}
 	\begin{table}[ht!]
 	\centering
@@ -1015,17 +1013,20 @@
 	If a global state collection is started, originating at \texttt{A} after which \texttt{A} and then \texttt{B} is executed, the collection of the global state would return an empty sequence from \texttt{A} and a sequence of $\{\texttt{A}, \texttt{B}\}$ from \texttt{B}.
 	This means that the global state collected by this would be the sum of returned sequences: $\{\texttt{A}, \texttt{B}\}$
 
-	There are however situations where this is insufficient, as it is not always clear how to aggregate the returned sequences.
-	Consider the graph: $\ev{A} \erel \ev{B}, \ev{B} \crel \ev{C}, \ev{D} \irel \ev{B}$
-	On the first execution of \texttt{A}, \texttt{C} is notified, but since subsequent executions do not need to lock \texttt{C} due to \texttt{B} being unaffected by them, \texttt{C} will only be notified once.
-	If \texttt{D} is also executed after \texttt{A} has been executed, then it is unclear how a combined history of executions would look like, as there are multiple valid points in the sequence for the execution of \texttt{C}.
+	Any sequence returned from an event, is a valid sequence and therefore compatible with any other sequence returned from an event.
+	Each execution of an event is uniquely identifiable as part of the locking algorithm, as locks have to be distinguishable from one another.
 
-	The ordering of these messages can therefore not be trivially achieved.
-	To solve this, each event attaches the value of a monotonic counter\footnote{starting at 0} to each execution of that specific event.
-	This makes multiple executions of an event indistinguishable from one another and means that the ordering can be deterministically achieved and that only executions performed during a global state collection can possibly be in the resulting collected state.
+	\begin{figure}[ht!] 
+		\center
+		\includegraphics[scale=0.6]{figures/dcr-graphs/GlobalStateCollectionExample.pdf}
+		\caption{Example graph illustrating global state collection.}
+		\label{fig:global-state-collection-example}
+	\end{figure}
 
-	Even though the executions can be ordered at any given time, there is the possibility of this ordering changing depending on which peer attempts to collect the global state.
-	This is possible due to the locking system regarding some events to be concurrent (as described in REF), as the execution of those events have no competing locks.
+	From the graph shown in figure \ref{fig:global-state-collection-example}, the shown sequences are collected for each event.
+	As each of these sequences are valid, they can also be shown as a happened-before relationships REF, for example the execution sequence recorded by \texttt{B} could also be formulated as: $A_1 \rightarrow B_1, B_1 \rightarrow A_2, A_2 \rightarrow D_1, D_1 \rightarrow D_2$.
+	These relationships can be trivially aggregated to compile the global state of the graph, with the exception of situations where both $A_1 \rightarrow B_1$ and $B_1 \rightarrow A_1$ are present, meaning that \texttt{A} and \texttt{B} are independent.
+	This is in violation of traditional happened-before relationships as they have the properties of transitivity, irreflexivity and antisymmetry, whereas the legal execution sequences of DCR graphs have the properties of transitivity, reflexivity and symmetry, due to concurrent activities\footnote{It follows from if $A \rightarrow B$ and $B \rightarrow A$, then if transitivity holds then $A \rightarrow A$ and $B \rightarrow B$.}.
 
 	\section{Security analysis}
 	The following is a security analysis of the algorithm described in section~\ref{sec:analysis}.
