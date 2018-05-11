@@ -904,6 +904,12 @@
 	The reason for choosing Raft is that it is widely used commercially, relatively simple and able to achieve consensus in very few messages. % Mention synchronous and therefore applying SGX is straight-forward?
 	The consensus algorithm applied in the clusters is described in the subsection | \textbf{Cluster Consensus}.
 
+	With the two parts described above, the graph can now function, in the sense that events can be executed safely, but since each peer only knows the state of events which clusters it belongs to, what has transpired in the graph is implicitly distributed.
+	Since the algorithm does at this point guarantee that any event can only execute, when the semantics of the graph permits it, collecting the global state is only interesting from a documentation perspective.
+	Suppose that a node which is only a member of clusters of events which are never executed, that node will have no way of knowing if anything in the graph is being executed at all.
+	Additionally, it is useful to know the entire state of the graph, when evaluating whether or not the graph has served its purpose.
+	For these reasons, we present a simple method of collecting the global state of a DCR graph in the subsection | \textbf{Global State Collection}.
+
 	% The second problem is closely related as consensus must be achieved on which peer holds which lock:
 	% \begin{description}
 	%   \item[Consensus] In extension to preventing simultaneous incompatible executions, locking has pushed the issue of concurrency into the locking portion, which now needs to be handled in the sense that peers must agree on who holds the locks.
