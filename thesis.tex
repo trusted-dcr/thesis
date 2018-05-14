@@ -920,28 +920,30 @@
 
 	To avoid the high number of messages associated with a fully replicated system and the message bottleneck associated with a single-leader system, we propose a multi-leader, partial state system.
 	Each event is represented by a leader, who can initiate execution of that event at any given time.
-	Since events can affect each other and this system is in an asynchronous setting where messages can be delayed arbitrarily, having multiple leaders can potentially lead to situations where leaders disagree on which order events have been executed in, resulting in inconsistent states.
+	Since events can affect each other and this system is in an asynchronous setting where messages can be delayed arbitrarily, having multiple leaders can potentially lead to situations where leaders disagree on which order events have been executed in, possibly resulting in disagreement on the state of the workflow.
 	The issue of synchronizing the ordering of simultaneous and incompatible executions, across multiple leaders is solved with the locking of events.  
 	As locking is expensive both in regards to concurrency and the number of messages required, a minimal number of locks is desired.
 	Evaluating the need for locking is concerned with how far changes from an event execution can propagate, necessitating locking, and whether or not there are identifiable cases where locks can be spared.
-	A method of discerning which events need to be locked and when is described in the subsection | \textbf{Event Locking}.
+	A method of discerning which events need to be locked and when is described in subsection \ref{subsec:event-locking}.
 
 	Given a method of ordering event executions, ensuring that the system can sustain faults means that each event needs to not only be stored by a leader, but rather a number of peers, called a \textit{cluster}, one of which is the leader at any given time.
 	Clusters being responsible for events rather than single peers means that executions and locks need to be synchronized for each individual cluster.
-	Any consensus algorithm can be used to solve the problem of synchronizing executions and locks as it is completely detached from the locking mechanism and reduces to the problem of consensus.
+	Due to the fact that these clusters can be seen as completely individual networks of peers, any consensus algorithm can be used to solve the problem of synchronizing executions and locks as it is completely detached from the locking mechanism and reduces to the problem of consensus.
 	Choosing a consensus algorithm to manage the clusters is however still an important decision, as the wrong choice could form significant bottlenecks in the system.
-	For this implementation we have chosen Raft CITE, as the basis for the cluster consensus algorithm, with the addition of Intel SGX to reduce byzantine faults to crash-stop failures and an additional requirement with regards to leader election, to avoid deliberate crashes live-locking the network.
-	The reason for choosing Raft is that it is widely used commercially, relatively simple and able to achieve consensus in very few messages. % Mention synchronous and therefore applying SGX is straight-forward?
-	The consensus algorithm applied in the clusters is described in the subsection | \textbf{Cluster Consensus}.
+	For this implementation we have chosen Raft \cite{ongaro_search_2014}, as the basis for the cluster consensus algorithm, with the addition of Intel SGX to reduce byzantine faults to crash-stop failures and an additional requirement with regards to leader election, to avoid deliberate crashes live-locking the network.
+	The reason for choosing Raft is that it is widely used commercially, relatively simple and able to achieve consensus in very few messages.
+	Additionally Raft only handles crash faults and is therefore an ideal candidate for the transformation of byzantine faults to crashes, as described earlier in section \ref{sec:transforming-byzantine-faults}.
+	The consensus algorithm applied in the clusters is described in subsection \ref{subsec:cluster-consensus}.
 
-	With the two parts described above, the graph can now function, in the sense that events can be executed safely, but since each peer only knows the state of events which clusters it belongs to, what has transpired in the graph is implicitly distributed.
+	With the two parts described above, the graph can now progress, in the sense that events can be executed safely, but since each peer only knows the state of events which clusters it belongs to, what has transpired in the graph is implicitly distributed.
 	Since the algorithm does at this point guarantee that any event can only execute, when the semantics of the graph permits it, collecting the global state is only interesting from a documentation perspective.
 	Suppose that a node which is only a member of clusters of events which are never executed, that node will have no way of knowing if anything in the graph is being executed at all.
 	Additionally, it is useful to know the entire state of the graph, when evaluating whether or not the graph has served its purpose.
-	For these reasons, we present a simple method of collecting the global state of a DCR graph in the subsection | \textbf{Global State Collection}.
+	For these reasons, we present a simple method of collecting the global state of a DCR graph in subsection \ref{subsec:global-state-collection}.
 
 	\subsection{Event Locking}
-	\label{subsec:locking}
+	\label{subsec:event-locking}
+
 	As discussed in section \ref{sec:analysis}, the execution of non-independent events must be synchronised.
 	This is achieved through locking of individual events.
 
@@ -1012,6 +1014,8 @@
 	Both of these solutions aim to maximize concurrency, but at the cost of messages and round-trips, which could in practice be very time consuming.
 
 	\subsection{Cluster Consensus}
+	\label{subsec:cluster-consensus}
+
 	\begin{table}[ht!]
 	\centering
 	\makebox[\textwidth][c]{\begin{tabular}{|l|p{1.7cm}|p{1.5cm}|l|p{1.7cm}|}
@@ -1110,6 +1114,8 @@ function accept($m$)
 
 
 	\subsection{Global state collection}
+	\label{subsec:global-state-collection}
+
 	Because of the way that changes are propagated through the network, at no point can the state of the entire workflow be ascertained.
 	Both as documentation of the process at deprecation of the workflow and during the life cycle of the workflow, the global state is relevant.
 	This means that there needs to be some method of collecting the state at any given time.
