@@ -207,8 +207,6 @@
 				\end{description}
 			\end{description}
 
-
-
 			\subsubsection{Enabledness}
 			Since the properties of DCR graphs described so far all affect whether or not a given event can be executed or not, we use the notion of enabledness to describe the sum of these properties.
 			An event which can be executed, meaning it is included and any milestones or conditions targeting it are rendered invalid by the state of the relevant events, it is said to be enabled.
@@ -232,6 +230,8 @@
 			If, in a given state of $G$, an event $e$ changes state or enabledness if event $e'$ is executed, we say that $e$ is in $e'$s \textit{effecting event set}, denoted $E_{eff}(G,e')$. 
 
 			\subsubsection{Concurrency}
+			\label{subsubsec:concurrency}
+
 			The notion of concurrency in DCR graphs, described in~\cite{debois_concurrency_2015}, is the property a pair of events is said to have when the graph allows those events to be executed in either order with the same resulting state in graph.
 
 			More formally, given a graph, $G$, and two events $e_1, e_2$ in $G$, we say that $e_1$ and $e_2$ are concurrent if $E(E(G, e_1),e_2)=E(E(G, e_2),e_1)$.
@@ -245,7 +245,8 @@
 				We say that an event, $e$, has a \textit{dynamic independence set}, $I_{dyn}(G,e)$, such that $e' \in I_{dyn}(G,e)$ iff. $e$ and $e'$ are dynamically independent in graph state $G$.
 				Likewise an event, $e$, has a \textit{dynamic dependence set}, $D_{dyn}(G,e) = E \setminus I_{dyn}(G,e)$.
 
-				Notice that the dynamic dependence set is closely related to effecting event set of an event s.t. $e' \in D_{dyn}(G,e) \implies e \in E_{eff}(G,e') \lor e' \in E_{eff}(G,e)$, i.e.  if $e'$ is in the dynamically dependence set of $e$ then then either the execution of $e$ changes the state or the enabledness of $e'$, or the execution of $e'$ changes he state or the enabledness of $e$.
+				Notice that the dynamic dependence set is closely related to effecting event set of an event s.t. $e' \in D_{dyn}(G,e) \implies e \in E_{eff}(G,e') \lor e' \in E_{eff}(G,e)$, i.e.  if $e'$ is in the dynamically dependence set of $e$ then then either the execution of $e$ changes the state or the enabledness of $e'$, or the execution of $e'$ changes the state or the enabledness of $e$.
+
 				\item[Static independence] means that two events, are dynamically independent in every \textit{reachable} state of the graph, where they are both enabled.
 				That is, $e_1$ and $e_2$ are statically independent in $G$, if they are dynamically independent in all states of $G$ that can be reached by a run. %explain run
 
@@ -485,7 +486,7 @@
 	A finite state machine consists of a current state, $s_{current}$, a finite set of $n$ distinct states, $S=\{s_1, s_2, \dots, s_n\}$, and a finite set of $m$ distinct state-transitions, $T$.
 	A finite state machine can only be in one state at any time, and transitions to another state by accepting a bit-string as input, and optionally outputs another bit-string. 
 	A transition has the form $(s_{from}, i, o, s_{to})$, where $i$ is an input consisting of a tuple of a bit-string and the channel the bit-string was received on, and $o$ is the output consisting of a set of bit-string/channel pair, each representing that bit-string being sent on the appertaining channel.
-	For example, the finite state machine in figure \ref{fig:simple-nfa} will transition from the starting state $s_0$ to $s_2$ on input $"010"$ from channel $c_0$, and will during the transition output $"101"$ to channel $c_1$ and $"100"$ to $c_2$.
+	For example, the finite state machine in Figure \ref{fig:simple-nfa} will transition from the starting state $s_0$ to $s_2$ on input $"010"$ from channel $c_0$, and will during the transition output $"101"$ to channel $c_1$ and $"100"$ to $c_2$.
 	
 	A channel can either be reliable or unreliable, and is bi-directional. 
 	A reliable channel guarantees that messages sent on it will be delivered, will be delivered in the order the messages was sent, and will not be changed during transmission.
@@ -507,7 +508,7 @@
 
 	A distributed protocol can experience a plethora of different errors. 
 	Apart from the channel faults already described, we will model crashes and byzantine faults, as these are the ones we are concerned about in this transformation.
-	We model a crash fault in the state machine by adding an empty input transition ("$\epsilon$") from every state to an error-state, which cannot transition to another state (see $s_{error}$ in figure \ref{fig:simple-nfa}).
+	We model a crash fault in the state machine by adding an empty input transition ("$\epsilon$") from every state to an error-state, which cannot transition to another state (see $s_{error}$ in Figure \ref{fig:simple-nfa}).
 	As the state machine will not be able to transition to another state, and thus also cannot output anything from this state, this serves to model a component crashing in distributed protocol.
 	We model a byzantine fault by exchanging a process with a new process.
 	This potentially includes the removal of state machines, the addition of state machines or the exchange of old state machine with new state machines with new current states and new channels (we will refer to this last case as \textit{corrupted} state machines).
@@ -701,7 +702,7 @@
 		\end{figure}
 		\FloatBarrier
 
-		The client state machine is quite simple, and is modelled in figure \ref{fig:CSME-client-NFA}.
+		The client state machine is quite simple, and is modelled in Figure \ref{fig:CSME-client-NFA}.
 		It can either not not have requested access to the critical section ($s_0$), wait for the token from the server ($s_1$), or have the token and be in the critical section ($s_2$). 
 		Naturally it can also crash ($s_{error}$).
 
@@ -954,10 +955,15 @@
 		\item[In-neighbourhood] denoted $N_{in}(v)$ and defined as the set of relations originating from the event $v$.
 	\end{description}
 		
+	In order to ensure that dynamically dependent events, as described in section \ref{subsubsec:concurrency}, can not be executed simultaneously locking is applied as a way of synchronizing attempts to execute.
 	In a graph, $G(E,V)$, we define the set of locked events, $L$, on the execution of an event, $v$, as $L(v)$.
-	As the way DCR propogates changes from an execution by relations and one execution can not set any other than the executed event to executed, the locking semantics must adhere to the rules of the relations.
-	Consider an event, \texttt{A}, which has only constraints originating from it.
-	Since constraints can not modify states, there is no need for \texttt{A} to lock any other event than itself.
+	As the way DCR propagates changes from an execution by relations and one execution can not set any other than the executed event to executed, the locking semantics must adhere to the rules of the relations.
+	Due to the semantics of DCR graphs, there is an advantage which can be leveraged with regards to when locking is needed.
+	Consider a graph consisting of two events with a condition between them: $\ev{A} \crel \ev{B}$
+	Events \texttt{A} and \texttt{B} are dynamically dependent, as executing first \texttt{A} and then \texttt{B} results in a different graph than executing first \texttt{B} and then \texttt{A}, since \texttt{B} cannot be executed in the latter case.
+	According to the goal of preventing dynamically dependent events from executing simultaneously, when event \texttt{A} is executing, event \texttt{B} must therefore be locked.
+	This is however unnecessary as it is impossible for event \texttt{B} to be executing before event \texttt{A} has been executed.
+	Both of the constraints share this property and since constraints furthermore do not modify states, there is no need for \texttt{A} to lock \texttt{B} or indeed for any event to lock events which it is targeting only with a constraint.
 
 	\begin{figure}[ht!] 
 		\center
@@ -966,7 +972,7 @@
 		\label{fig:race-condition}
 	\end{figure}
 
-	If \texttt{A} has effects originating from it, the need for synchronization arises as shown in \ref{fig:race-condition}.
+	If \texttt{A} has effects originating from it, the need for synchronization arises as shown in Figure \ref{fig:race-condition}.
 	In the graph events \texttt{A} and \texttt{B} both modify the same states and a race condition might arise if they are not synchronized.
 	This means that events with effects targeting events within $N_{out}(v)$, where $v$ is the event being executed, need to lock the targeted events.
 
@@ -979,7 +985,7 @@
 		\label{fig:second-degree-effect}
 	\end{figure}
 
-	In the graph shown in figure \ref{fig:second-degree-effect} it is shown that the locking set has to include either $N_{out}(N_{out}(v))$ or $N_{in}(v) \cup N_{out}(v)$, in order to prevent the graph from ending in a state where both \texttt{A} and \texttt{B} have been executed, which should be impossible due to the execution of either including a condition on the other.
+	In the graph shown in Figure \ref{fig:second-degree-effect} it is shown that the locking set has to include either $N_{out}(N_{out}(v))$ or $N_{in}(v) \cup N_{out}(v)$, in order to prevent the graph from ending in a state where both \texttt{A} and \texttt{B} have been executed, which should be impossible due to the execution of either including a condition on the other.
 	In this case, the two locking methods have the same results and as no strong argument for one over the other can be formed from this basis, the simplest method is chosen, namely the locking scheme of $N_{out}(N_{out}(v))$.
 
 	Summarized we have the following cases where locking must occur:
@@ -1000,7 +1006,7 @@
 		\label{fig:second-degree-no-effect}
 	\end{figure}
 
-	In the graph shown in figure \ref{fig:second-degree-no-effect} an execution of \texttt{A} no longer has an effect on the enabledness of \texttt{B}, as \texttt{C} has the same state before and after the execution of \texttt{A}.
+	In the graph shown in Figure \ref{fig:second-degree-no-effect} an execution of \texttt{A} no longer has an effect on the enabledness of \texttt{B}, as \texttt{C} has the same state before and after the execution of \texttt{A}.
 	An argument can be made here for the chosen locking scheme over $N_{in}(v) \cup N_{out}(v)$, as it allows for optimizations in that \texttt{B} strictly does not need to be locked.
 	This optimization is only possible when the state of \texttt{C} is known and since locking is only performed forwards, there is no implicit way to propagate executions backwards.
 	This means that \texttt{A} does not know the state of \texttt{C} on execution and would have to do one of two options when executing:
@@ -1010,7 +1016,7 @@
 	\end{itemize}
 	Both options result in the minimum amount of locks, but the first option has fewer messages, as it only results in two messages.
 	However, the first option has the disadvantage of potentially taking twice as long, assuming that transporting a message between \texttt{A} and \texttt{C} takes the same amount of time as between \texttt{A} and \texttt{B}.
-	An additional consideration, incidentally with the same trade-ofs, is locking each individual event in lexicographical order, thereby minimizing the number of locks which have to be aborted, if leader collsion occurs.
+	An additional consideration, incidentally with the same trade-offs, is locking each individual event in lexicographical order, thereby minimizing the number of locks which have to be aborted, if leader collsion occurs.
 	Both of these solutions aim to maximize concurrency, but at the cost of messages and round-trips, which could in practice be very time consuming.
 
 	\subsection{Cluster Consensus}
@@ -1137,7 +1143,7 @@ function accept($m$)
 		\label{fig:global-state-collection-example}
 	\end{figure}
 
-	From the graph shown in figure \ref{fig:global-state-collection-example}, the shown sequences are collected for each event.
+	From the graph shown in Figure \ref{fig:global-state-collection-example}, the shown sequences are collected for each event.
 	As each of these sequences are valid, they can also be shown as a happened-before relationships REF, for example the execution sequence recorded by \texttt{B} could also be formulated as: $A_1 \rightarrow B_1, B_1 \rightarrow A_2, A_2 \rightarrow D_1, D_1 \rightarrow D_2$.
 	These relationships can be trivially aggregated to compile the global state of the graph, with the exception of situations where both $A_1 \rightarrow B_1$ and $B_1 \rightarrow A_1$ are present, meaning that \texttt{A} and \texttt{B} are independent.
 	This is in violation of traditional happened-before relationships as they have the properties of transitivity, irreflexivity and antisymmetry, whereas the legal execution sequences of DCR graphs have the properties of transitivity, reflexivity and symmetry, due to concurrent activities\footnote{It follows from if $A \rightarrow B$ and $B \rightarrow A$, then if transitivity holds then $A \rightarrow A$ and $B \rightarrow B$.}.
