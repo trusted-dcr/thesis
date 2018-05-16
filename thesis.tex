@@ -859,8 +859,8 @@
 	\textit{1} & $0$                                        & $n$                      & $0$                         & n/a                       & $2$                                       		& $\leq$ Dynamic independence & $L$ \\ 
 	\textit{2} & $\lfloor \frac{(n-1)}{2} \rfloor$          & $n$                      & $n-1$                       & $O(n)$                    & $2\cdot\lfloor\frac{(n-1)}{2}\rfloor$     		& $\leq$ Dynamic independence & $L$ \\ 
 	\textit{3} & $\lfloor \frac{(m-1)}{2} \rfloor$ (partly) & $n$                      & $m-1$                       & $O(n^2)$                  & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor$     		& Dynamic independence        & $L$ \\ 
-	\textit{4} & $\lfloor \frac{(m-1)}{2} \rfloor$ (partly) & $n$                      & $m-1$                       & $O(m)$                    & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor$     		& Dynamic independence        & $L\cdot \frac{n}{m}$ \\ 
-	\textit{5} & $0$ (partly)                               & $n$                      & $0$                         & n/a                       & $2\cdot D_{dyn}(G,e)$           					& Dynamic independence        & $L\cdot n$ \\ 
+	\textit{4} & $0$ (partly)                               & $n$                      & $0$                         & n/a                       & $2\cdot D_{dyn}(G,e)$           					& Dynamic independence        & $L\cdot n$ \\ 
+	\textit{5} & $\lfloor \frac{(m-1)}{2} \rfloor$ (partly) & $n$                      & $m-1$                       & $O(m)$                    & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor$     		& Dynamic independence        & $L\cdot \frac{n}{m}$ \\ 
 	\bottomrule
 	\end{tabular}}
 	\caption{Comparison of different approaches.
@@ -875,6 +875,7 @@
 	We wish to create a system in which the state of an event is agreed upon in less that $O(n)$ messages (for sufficiently large and loosely connected graphs)\footnote{Trivially, a DCR graph with a single event must require $O(n)$ messages, as each peer must have responsibility for that event.} while maintaining fault tolerance, and enabling dynamic independence concurrency of event executions.
 	Table~\ref{tab:approcach-comparison} shows different approaches to solving the problem under these conditions in a stepwise fashion.
 	
+	\paragraph{Central server approach}
 	Approach number \textit{1} is a simple central server algorithm. 
 	There is a single leader, $L$, each of the other peers replicate some subset of $E$ and can redirect requests to the leader. 
 	When the leader receives a request, it is queued in the order they are received in, and applied to $G$ in that order.
@@ -886,6 +887,7 @@
 	When an execution request is received of an event that is dynamically dependent on one of the currently executing events, it is queued, and so is all other requests that are not in the approximate static independence set of all the currently executing and queued events.
 	Furthermore, there is no fault tolerance because under a leader crash, there is no guarantee that the remaining peers can recreate the last state.
 
+	\paragraph{SMR approach}
 	Approach number \textit{2} is an approach that tries to improve on the fault tolerance of approach number \textit{1}.
 	This is a classic SMR/consensus solution with crash fault tolerance.
 	There are several protocols that fits this description, for instance in~\cite{bracha_asynchronous_1985,lamport_part-time_1998,lamport_lower_2006,ongaro_search_2014}, but for the purposes of this comparison, an abstract solution that utilizes a leader, $L$, to achieve an optimal crash fault tolerance of $f = \lfloor \frac{(n-1)}{2} \rfloor$ is enough.
@@ -897,6 +899,7 @@
 	Because the peer needs to know the previous uncommitted requests, this results in worse concurrency than dynamic independence.
 	Furthermore, the solution still needs $O(n)$ messages to execute a single event, no matter how the graph is constructed.
 
+	\paragraph{Partial state, single leader approach}
 	Approach number \textit{3} is an attempt to reduce the amount of messages needed for executing an event.
 	The basic idea is to distribute the event responsibility out to a subset of peers, which will then only be responsible for that event.
 	We name these subsets \textit{clusters} and denote the size of these clusters $m$. 
@@ -911,18 +914,19 @@
 	There is an argument that one could simply reduce $n$ in approach \textit{2} to achieve the exact same message complexity.
 	While this is true for a system where we control the number of peers, it does not hold in system where the number of initial peers are constant (e.g. a system where all participants in a large DCR graph requires to be in control of some constant amount of peers), or systems where the peers independently join the network (in which case we do not control the number of peers).
 
-	Approach number \textit{4} is our chosen approach, and we will go into detail with it below.
-	Suffice it to say that it is build upon approach number \textit{3}, except that the strong common leader is replaced with inter-cluster synchronisation using locks.
-	This has the benefit that even if a leader dies, the recovery has message complexity $O(m)$ (instead of $O(n^2)$ in approach \textit{3} and $O(n)$ in approach \textit{2}), and the number of concurrent client requests are no longer bounded by the speed of a single process.
-
-	Approach number \textit{5} is heavily inspired by~\cite{hildebrandt_safe_2011}.
+	\paragraph{Complete distribution approach}
+	Approach number \textit{4} is heavily inspired by~\cite{hildebrandt_safe_2011}.
 	In it $n = v$, and each peer has responsibility for only a single event.
 	There is no leader, and an execution is done through synchronisation between peers.
 	I.e. if event $e$ is to be executed, the responsible peer will use a synchronisation technique (e.g. 2 phase locking) with all the peers responsible for the events in $E_{eff}(G,e)$, who will update their state accordingly.
 	This guarantees DCR linearisability and dependence synchronisation. 
-	The fault tolerance of this approach is quite bad, as any peer crashing will result in a data loss, and effect availability, even though it has the same property as approach \textit{3} and \textit{4} of not effecting the events in $I_{stat}\{e\}$
+	The fault tolerance of this approach is quite bad, as any peer crashing will result in a data loss, and effect availability, even though it has the same property as approach \textit{3} and \textit{5} of not effecting the events in $I_{stat}\{e\}$
 
-	From here on in, we will primarily concern ourselves with the details of approach \textit{4}:
+	\paragraph{Partial state, multi-leader approach}
+	Approach number \textit{5} is our chosen approach, and we will go into detail with it below.
+	Suffice it to say that it is build upon approach number \textit{3}, except that the strong common leader is replaced with inter-cluster synchronisation using locks.
+	This has the benefit that even if a leader dies, the recovery has message complexity $O(m)$ (instead of $O(n^2)$ in approach \textit{3} and $O(n)$ in approach \textit{2}), and the number of concurrent client requests are no longer bounded by the speed of a single process.
+	From here on in, we will primarily concern ourselves with the details of approach number \textit{5}:
 
 	\subsection{Algorithm}
 
