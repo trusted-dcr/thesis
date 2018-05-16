@@ -356,40 +356,41 @@
 		Relatively few solutions exists for the PSMR problem and the ones that do require a large amount of messages \cite{sousa_partial_2001}.
 		To the best of our knowledge, no solution to the PSMR problem using a trusted execution environment exists.
 
-		\subsection{Intel SGX}
+		\subsection{Intel Software Guard Extensions}
+		SGX is a TEE technology which includes a set of CPU instructions, that allows user-level code to define and run in protected areas of memory, so called \textit{enclaves}.
+		Only processes running in enclaves are allowed to access the SGX instructions.
+		Intel guarantees~\cite{intel_sgx} that any code run and data loaded in the enclaves is protected from access by any process running outside of the enclave.
+		More specifically, the guarantees encompass \textit{confidentiality}, only the process running in the enclave can read the contents of the enclave, and \textit{integrity}, only the process running in the enclave can modify the contents of the enclave.
+		These guarantees of the enclave comes at the expense of access to system calls, and by extension, hardware peripherals.
+		Any code running in an enclave is therefore unable to access, for instance, hard disks, network cards and the console.
+		As such, an enclave that requires system calls must have a so-called \textit{wrapper component} which is a non-enclave process that make calls to, and receive calls from enclaves processes.  
 
-		Intel SGX is a TEE technology which allows users to define protected areas of memory, so called \textit{enclaves}.
-		Intel guarantees~\cite{intel_sgx} that any code run and data loaded in the TEE is protected from access by any process running outside of the enclave.
-		More specifically, the guarantees encompass \textit{confidentiality}, i.e. no other process can read the data in the enclave, and \textit{integrity}, i.e. no other process can modify the data in the enclave. 
-		If the enclave contains secrets which the user wishes to keep, but still does not want to trust external processes with, the enclave can be sealed on disk, essentially encrypting it for later use.
-		This means that data can be stored and processed securely, with its security guaranteed by Intel, if done properly.
-		An additional feature of Intel SGX is that the result of any code run using Intel SGX can be verified by other users, given the code and the output.
-
-		This is all made possible by unique keys generated during manufacturing and permanently stored inside the fuse array of the processor.
-		Some of these keys are known by Intel for the system to be recognized when contacting Intel servers.
+		This is all made possible by a set of unique keys generated during manufacturing and permanently stored inside the so-called \textit{fuse array} of the processor -- an array of fuses that can be programmed once and then closed for further programming~\cite{robson_electrically_2007}.
+		Using these keys, an enclave process is able to identify if another process is an enclave process, using the process of \textit{local attestation}.
+		This process can be extended to identify if a process running on another processor is an enclave process, by contacting Intel's servers for verification of the other processor's key.
+		As such, some of the keys are known by Intel for the system to be recognized when contacting Intel servers.
 
 		In short, the major innovation in Intel SGX is the option of running hardware secured software, which enables tamper proof messages, where the sender can be verified as being a correct process.
-		This eases some of the inherent problems in consensus, as seen in~\cite{liu_scalable_2016} and~\cite{dhillon_hyperledger_2017}.
 
 			\subsubsection{Enclave}
 			\label{subsec:enclave}
-			What allows SGX enabled CPUs to provide these strong guarantees builds on the following two hardware details:
+			What allows SGX enabled CPUs to provide these strong guarantees of confidentiality and integrity builds on the following two hardware details:
 			\begin{description}
-				\item [Processor Reserved Memory (PRM)] is a sequential block of memory reserved for SGX, inaccessible from untrusted software and even hardware.
-				\item [Enclave mode] is a mode under which a logical processor gains access to the PRM.
+				\item [Processor Reserved Memory (PRM)] is a sequential block of memory reserved for SGX, only accessible through enclave CPU instructions.
+				\item [Enclave mode] is a mode under which a process gains access to the PRM.
 			\end{description}
 			Using these hardware facilities SGX defines the concept of an enclave.
-			An enclave is, as its name suggests, a software module isolated completely from the rest of the system.
+			An enclave is a software module which, as its name suggests, is isolated completely from the rest of the system.
 			Its memory is located solely in PRM, preventing access by other processes and enclaves running on the system. 
 			The PRM is protected from non-enclave processes by enclave mode. 
-			When a process is not in enclave mode and tries to access the PRM, the memory access is denied~\cite{costan_intel_2016}.      
+			When a process is not in enclave mode and tries to access the PRM, the memory access is denied by the processor~\cite{costan_intel_2016}.      
 			The PRM of an enclave process is protected from accesses by other processes in enclave mode by the SGX Enclave Control Structure (SECS). 
 			The SECS holds meta data about the enclave processes, and among this is a virtual-to-physical memory mapping called the Enclave Page Cache (EPC). 
 			Through the EPC an enclave's access to physical PRM is restricted to what has been allocated for the enclave-process~\cite{costan_intel_2016}.
 
 			While SGX provides powerful guarantees trough its enclave concept, it does not guarantee software correctness and will not protect against flawed software.
 			Instead SGX encourages developers to isolate a minimal piece of their software, the Trusted Computing Base (TCB), in a trusted enclave environment, and keep the remainder as traditional system processes~\cite{intel_sgx_guide}.
-			By minimizing the size of the TCB, and thus the amount of code one must trust, common security principles indicate that the chance of security flaws decreases~\cite{intel_sgx_guide}.
+			By minimizing the size of the TCB, and thus the amount of code one must trust, common security principles dictate that the chance of security flaws decreases~\cite{intel_sgx_guide}.
 
 			In order for an isolated enclave to be useful, communication between trusted and untrusted software is enabled through \textit{enclave calls} (ECALL) and \textit{out calls} (OCALL).
 			This interface must be defined at compile-time, specifying an API of ECALLs for the enclave as well as any untrusted services needed as OCALLs, in a \textit{EDL}-file~\cite{intel_sgx_guide}.
@@ -398,6 +399,7 @@
 			As an enclave under such circumstances would be vulnerable to tampering before initialization, SGX enforces a strict signature policy.
 			An enclave must include an \textit{Enclave Signature} containing \textbf{(a)} a hash of the code and initialization data of the enclave, \textbf{(b)} the author's public key and \textbf{(c)} an enclave version/product number.
 			During enclave initialization a hardware check is performed, ensuring the Enclave Signature matches the enclave binary loaded from the file system.
+			This signature identifies the enclave during the attestation process as well, so if an adversary were to tamper with an existing enclave binary, the contents would no longer match, and would not be allowed to be loaded by SGX, and if the adversary were to create their own enclave, the signature would no longer match, and would then be rejected if it tried to do attestation with another uncorrupted enclave.
 
 			Another powerful tool of an SGX enclave is the ability to read from and write data to an untrusted storage medium while ensuring confidentiality of its contents.
 			Such capabilities are needed as the PRM is volatile and will not persist after shutdown.
@@ -410,7 +412,7 @@
 			When loading enclave memory, Intel SGX's Memory Encryption Engine (MEE) decrypts the memory, and then performs an integrity check on the loaded memory.
 			If the integrity check does not pass, the processor drops the memory, and eventually locks itself for further operations (the \textit{drop-and-lock policy}), requiring a physical reset before new operations can be completed~\cite{jang_sgx-bomb_2017}.
 
-			In short, the integrity checks is implemented as a Merkle-Tree of Message Authentication Codes (MACs), with the root node of the tree stored on processor-internal memory~\cite{jang_sgx-bomb_2017}. 
+			The integrity checks is implemented as a Merkle-Tree of Message Authentication Codes (MACs), with the root node of the tree stored on processor-internal memory~\cite{jang_sgx-bomb_2017}. 
 			Under the assumption that AES128 is a random permutation, this method provides the guarantee that an active adversary with the capability of observing the MACs has a negligible probability of forgery~\cite{gueron_memory_2016}.
 
 			A practical example of the effectiveness of this integrity check is the \textit{SGX bomb} attack~\cite{jang_sgx-bomb_2017}. 
@@ -419,27 +421,27 @@
 
 			\subsubsection{Attestation}
 			\label{subsec:attestation}
-			Attestation, within the Intel SGX platform, is the action of verifying the existence of specific enclaves.
+			Attestation, within the Intel SGX platform, is the action of verifying that some other process is running inside a specific enclave.
 			The applications of this are two-fold, in the case where there are multiple enclaves running locally on the same CPU and in the case where enclaves need to communicate to enclaves running on external CPUs.
 			These two situations are handled by two different processes, aptly named local and remote attestation.
 	  
 			Local attestation builds on a secret fused into the CPU.
-			An enclave can use an SGX instruction to generate a report uniquely identifying the enclave.
+			An enclave can use an SGX instruction to generate a \textit{report} uniquely identifying the enclave, the enclave signature among them.
 			This report is MACed with a key derived from the fused secret and enclave identifier.
 			It is not possible to fake such a MACed report, as the MACing happens in hardware components that ensure that the report corresponds to the caller enclave.
-			The fused secret is not directly accessible by software components, but can only be used by certain hardware instructions that protect against malicious use.
+			The fused secret is not directly accessible by software components, but can only be used by certain hardware instructions that protect against malicious use~\cite{costan_intel_2016}.
 			An attestation challenger will ask for a MACed report from the client enclave, and after receiving it derive the same key to verify the MAC.
 			Because a report can only be created by the enclave it describes, the challenger can be certain of which enclave the client is running if the MAC is valid.
-			To prevent replays the MACed report is allowed to contain a block of arbitrary data, in which the challenger can require a nonce.
+			To prevent replays the MACed report is allowed to contain a block of arbitrary data, in which the challenger can require a nonce~\cite{costan_intel_2016}.
 
 			Remote attestations build on the same concept of a report, but as challenger and client are now on different CPUs, they no longer hold the same fused secret.
 			Instead remote attestation relies on the group signature scheme Enhanced Privacy ID (EPID) and a third party issuer.
 			Each SGX enabled CPU is granted an EPID Member Private Key by the third party issuer some time after manufacturing.
-			Like the fused secret, this private key is not directly accessible to an enclave.
+			Like the fused secret, this private key is not directly accessible to an enclave~\cite{costan_intel_2016}.
 			Under the EPID scheme, all issuer generated private keys share the same public key (EPID Group Public Key).
 			When remote attestation takes place, the client enclave generates a report and attests locally with the Quoting Enclave (QE).
 			The QE, now convinced of the client enclave's identify, strips the MAC off the report and instead signs it with the EPID Member Private Key, which the QE has special privileges to access\footnote{Enclaves signed by Intel have special privileges throughout SGX. This allows SGX to implement complicated SGX instructions in software.}.
-			The remote challenger can verify the signed report with the EPID Group Public Key and be sure that \textbf{(a)} the report is signed by an EPID Member Private Key, \textbf{(b)} EPID Member Private Keys are granted secret to QEs, and \textbf{(c)} QEs will not sign false reports.
+			The remote challenger can verify the signed report with the EPID Group Public Key and be sure that \textbf{(a)} the report is signed by an EPID Member Private Key, \textbf{(b)} EPID Member Private Keys are granted secret to QEs, and \textbf{(c)} QEs will not sign false reports~\cite{costan_intel_2016}.
 
 			%TODO, Mangler, sdf: Præcis beskrivelse af remote attestation process. 
 
@@ -536,7 +538,9 @@
 		\item Add all the state machines to the integrity protected area of the process.
 			\begin{itemize}
 				\item This is equivalent to making the distributed components in the crash-resistant protocol into enclaves. 
-				Please note that it is rarely necessary to make all components into enclaves, only the so-called \textit{security critical components}.
+				Please note that it is rarely necessary to integrity protect all components.
+				Instead the minimal necessary number of components, the TCB, should be identified and integrity protected.
+				For the general case, however, every component is part of the TCB.
 			\end{itemize}
 		\item For each endpoint state machine in unreliable channels between processes, add a new state machine in the unprotected area of each of the processes (called a wrapper state machine), connect a new unreliable channel between these and add a reliable channel from the old endpoint state machines to the new.
 			\begin{itemize}
@@ -1154,6 +1158,11 @@ function accept($m$)
 		\subsection{Adversary model}
 		We allow for a very strong adversary that can coordinate faulty nodes, delay communication and delay correct nodes, but not indefinitely. 
 		We assume that the adversary is computationally bound, so that they are probabilistically unable to subvert the cryptographic techniques described above.
+		We also assume that the adversary does not have access to our cryptographic secrets.
+		These include the shared common secret between the processes of the network, but also the processor specific PID key provisioned by Intel, as well as the associated group private keys stored by Intel.
+		This is a quite strong assumption, in that Intel might be required surrender these keys by law in some countries.
+		
+
 		
 		\subsection{Analysis}
 		
