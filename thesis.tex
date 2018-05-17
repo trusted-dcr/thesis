@@ -1154,12 +1154,6 @@ function accept($m$)
 	We define a global history to be a DCR run, i.e. it is a sequence of event executions.
 	Both as documentation of the process at deprecation of the workflow and during the life cycle of the workflow, the global history is relevant, in the latter case because the global state can be derived from the global history.
 	In this section we will refer to each cluster as the event itself, for simplicity.
-
-	% In order for the global state to be useful, we specify the following requirements for global state collection:
-	% \begin{itemize}
-	% 	\item Each execution sequence returned by an event must be compatible with each other.
-	% 	\item If an execution is present in a collected sequence, it must be present in all sequences collected in the future sequences.
-	% \end{itemize}
 		
 	For a global history to be collectible, each event need to track more than just their own executions.
 	Events must also track all executions that changes its state and enabledness, as it is required that an event always knows it own state and enabledness.
@@ -1171,19 +1165,26 @@ function accept($m$)
 	It is assumed that informing events is attempted until the informed event responds.
 	Under this assumption, an arbitrary amount of time can pass before an event is actually notified, but as this does not allow executions to happen which violate the semantics of DCR, this is reduced to a question of fairness, which will not be discussed in this thesis\footnote{Fairness in the sense that two events which enabledness is affected by an execution will not necessarily be notified of that execution at the same time, thereby allowing one event to execute before the other.}.
 
+	The standard for representing the state of a continuous system in an asynchronous setting is by finding a consistent cut \cite{lamport_time_1978}, which is defined by the happened-before relations:
+	
+	\begin{description}
+		\item[Happened-before 1 (HB1)] Process events occurring on the same process can be ordered in happened-before relations.
+		\item[Happened-before 2 (HB2)] There is a happened-before relation between the sending and the reception of a message.
+		\item[Happened-before 3 (HB3)] Happened-before relations are transitive. 
+	\end{description}
 
+	A consistent cut means that all events obey the happened-before rules within the cut, meaning:
+	\begin{itemize}
+		\item If an event, \textit{a}, happened before another event, \textit{b}, and \textit{b} is included in the cut, then so it \textit{a}.
+		\item If a message is received within the cut, the sending of that message must also be within the cut.
+	\end{itemize}
 
-%mangler beskrivelse af happend-before og consistent cut
-	One way to achieve a global history, is to implement Chandra and Lamport's Snapshot algorithm~\cite{chandy_distributed_1985}.
+	One way to achieve a consistent cut, is to implement Chandra and Lamport's Snapshot algorithm~\cite{chandy_distributed_1985}.
 	This would require incorporation of this algorithm into the snapshot, increasing the complexity even more.
 	Instead, we present an alternative solution, where the client requesting the global history requests the execution log from each event cluster.
 	The algorithm we present for collecting the global history, does so without locking or pausing the network.	
 	There is, however, considerations in that each event will then have their individual perceived sequence of executions, which might be dissimilar due to arbitrary message delays.
 	After receiving an answer from each cluster, the client is able to merge the local executions sequences into a consistent cut, using the following algorithm. 
-
-
-%mangler kort beskrivelse af vi bare spørger alle leaders
-
 
 	Consider a simple graph of two events with a condition between them: $\ev{A} \crel \ev{B}$.
 	A global history collection is started, by a client requesting it from every cluster, and \texttt{A} is the first to send its execution sequence $\{\}$, after which it executes, followed by an execution of \texttt{B}.
@@ -1208,7 +1209,15 @@ function accept($m$)
 	The method of fixing an inconsistent cut described earlier, is the equivalent of ignoring that \texttt{D}'s cluster has received an execution message from \texttt{C}, which also renders the execution of \texttt{D} invalid.
 	Cuts made in a DCR graph adhering to the tracking rules outlined here, and the implicit tracking of locks, will always be locally consistent up to a point, meaning that they are guaranteed to uphold the first premise of happened-before relations (HB1), namely ordering of local process events.
 	Given that these events will always present a local sequence adhering to HB1, there must be some point for each process which is consistent with another point in each other process.
-	Each event will always be able to present an empty sequence, as an example of a consistent cut, and since all messages received within the cut are discarded along with all later executions if the message is not sent within the same cut, it follows that it is always possible to obtain a consistent cut. %WHAT?
+	Each event will always be able to present an empty sequence, as an example of a consistent cut, trivially an empty sequence.
+	Since all messages received within the cut are discarded along with all later executions if the message is not sent within the same cut, it follows that it is eventually possible to obtain a consistent cut, as worst case an empty sequence of executions would be applicable.
+
+	Note that dynamically independent activities can cause sequences apparently contradicting one another.
+	For example, a graph of $\ev{A} \crel \ev{B}, \ev{A} \crel \ev{C}, \ev{D} \crel \ev{B}, \ev{D} \crel \ev{C}$ could by executing \texttt{A} and \texttt{D} cause events \texttt{B} and \texttt{C} to perceive execution sequences of $\{\texttt{A}, \texttt{D}\}$ and $\{\texttt{D}, \texttt{A}\}$ respectively.
+	This would appear to violate HB1, but since an event is notified of another events execution without locking, it should be seen as sent and received messages.
+	When \texttt{A} executes, it sends a notification to \texttt{C} and notes it in its execution sequence.
+	When \texttt{C} receives a notification it notes it in its execution sequence.
+	Thereby HB1 is not violated, as the execution of \texttt{A} is represented by two different events, meaning that it is covered by HB2.
 
 	Now that a consistent cut is guaranteed, a valid execution sequence then has to be interpolated.
 
