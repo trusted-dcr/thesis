@@ -1038,7 +1038,7 @@
 	We illustrate this in the three following cases:
 	\begin{itemize}
 		\item Consider a graph $\ev{A} \erel \ev{B}, \ev{C} \erel \ev{B}$. When \texttt{A} is executing, it locks \texttt{B}. If \texttt{C} then attempts to execute it will need a lock on \texttt{B} as well. \texttt{B} could choose to accept both of these locks, as they have exactly the same effect on the graph.
-		\item Consider a graph $\ev{A} \irel \ev{B}, \ev{C} \erel {B}$. When \texttt{A} is executing, it locks \texttt{B}. If \texttt{C} attempts to execute, it is clear that it should not be allowed to obtain a lock until \texttt{A} finishes executing. However, even though \texttt{B} is locked by \texttt{A}, \texttt{B} should be allowed to execute, as it is dynamically independent with \texttt{A}.
+		\item Consider a graph $\ev{A} \irel \ev{B}, \ev{C} \erel \ev{B}$. When \texttt{A} is executing, it locks \texttt{B}. If \texttt{C} attempts to execute, it is clear that it should not be allowed to obtain a lock until \texttt{A} finishes executing. However, even though \texttt{B} is locked by \texttt{A}, \texttt{B} should be allowed to execute, as it is dynamically independent with \texttt{A}.
 		\item Consider a graph $\ev{A} \irel \ev[100]{B}, \ev[100]{B} \crel \ev{C}$. When \texttt{A} is executing, it will lock \texttt{B} and \texttt{C} due to the constraint originating from \texttt{B} and targeting \texttt{C}. This is not needed, as the condition relation is invalidated by the fact that \texttt{A} is executed. 
 	\end{itemize}
 
