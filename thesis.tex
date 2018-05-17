@@ -1016,7 +1016,7 @@
 	According to the semantics of DCR relations (see section \ref{subsec:dcr}), the enabledness of an event, $v$, can only be changed by state changes in $N_{in}(v)$, and state of the event can only be affected by an execution in $N_{in}(v)$. 
 	Consider an event $v$.
 	Executing $v$ can then change the state and enabledness of any event in $N_{out}(v)$. 
-	Changing the enabledness of an event in $N_{out}(v)$ cannot propagate, since no relation relies on the enabledness of the originating event.
+	Changing the enabledness of an event in $N_{out}(v)$ cannot propagate\footnote{unless the enabledness change of the event is a result of a state change of the event, e.g. if the event is excluded}, since no relation relies on the enabledness of the originating event.
 	Changing the state of an event in $N_{out}(v)$, \textit{can} propagate, since the constraining relations relies on the state of the originating event.
 	But since only the constraining relations rely on the state of the originating event, the state change can only propagate enabledness changes, which in turn cannot propagate.
 	Summarized we have the following cases where locking must occur:
