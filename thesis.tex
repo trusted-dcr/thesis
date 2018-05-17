@@ -250,7 +250,7 @@
 				We say that an event, $e$, has a \textit{dynamic independence set}, $I_{dyn}(G,e)$, such that $e' \in I_{dyn}(G,e)$ iff. $e$ and $e'$ are dynamically independent in graph state $G$.
 				Likewise an event, $e$, has a \textit{dynamic dependence set}, $D_{dyn}(G,e) = E \setminus I_{dyn}(G,e)$.
 
-				Notice that the dynamic dependence set is closely related to effecting event set of an event s.t. $e' \in D_{dyn}(G,e) \implies e \in E_{eff}(G,e') \lor e' \in E_{eff}(G,e)$, i.e.  if $e'$ is in the dynamically dependence set of $e$ then then either the execution of $e$ changes the state or the enabledness of $e'$, or the execution of $e'$ changes the state or the enabledness of $e$.
+				% Notice that the dynamic dependence set is closely related to effecting event set of an event s.t. $e' \in D_{dyn}(G,e) \implies e \in E_{eff}(G,e') \lor e' \in E_{eff}(G,e)$, i.e.  if $e'$ is in the dynamically dependence set of $e$ then then either the execution of $e$ changes the state or the enabledness of $e'$, or the execution of $e'$ changes the state or the enabledness of $e$.
 
 				\item[Static independence] means that two events, are dynamically independent in every \textit{reachable} state of the graph, where they are both enabled.
 				That is, $e_1$ and $e_2$ are statically independent in $G$, if they are dynamically independent in all states of $G$ that can be reached by a run. %explain run
@@ -862,7 +862,7 @@
 	Central Server 			  					& $0$                                        & $n$                      & $0$                         & n/a                       & $2$                                       		& $\leq$ Dynamic independence & $1$ \\
 	State Machine Replication 					& $\lfloor \frac{(n-1)}{2} \rfloor$          & $n$                      & $n-1$                       & $O(n)$                    & $2\cdot\lfloor\frac{(n-1)}{2}\rfloor$     		& $\leq$ Dynamic independence & $1$ \\
 	Event state clusters with strong leader 	& $\lfloor \frac{(m-1)}{2} \rfloor$ (partly) & $n$                      & $m-1$                       & $O(n^2)$                  & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor$     		& Dynamic independence & $1$ \\
-	One-to-one mapping of peers and events  	& $0$ (partly)                               & $n$                      & $0$                         & n/a                       & $2\cdot D_{dyn}(G,e)$           				& Dynamic independence & $n$ \\
+	Complete distribution 					  	& $0$ (partly)                               & $n$                      & $0$                         & n/a                       & $2\cdot D_{dyn}(G,e)$           				& Dynamic independence & $n$ \\
 	Event state clusters with no common leader 	& $\lfloor \frac{(m-1)}{2} \rfloor$ (partly) & $n$                      & $m-1$                       & $O(m)$                    & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor$     		& Dynamic independence & $\frac{n}{m}$ \\
 	\bottomrule
 	\end{tabular}}
@@ -976,19 +976,18 @@
 
 	For this section, we apply terms used in directed graphs and define variations of neighbourhoods with regards to DCR graphs as:
 	\begin{description}
-		\item{Neighbourhood}
-		\item[Out-neighbourhood] denoted $N_{out}(v)$ and defined as the set of relations targeting the event $v$.
-		\item[In-neighbourhood] denoted $N_{in}(v)$ and defined as the set of relations originating from the event $v$.
+		\item[Out-neighbourhood] denoted $N_{out}(v)$, defined as the set of events where event $v'$ is in $N_{out}(v)$ iff there is a relation in $G$ that originates in $v$ that targets $v'$.
+		\item[In-neighbourhood] denoted $N_{in}(v)$, defined as the set of events where event $v'$ is in $N_{in}(v)$ iff there is a relation in $G$ that originates in $v'$ that targets $v$.
 	\end{description}
 		
-	In order to ensure that dynamically dependent events, as described in section \ref{subsubsec:concurrency}, can not be executed simultaneously locking is applied as a way of synchronizing attempts to execute.
+	In order to ensure that dynamically dependent events, as described in section \ref{subsubsec:concurrency}, cannot be executed simultaneously, locking is applied as a way of synchronizing attempts to execute.
 	In a graph, $G(E,V)$, we define the set of locked events, $L$, on the execution of an event, $v$, as $L(v)$.
-	As the way DCR propagates changes from an execution by relations and one execution can not set any other than the executed event to executed, the locking semantics must adhere to the rules of the relations.
+	As the way DCR propagates changes from an execution by relations and one execution cannot set any other than the executed event to executed, the locking semantics must adhere to the rules of the relations.
 	Due to the semantics of DCR graphs, there is an advantage which can be leveraged with regards to when locking is needed.
 	Consider a graph consisting of two events with a condition between them: $\ev{A} \crel \ev{B}$
 	Events \texttt{A} and \texttt{B} are dynamically dependent, as executing first \texttt{A} and then \texttt{B} results in a different graph than executing first \texttt{B} and then \texttt{A}, since \texttt{B} cannot be executed in the latter case.
 	According to the goal of preventing dynamically dependent events from executing simultaneously, when event \texttt{A} is executing, event \texttt{B} must therefore be locked.
-	This is however unnecessary as it is impossible for event \texttt{B} to be executing before event \texttt{A} has been executed.
+	This is unnecessary as it is impossible for event \texttt{B} to be executing before event \texttt{A} has been executed.
 	Both of the constraints share this property and since constraints furthermore do not modify states, there is no need for \texttt{A} to lock \texttt{B} or indeed for any event to lock events which it is targeting only with a constraint.
 
 	\begin{figure}[ht!] 
@@ -1011,9 +1010,15 @@
 		\label{fig:second-degree-effect}
 	\end{figure}
 
-	In the graph shown in Figure \ref{fig:second-degree-effect} it is shown that the locking set has to include either $N_{out}(N_{out}(v))$ or $N_{in}(v) \cup N_{out}(v)$, in order to prevent the graph from ending in a state where both \texttt{A} and \texttt{B} have been executed, which should be impossible due to the execution of either including a condition on the other.
-	In this case, the two locking methods have the same results and as no strong argument for one over the other can be formed from this basis, the simplest method is chosen, namely the locking scheme of $N_{out}(N_{out}(v))$.
+	In the graph shown in Figure \ref{fig:second-degree-effect} it is shown that the locking set has to include either a subset of $N_{out}(N_{out}(v))$ or a subset $N_{in}(v) \cup N_{out}(v)$, in order to prevent the graph from ending in a state where both \texttt{A} and \texttt{B} have been executed, which should be impossible due to the execution of either including a condition on the other.
+	In this case, the two locking methods have the same results and as no strong argument for one over the other can be formed from this basis, the simplest method is chosen, namely the locking that includes a subset of $N_{out}(N_{out}(v))$.
 
+	According to the semantics of DCR relations (see section \ref{subsec:dcr}), the enabledness of an event, $v$, can only be changed by state changes in $N_{in}(v)$, and state of the event can only be affected by an execution in $N_{in}(v)$. 
+	Consider an event $v$.
+	Executing $v$ can then change the state and enabledness of any event in $N_{out}(v)$. 
+	Changing the enabledness of an event in $N_{out}(v)$ cannot propagate, since no relation relies on the enabledness of the originating event.
+	Changing the state of an event in $N_{out}(v)$, \textit{can} propagate, since the constraining relations relies on the state of the originating event.
+	But since only the constraining relations rely on the state of the originating event, the state change can only propagate enabledness changes, which in turn cannot propagate.
 	Summarized we have the following cases where locking must occur:
 	\begin{description}
 		\item[Effect] Consider a graph of two events: \ev{A} and \ev{B}, with an effect originating from \texttt{A}, targeting \texttt{B}. 
@@ -1023,7 +1028,7 @@
 	\end{description}
 
 	Given these two rules, all cases where locking is needed is covered.
-	However there are special cases where locking can be omitted, due to the actual effect of the an effect-relation, for example when executing an event which includes another event that is already included.
+	However, there are special cases where locking can be omitted, due to the actual effect of the an effect-relation, for example when executing an event which includes another event that is already included.
 
 	\begin{figure}[ht!] 
 		\center
@@ -1034,15 +1039,15 @@
 
 	In the graph shown in Figure \ref{fig:second-degree-no-effect} an execution of \texttt{A} no longer has an effect on the enabledness of \texttt{B}, as \texttt{C} has the same state before and after the execution of \texttt{A}.
 	An argument can be made here for the chosen locking scheme over $N_{in}(v) \cup N_{out}(v)$, as it allows for optimizations in that \texttt{B} strictly does not need to be locked.
-	This optimization is only possible when the state of \texttt{C} is known and since locking is only performed forwards, there is no implicit way to propagate executions backwards.
+	This optimization is only possible when the state of \texttt{C} is known and since locking is only performed forwards, there is no implicit way to propagate executions backwards. %what??
 	This means that \texttt{A} does not know the state of \texttt{C} on execution and would have to do one of two options when executing:
 	\begin{itemize}
 		\item \texttt{A} sends a locking message to \texttt{C}, telling it to lock \texttt{B} if necessary.
 		\item \texttt{A} sends a locking message to \texttt{C} and one to \texttt{B}, but gives \texttt{B} the option to forgo locking if the state of \texttt{C} would be unchanged by the execution of \texttt{A}.
 	\end{itemize}
-	Both options result in the minimum amount of locks, but the first option has fewer messages, as it only results in two messages.
+	Both options result in the minimum amount of locks, but the first option has fewer messages, as it only results in two messages. 
 	However, the first option has the disadvantage of potentially taking twice as long, assuming that transporting a message between \texttt{A} and \texttt{C} takes the same amount of time as between \texttt{A} and \texttt{B}.
-	An additional consideration, incidentally with the same trade-offs, is locking each individual event in lexicographical order, thereby minimizing the number of locks which have to be aborted, if leader collsion occurs.
+	An additional consideration, incidentally with the same trade-offs, is locking each individual event in lexicographical order, thereby minimizing the number of locks which have to be aborted, if leader collision occurs.
 	Both of these solutions aim to maximize concurrency, but at the cost of messages and round-trips, which could in practice be very time consuming.
 
 	\subsection{Cluster Consensus}
