@@ -478,7 +478,7 @@
 
 	\section{Transforming byzantine faults to crashes}
 	\label{sec:transforming-byzantine-faults}
-	We conjecture that the correct use of Intel SGX can transform all byzantine faults in a distributed system with unreliable channels, such that correct processes in the protocol exhibit behaviour equivalent to the faulty processes crashing and losing messages. 
+	We conjecture that the correct use of Intel SGX can transform all byzantine faults in a distributed system with unreliable channels, such that correct processes in the protocol treat faulty processes as equivalent to processes crashing and losing messages. 
 
 	Thereby a crash-fault-tolerant distributed protocol with unreliable channels which will exhibit undocumented behaviour under byzantine-faults (from here on in "crash-resistant protocol") can be transformed into a byzantine-fault-tolerant protocol using Intel SGX and cryptography.
 	We assume that processes exhibiting byzantine faults will not be able to utilize the cryptographic secrets of a correct process.
@@ -496,7 +496,7 @@
 	For example, the finite state machine in Figure \ref{fig:simple-nfa} will transition from the starting state $s_0$ to $s_2$ on input $"010"$ from channel $c_0$, and will during the transition output $"101"$ to channel $c_1$ and $"100"$ to $c_2$.
 	
 	A channel can either be reliable or unreliable, and is bi-directional. 
-	A reliable channel guarantees that messages sent on it will be delivered, will be delivered in the order the messages was sent, and will not be changed during transmission.
+	A reliable channel guarantees that messages sent on it will be delivered in the order the messages was sent, and will not be changed during transmission.
 	An unreliable channel gives no such guarantees, and can thus experience loss, reordering and corruption of messages.
 
 	The last component in our model is the process.
@@ -591,21 +591,10 @@
 		The MAC is an output of the message and the Remote Attestation provisioned key.
 		$SM_s$ is the only state machine with the Remote Attestation provisioned key, and thus only $SM_s$ can MAC a message correctly.
 		$SM_s$ will refuse to sign any message if any state machine in the integrity protected area is not the original.
-		This translates to a transformation of the state machine, such that each transition\\
-		$(s_{from}, i, \{(m_o, c_o)\}, s_{to})$,\\
-		where $c_o$ is a channel that was previously to another process, must be transformed to the transitions\\
-		$(s_{from}, i, \{(m_o, c_{SM_s})\}, s_{wait})$ and\\ 
-		$(s_{wait}, (m_o+MAC, c_{SM_s}), \{(m_o+MAC, c_o)\}, s_{to})$\\
-		with the intermediate state $s_{wait}$, which acts as a state in which the state machine waits for $SM_s$ to MAC the output message.
+		This translates to a transformation of the state machine, such that each transition $(s_{from}, i, \{(m_o, c_o)\}, s_{to})$, where $c_o$ is a channel that was previously to another process, must be transformed to the transitions $(s_{from}, i, \{(m_o, c_{SM_s})\}, s_{wait})$ and $(s_{wait}, (m_o+MAC, c_{SM_s}), \{(m_o+MAC, c_o)\}, s_{to})$ with the intermediate state $s_{wait}$, which acts as a state in which the state machine waits for $SM_s$ to MAC the output message.
 		\item Whenever a message that supposedly originates from another process is received from the unprotected area  by a state machine in the integrity protected area, the MAC of that message must be verified by $SM_s$.
 		In case this verification fails, the message must be dropped discarded.
-		This translates to a transformation of the state machine, such that each transition\\
-		$(s_{from}, (m_i, c_i), o, s_{to})$,\\
-		where $c_i$ is a channel that was previously to another process, must be transformed to the transitions\\
-		$(s_{from}, (m_i+MAC, c_i), \{(m_i+MAC, c_{SM_s})\}, s_{wait})$,\\
-		$(s_{wait}, ("0", c_{SM_s}), \{\}, s_{from})$ and \\
-		$(s_{wait}, ("1", c_{SM_s}), o, s_{to})$ \\
-		with the intermediate state $s_{wait}$, which acts as a state in which the state machine waits for $SM_s$ to verify the MAC of the input, and the messages $"0"$ and $"1"$ represents the failure and success of this verification, respectively.
+		This translates to a transformation of the state machine, such that each transition $(s_{from}, (m_i, c_i), o, s_{to})$, where $c_i$ is a channel that was previously to another process, must be transformed to the transitions $(s_{from}, (m_i+MAC, c_i), \{(m_i+MAC, c_{SM_s})\}, s_{wait})$, $(s_{wait}, ("0", c_{SM_s}), \{\}, s_{from})$ and  $(s_{wait}, ("1", c_{SM_s}), o, s_{to})$ with the intermediate state $s_{wait}$, which acts as a state in which the state machine waits for $SM_s$ to verify the MAC of the input, and the messages $"0"$ and $"1"$ represents the failure and success of this verification, respectively.
 		\item In the event that $SM_s$ is asked to sign a message from a state machine that it identifies is not the original state machines in the integrity protected area, it must discard the message.
 	\end{enumerate}
 
@@ -696,7 +685,7 @@
 		For instance, the server could serve the tokens to all requests without waiting for acknowledgements from the clients.
 
 		We will now show how the transformation from section \ref{sec:transforming-byzantine-faults}, can transform CSME to give the same guarantees in a byzantine system as the untransformed protocol gives in a crash-fault system.
-		Notice that there is no formal definition of how the critical section access and token is implemented in CSME -- it can be implemented with cryptography, as partial states, with append-only memory, as another process, etc.
+		Notice that there is no formal definition of how the critical section access and token is implemented in CSME | it can be implemented with cryptography, as partial states, with append-only memory, as another process, etc.
 		We will keep this abstraction in the following transformation, but the implementation of this is also required to undergo the same transformation.
 		We will omit the handling of unreliable channels on the state machines for readability, but assume that it is handled.
 
@@ -711,8 +700,8 @@
 		\end{figure}
 		\FloatBarrier
 
-		The client state machine is quite simple, and is modelled in Figure \ref{fig:CSME-client-NFA}.
-		It can either not not have requested access to the critical section ($s_0$), wait for the token from the server ($s_1$), or have the token and be in the critical section ($s_2$). 
+		The client state machine is modelled in Figure \ref{fig:CSME-client-NFA}.
+		It can either not have requested access to the critical section ($s_0$), wait for the token from the server ($s_1$), or have the token and be in the critical section ($s_2$). 
 		Naturally it can also crash ($s_{error}$).
 
 		\FloatBarrier
@@ -735,7 +724,7 @@
 		\end{figure}
 		\FloatBarrier
 
-		Figure \ref{fig:CSME-protocol} show the processes and channels in CSME with two client processes.
+		Figure \ref{fig:CSME-protocol} shows the processes and channels in CSME with two client processes.
 		$P_1$ and $P_2$ are the clients, each running an instance of the state machine from figure \ref{fig:CSME-client-NFA}, with an unreliable channel to the server process $P_0$, which runs an instance of the state machine from figure \ref{fig:CSME-server-NFA}.
 
 		We start the transformation by transforming the state machines to have their messages MAC'ed by $SM_s$, and to have $SM_s$ verify the messages they receive.
@@ -774,7 +763,7 @@
 		If the token is released by client $1$, and this message's MAC is verified, the state machine will transition to $s_0$. 
 		$s_2$ is equivalent to $s_1$, except with client $2$ instead of client $1$. 
 		In $s_3$, client $1$ has the token, and client $2$ has requested the token.
-		So when the server state machine receives a verifiably "exit" message from client $1$, a token is MAC'ed and sent to client $2$, so the state machine can transition to $s_2$.
+		So when the server state machine receives an "exit" message verifiably from client $1$, a token is MAC'ed and sent to client $2$, so the state machine can transition to $s_2$.
 		$s_4$ is equivalent to $s_3$, except with the clients reversed (client $2$ has the token, client $1$ has requested it, when client $2$ releases the token).  
 
 		\FloatBarrier
