@@ -17,6 +17,7 @@
 \usepackage{amssymb}
 \usepackage{booktabs}
 \usepackage{rotating}
+\usepackage{pdflscape}
 
 \include{dcr-preamble}
 
@@ -842,30 +843,25 @@
 
 	% Synchronizing state changes is a well-known problem and one solution is the election of a leader which orders the messages, such as in most BFT algorithms~\cite{castro_practical_1999,kapitza_cheapbft_2012,veronese_efficient_2013,liu_scalable_2016}.
 	% %A single-leader system does however neccesitate that each peer in the system manages the entire subject state | in the case of this project the entirety of the DCR graph.
-	\begin{sidewaystable}[htbp]
-	\centering
-	\makebox[\textwidth][c]{\begin{tabular}{ p{4cm} p{1.5cm} p{1.5cm} p{1.5cm} p{1.5cm} p{2cm} p{2.3cm} p{2cm} }
-	\toprule
-	\textbf{Approach}		  					& \textbf{Fault tolerance (Availability)}    & \textbf{Fault tolerance (Safety)} & \textbf{Fault tolerance (Data loss)} & \textbf{Crash recovery (messages)} & \textbf{Message complexity for executing $e$ (Best case)} & \textbf{Concurrency}                 & \textbf{Request Bottleneck}    \\ 
-    \midrule
-	Central Server 			  					& $0$                                        & $n$                      & $0$                         & n/a                       & $2$                                       		& $\leq$ Dynamic independence & $1$ \\
-	State Machine Replication 					& $\lfloor \frac{(n-1)}{2} \rfloor$          & $n$                      & $n-1$                       & $O(n)$                    & $2\cdot\lfloor\frac{(n-1)}{2}\rfloor$     		& $\leq$ Dynamic independence & $1$ \\
-	Event state clusters with strong leader 	& $\lfloor \frac{(m-1)}{2} \rfloor$ (partly) & $n$                      & $m-1$                       & $O(n^2)$                  & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor$     		& Dynamic independence & $1$ \\
-	Complete distribution 					  	& $0$ (partly)                               & $n$                      & $0$                         & n/a                       & $2\cdot D_{dyn}(G,e)$           				& Dynamic independence & $n$ \\
-	Event state clusters with no common leader 	& $\lfloor \frac{(m-1)}{2} \rfloor$ (partly) & $n$                      & $m-1$                       & $O(m)$                    & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor$     		& Dynamic independence & $\frac{n}{m}$ \\
-	\bottomrule
-	\end{tabular}}
+	\begin{landscape}
+		\begin{table}
+		\centering
+		\makebox[\textwidth][c]{\begin{tabular}{ p{4cm} p{1.5cm} p{1.5cm} p{1.5cm} p{1.5cm} p{2cm} p{2.3cm} p{2cm} }
+		\toprule
+		\textbf{Approach}		  					& \textbf{FT: Availability}    & \textbf{FT: Safety} & \textbf{FT: Data integrity} & \textbf{Crash recovery} & \textbf{Minimum complexity for executing $e$} & \textbf{Concurrency}                 & \textbf{Request Bottleneck}    \\ 
+	    \midrule
+		Central Server 			  					& $0$                                        & $n$                      & $0$                         & n/a                       & $2$                                       		& $\leq$ Dynamic independence & $1$ \\
+		State Machine Replication 					& $\lfloor \frac{(n-1)}{2} \rfloor$          & $n$                      & $n-1$                       & $O(n)$                    & $2\cdot\lfloor\frac{(n-1)}{2}\rfloor$     		& $\leq$ Dynamic independence & $1$ \\
+		Partial state with 1 leader 				& $\lfloor \frac{(m-1)}{2} \rfloor^*$ & $n$                      & $m-1$                       & $O(n^2)$                  & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor$     		& Dynamic independence & $1$ \\
+		Complete distribution 					  	& $0^*$                               & $n$                      & $0$                         & n/a                       & $2\cdot D_{dyn}(G,e)$           				& Dynamic independence & $n$ \\
+		Event state clusters with no common leader 	& $\lfloor \frac{(m-1)}{2} \rfloor^*$ & $n$                      & $m-1$                       & $O(m)$                    & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor$     		& Dynamic independence & $\frac{n}{m}$ \\
+		\bottomrule
+		\end{tabular}}
 
-	\caption[caption]{Comparison of different approaches to solving the problem.\\\hspace{\textwidth}
-	\textbf{Fault tolerance (Availability)}: The maximum number of concurrent faults the solution can handle before Availability is no longer guaranteed under the partial synchrony assumption.\\\hspace{\textwidth}
-	\textbf{Fault tolerance (Safety)}: The maximum number of concurrent faults the solution can handle before Safety is no longer guaranteed.\\\hspace{\textwidth}
-	\textbf{Fault tolerance (Data loss)}: The maximum number of concurrent faults the solution can handle before data may be lost.\\\hspace{\textwidth}
-	\textbf{Crash recovery (messages)}: The maximum number of messages required to recover from a crashing process.\\\hspace{\textwidth}
-	\textbf{Message complexity for executing $e$ (Best case)}: The minimum number of messages needed for executing a single event.\\\hspace{\textwidth}
-	\textbf{Concurrency}: What level of DCR concurrency is supported by the approach.\\\hspace{\textwidth}
-	\textbf{Request Bottleneck} How many processes' can handle execution requests at one time.}
-	\label{tab:approcach-comparison}
-	\end{sidewaystable}
+		\caption[caption]{Comparison of different approaches to solving the problem. $^*$ denotes partially. \textbf{FT: Availability} is the fault tolerance of the availability guarantee. \textbf{FT: Safety} is the fault tolerance of the safety guarantee. \textbf{FT: Data integrity} is the fault tolerance of data integrity. \textbf{Crash recovery} is the number of messages required to recover from a crashing process. \textbf{Minimum complexity for executing $e$} is the minimum number of messages needed for the execution of an event. \textbf{Concurrency} is the supported level of DCR concurrency. \textbf{Request Bottleneck} is how many processes' can handle execution requests at one time.}
+		\label{tab:approcach-comparison}
+		\end{table}
+	\end{landscape}
 
 	We wish to create a system in which:
 	\begin{itemize}
