@@ -1164,10 +1164,11 @@ function accept($m$)
 	% 	\item If an execution is present in a collected sequence, it must be present in all sequences collected in the future sequences.
 	% \end{itemize}
 	
-	For a global history to be collectible, each event need to track more than just their own executions, but must track all executions relevant in relation to its own executions, due to the fact that the properties of the locking algorithm, described in section \ref{subsec:event-locking}, requires that an event always knows it own state and enabledness.
+	For a global history to be collectible, each event need to track more than just their own executions.
+	Events must also track all executions that changes its state and enabledness, as it is required that an event always knows it own state and enabledness.
 	The cases where the execution of an event, \texttt{A}, would affect the enabledness of another event, \texttt{B}, seems to encompass all situations where \texttt{B} would need to track the execution of \texttt{A}, as enabledness specifically concerns the effects an execution has on another events ability to execute.
 	As locked events are implicitly notified of an execution upon unlocking, tracking these are trivial.
-	There are however cases where locking is not performed, as locking is mostly concerned with preventing race conditions, but where enabledness is affected, such as the case of: $\ev{A} \crel \ev{B}$, where \texttt{B} can not execute before \texttt{A} is executed or excluded.
+	There are, however, cases where locking is not performed, as locking is mostly concerned with preventing race conditions, but where enabledness is affected, such as the case of: $\ev{A} \crel \ev{B}$, where \texttt{B} can not execute before \texttt{A} is executed or excluded.
 	In addition to locking, events which enabledness is affected by an execution must therefore also be informed about that execution, so that they are able to execute.
 
 	It is assumed that informing events is attempted until the informed event responds.
