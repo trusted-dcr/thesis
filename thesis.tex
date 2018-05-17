@@ -1156,14 +1156,13 @@ function accept($m$)
 	In this section we will refer to each cluster as the event itself, for simplicity.
 		
 	For a global history to be collectible, each event need to track more than just their own executions.
-	Events must also track all executions that changes its state and enabledness, as it is required that an event always knows it own state and enabledness.
-	The cases where the execution of an event, \texttt{A}, would affect the enabledness of another event, \texttt{B}, seems to encompass all situations where \texttt{B} would need to track the execution of \texttt{A}, as enabledness specifically concerns the effects an execution has on another events ability to execute. %seems to contradict the sentance before
+	Events must also track all executions that changes its state and enabledness, since it is required that an event always knows it own state and enabledness.
 	As locked events are implicitly notified of an execution upon unlocking, tracking these are trivial.
 	There are, however, cases where locking is not performed, as locking is mostly concerned with preventing race conditions, but where enabledness is affected, such as the case of: $\ev{A} \crel \ev{B}$, where \texttt{B} can not execute before \texttt{A} is executed or excluded.
-	In addition to locking, events in which enabledness is affected by an execution must therefore also be informed about that execution, so that they are able to execute.
+	In addition to locking, events in which enabledness is affected by an execution must therefore also be informed about that execution, so that they are able to execute, as described in section~\ref{subsec:event-locking}.
 
 	It is assumed that informing events is attempted until the informed event responds.
-	Under this assumption, an arbitrary amount of time can pass before an event is actually notified, but as this does not allow executions to happen which violate the semantics of DCR, this is reduced to a question of fairness, which will not be discussed in this thesis\footnote{Fairness in the sense that two events which enabledness is affected by an execution will not necessarily be notified of that execution at the same time, thereby allowing one event to execute before the other.}.
+	Under this assumption, an arbitrary amount of time can pass before an event is actually notified, but as this does not allow executions to happen which violate the semantics of DCR; it is reduced to a question of fairness, which will not be discussed in this thesis\footnote{Fairness in the sense that two events which enabledness is affected by an execution will not necessarily be notified of that execution at the same time, thereby allowing one event to execute before the other.}.
 
 	The standard for representing the state of a continuous system in an asynchronous setting is by finding a consistent cut \cite{lamport_time_1978}, which is defined by the happened-before relations:
 	
@@ -1175,12 +1174,12 @@ function accept($m$)
 
 	A consistent cut means that all events obey the happened-before rules within the cut, meaning:
 	\begin{itemize}
-		\item If an event, \textit{a}, happened before another event, \textit{b}, and \textit{b} is included in the cut, then so it \textit{a}.
+		\item If an event, \textit{a}, happened before another event, \textit{b}, and \textit{b} is included in the cut, then so is \textit{a}.
 		\item If a message is received within the cut, the sending of that message must also be within the cut.
 	\end{itemize}
 
 	One way to achieve a consistent cut, is to implement Chandra and Lamport's Snapshot algorithm~\cite{chandy_distributed_1985}.
-	This would require incorporation of this algorithm into the snapshot, increasing the complexity even more.
+	This would require incorporation of the snapshot algorithm into the raft algorithm, increasing the complexity even more.
 	Instead, we present an alternative solution, where the client requesting the global history requests the execution log from each event cluster.
 	The algorithm we present for collecting the global history, does so without locking or pausing the network.	
 	There is, however, considerations in that each event will then have their individual perceived sequence of executions, which might be dissimilar due to arbitrary message delays.
@@ -1189,11 +1188,11 @@ function accept($m$)
 	Consider a simple graph of two events with a condition between them: $\ev{A} \crel \ev{B}$.
 	A global history collection is started, by a client requesting it from every cluster, and \texttt{A} is the first to send its execution sequence $\{\}$, after which it executes, followed by an execution of \texttt{B}.
 	\texttt{B} then receives the message asking for state and responds with a sequence of $\{\texttt{A}, \texttt{B}\}$.
-	In this specific example it is not immediately apparent that assuming that \texttt{B} is correct and therefore accept its sequence as the global history, could be problematic.
+	In this specific example it is not immediately apparent it could be problematic to assume that \texttt{B} is correct and therefore accept its sequence as the global history.
 	However, if \texttt{A} is not able to be executed immediately, it is impossible to interpolate what has happened.
 	An example of this is the graph $\ev{A} \erel \ev{B} \crel \ev{C} \crel \ev{D}$, where the collection of the global history could return an empty sequence for \texttt{A}, \texttt{B} and \texttt{C}, but a sequence of $\{\texttt{C}, \texttt{D}\}$ from \texttt{D}.
 	It is unknown whether an execution of \text{A} or an execution of \texttt{B} allowed the execution of \texttt{C} and then \texttt{D}.
-	To solve this, any execution not present in the sequence returned by the event itself is considered invalid and therefore that execution is deleted from the sequence of all events, as well as all following events in that sequence.
+	To solve this, any execution not present in the sequence returned by the event itself is considered invalid and therefore that execution is deleted from the sequence of all events, as well as all following executions in that sequence.
 	In the above example, this would mean that the execution of \texttt{B} in the history of \texttt{C} would be deleted, along with the execution of \texttt{C} as it follows the execution of \texttt{B}.
 	The reason for this procedure is that if these executions are not omitted, a consistent cut is no longer guaranteed.
 
@@ -1209,7 +1208,7 @@ function accept($m$)
 	The method of fixing an inconsistent cut described earlier, is the equivalent of ignoring that \texttt{D}'s cluster has received an execution message from \texttt{C}, which also renders the execution of \texttt{D} invalid.
 	Cuts made in a DCR graph adhering to the tracking rules outlined here, and the implicit tracking of locks, will always be locally consistent up to a point, meaning that they are guaranteed to uphold the first premise of happened-before relations (HB1), namely ordering of local process events.
 	Given that these events will always present a local sequence adhering to HB1, there must be some point for each process which is consistent with another point in each other process.
-	Each event will always be able to present an empty sequence, as an example of a consistent cut, trivially an empty sequence.
+	Each event will always be able to present an empty sequence, as an example of a consistent cut.
 	Since all messages received within the cut are discarded along with all later executions if the message is not sent within the same cut, it follows that it is eventually possible to obtain a consistent cut, as worst case an empty sequence of executions would be applicable.
 
 	Note that dynamically independent activities can cause sequences apparently contradicting one another.
@@ -1262,7 +1261,7 @@ function accept($m$)
 	The complexity of this operation is dominated by the process of ensuring a consistent cut.
 	If there are \textit{n} events, each with a sequence of length \textit{m}, there is a total of $n \cdot m$ elements.
 	Each element has to be checked against the elements in the list of the executed element, \textit{m} again and since an inconsistency can lead to a new inconsistency, the worst case means this has to be iterated over $\frac{n}{2}$ times.
-	This results in a complexity of $\frac{n^2}{2}\cdot m^2$, which is significantly expensive, but well within the reasonable limit of local computations.
+	This results in a complexity of $\frac{n^2}{2}\cdot m^2$, which is expensive, but well within the reasonable limit of local computations.
 
 	\section{Security analysis}
 	The following is a security analysis of the algorithm described in section~\ref{sec:analysis}.
