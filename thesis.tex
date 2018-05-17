@@ -1146,18 +1146,21 @@ function accept($m$)
 \end{lstlisting}
 
 
+
 	\subsection{Global history collection} % CheapShot
 	\label{subsec:global-history-collection}
 
 	Since changes in the workflow are not synchronized across every peer, the global history of the workflow at any given time is not readily available.
+	We define a global history to be a DCR run, i.e. it is a sequence of event executions.
 	Both as documentation of the process at deprecation of the workflow and during the life cycle of the workflow, the global history is relevant, in the latter case because the global state can be derived from the global history.
+	In this section we will refer to each cluster as the event itself, for simplicity.
 
 	% In order for the global state to be useful, we specify the following requirements for global state collection:
 	% \begin{itemize}
 	% 	\item Each execution sequence returned by an event must be compatible with each other.
 	% 	\item If an execution is present in a collected sequence, it must be present in all sequences collected in the future sequences.
 	% \end{itemize}
-	
+		
 	For a global history to be collectible, each event need to track more than just their own executions.
 	Events must also track all executions that changes its state and enabledness, as it is required that an event always knows it own state and enabledness.
 	The cases where the execution of an event, \texttt{A}, would affect the enabledness of another event, \texttt{B}, seems to encompass all situations where \texttt{B} would need to track the execution of \texttt{A}, as enabledness specifically concerns the effects an execution has on another events ability to execute. %seems to contradict the sentance before
@@ -1168,11 +1171,16 @@ function accept($m$)
 	It is assumed that informing events is attempted until the informed event responds.
 	Under this assumption, an arbitrary amount of time can pass before an event is actually notified, but as this does not allow executions to happen which violate the semantics of DCR, this is reduced to a question of fairness, which will not be discussed in this thesis\footnote{Fairness in the sense that two events which enabledness is affected by an execution will not necessarily be notified of that execution at the same time, thereby allowing one event to execute before the other.}.
 
+
+
+%mangler beskrivelse af happend-before og consistent cut
+
 	The algorithm we present for collecting the global history, does so without locking or pausing the network.	
 	There is, however, considerations in that each event will then have their individual perceived sequence of executions, which might be dissimilar due to arbitrary message delays.
 
+	% One way to achieve a global history, is to 
 %mangler kort beskrivelse af vi bare spørger alle leaders
-%mangler beskrivelse af happend-before og consistent cut
+
 
 	Consider a simple graph of two events with a condition between them: $\ev{A} \crel \ev{B}$.
 	A global history collection is started, by a client requesting it from every cluster, and \texttt{A} is the first to send its execution sequence $\{\}$, after which it executes, followed by an execution of \texttt{B}.
