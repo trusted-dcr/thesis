@@ -1160,27 +1160,30 @@ function accept($m$)
 	
 	For a global history to be collectible, each event need to track more than just their own executions.
 	Events must also track all executions that changes its state and enabledness, as it is required that an event always knows it own state and enabledness.
-	The cases where the execution of an event, \texttt{A}, would affect the enabledness of another event, \texttt{B}, seems to encompass all situations where \texttt{B} would need to track the execution of \texttt{A}, as enabledness specifically concerns the effects an execution has on another events ability to execute.
+	The cases where the execution of an event, \texttt{A}, would affect the enabledness of another event, \texttt{B}, seems to encompass all situations where \texttt{B} would need to track the execution of \texttt{A}, as enabledness specifically concerns the effects an execution has on another events ability to execute. %seems to contradict the sentance before
 	As locked events are implicitly notified of an execution upon unlocking, tracking these are trivial.
 	There are, however, cases where locking is not performed, as locking is mostly concerned with preventing race conditions, but where enabledness is affected, such as the case of: $\ev{A} \crel \ev{B}$, where \texttt{B} can not execute before \texttt{A} is executed or excluded.
-	In addition to locking, events which enabledness is affected by an execution must therefore also be informed about that execution, so that they are able to execute.
+	In addition to locking, events in which enabledness is affected by an execution must therefore also be informed about that execution, so that they are able to execute.
 
 	It is assumed that informing events is attempted until the informed event responds.
-	Under this assumption, an arbitrary amount of time can pass before an event is actually notified, but as this does not allow executions to happen which violate the semantics of DCR, this is reduced to a question of fairness, which will not be discussed in this thesis\footnote{Fairness in the sense that two events which enabledness is affected by an execution will not necessarily be notified of that execution at the same time, thereby giving the event notified of the execution first, would be able to execute sooner.}.
+	Under this assumption, an arbitrary amount of time can pass before an event is actually notified, but as this does not allow executions to happen which violate the semantics of DCR, this is reduced to a question of fairness, which will not be discussed in this thesis\footnote{Fairness in the sense that two events which enabledness is affected by an execution will not necessarily be notified of that execution at the same time, thereby allowing one event to execute before the other.}.
 
 	The algorithm we present for collecting the global history, does so without locking or pausing the network.	
-	There is however considerations in that each event will then have their individual perceived sequence of executions, which might be dissimilar due to arbitrary message delays.
+	There is, however, considerations in that each event will then have their individual perceived sequence of executions, which might be dissimilar due to arbitrary message delays.
 
-	Consider a simple graph of two events with a condition between them: $\ev{A} \crel \ev{B}$
-	If a global history collection is started, by a client requesting it from every cluster, and \texttt{A} is the first to send its state, after which it executes, followed by an execution of \texttt{B}.
-	\texttt{B} then receives the message asking for state and responds with a sequence of $\{\texttt{A}, \texttt{B}\}$, where \texttt{A} responds with an empty sequence.
+%mangler kort beskrivelse af vi bare spørger alle leaders
+%mangler beskrivelse af happend-before og consistent cut
+
+	Consider a simple graph of two events with a condition between them: $\ev{A} \crel \ev{B}$.
+	A global history collection is started, by a client requesting it from every cluster, and \texttt{A} is the first to send its execution sequence $\{\}$, after which it executes, followed by an execution of \texttt{B}.
+	\texttt{B} then receives the message asking for state and responds with a sequence of $\{\texttt{A}, \texttt{B}\}$.
 	In this specific example it is not immediately apparent that assuming that \texttt{B} is correct and therefore accept its sequence as the global history, could be problematic.
 	However, if \texttt{A} is not able to be executed immediately, it is impossible to interpolate what has happened.
 	An example of this is the graph $\ev{A} \erel \ev{B} \crel \ev{C} \crel \ev{D}$, where the collection of the global history could return an empty sequence for \texttt{A}, \texttt{B} and \texttt{C}, but a sequence of $\{\texttt{C}, \texttt{D}\}$ from \texttt{D}.
 	It is unknown whether an execution of \text{A} or an execution of \texttt{B} allowed the execution of \texttt{C} and then \texttt{D}.
-	To solve this, any execution not present in the sequence returned by the event itself is considered invalid and therefore that execution is deleted from the sequence of all events.
+	To solve this, any execution not present in the sequence returned by the event itself is considered invalid and therefore that execution is deleted from the sequence of all events, as well as all following events in that sequence.
 	In the above example, this would mean that the execution of \texttt{B} in the history of \texttt{C} would be deleted, along with the execution of \texttt{C} as it follows the execution of \texttt{B}.
-	The reason for this problem is that if these executions are not omitted, a consistent cut is no longer guaranteed.
+	The reason for this procedure is that if these executions are not omitted, a consistent cut is no longer guaranteed.
 
 	\begin{figure}[ht!] 
 		\center
@@ -1192,9 +1195,9 @@ function accept($m$)
 	In Figure \ref{fig:global-history-collection-consistent-cut} the example from above is shown.
 	As a consistent cut requires that any message received within the cut must also be sent within the cut, it is clear that the cut described in the figure is inconsistent.
 	The method of fixing an inconsistent cut described earlier, is the equivalent of ignoring that \texttt{D}'s cluster has received an execution message from \texttt{C}, which also renders the execution of \texttt{D} invalid.
-	Cuts made in a DCR graph adhering to the tracking rules outlined here, and the implicit tracking of locks, will always be locally consistent up to a point meaning that they are guaranteed to uphold the first premise of happened-before relations (HB1), namely ordering of local process events.
+	Cuts made in a DCR graph adhering to the tracking rules outlined here, and the implicit tracking of locks, will always be locally consistent up to a point, meaning that they are guaranteed to uphold the first premise of happened-before relations (HB1), namely ordering of local process events.
 	Given that these events will always present a local sequence adhering to HB1, there must be some point for each process which is consistent with another point in each other process.
-	Each event will always be able to present an empty sequence, as an example of a consistent cut, and since all messages received within the cut are discarded along with all later executions if the message is not sent within the same cut, it follows that it is always possible to obtain a consistent cut.
+	Each event will always be able to present an empty sequence, as an example of a consistent cut, and since all messages received within the cut are discarded along with all later executions if the message is not sent within the same cut, it follows that it is always possible to obtain a consistent cut. %WHAT?
 
 	Now that a consistent cut is guaranteed, a valid execution sequence then has to be interpolated.
 
@@ -1206,13 +1209,13 @@ function accept($m$)
 	\end{figure}
 
 	From the graph shown in Figure \ref{fig:global-history-collection-example}, the shown sequences are collected for each event and form a consistent cut.
-	Note that each execution of an event is uniquely identifiable, which is also the case in the algorithm described in this thesis, as it is need by the cluster consensus part described in section \ref{subsec:cluster-consensus}.
+	Note that each execution of an event is uniquely identifiable, which is also the case in the algorithm described in this thesis, as it is needed by the cluster consensus part described in section \ref{subsec:cluster-consensus}.
 
 	From each sequence, an implicit valid ordering is present, in the sense that from event \texttt{B} it is shown that execution $B_1$ can happen before $A_1$ happens.
-	An aggregation of these sequences needs to be found and this can be accomplished through the construction of a graph and topologically sorting it.
+	An aggregation of these sequences needs to be found, which can be accomplished through the construction of a directed graph and topologically sorting it.
 	Before an aggregation can be performed, we define each sequence as a series of execution relations.
 	For example the execution sequence recorded by \texttt{B} could also be formulated as: $A_1 \rightarrow B_1, B_1 \rightarrow E_1, E_1 \rightarrow F_1, F_1 \rightarrow E_2, E_2 \rightarrow F_2$.
-	Once each execution sequence is formulated in that way, they are aggregated to make a complete list of rules which a valid execution sequence must follow.
+	Once each execution sequence is formulated in that way, they are aggregated to make a complete list of rules that any valid execution sequence must follow.
 	For the example illustrated in Figure \ref{fig:global-history-collection-example}, this results in the following list of rules: $A_1 \rightarrow B_1, A_1 \rightarrow D_1, B_1 \rightarrow E_1, E_1 \rightarrow F_1, F_1 \rightarrow E_2, E_2 \rightarrow F_2, E_1 \rightarrow E_2, E_2 \rightarrow F_1, F_1 \rightarrow F_2, F_2 \rightarrow C_1$
 
 	\begin{figure}[ht!]
@@ -1232,9 +1235,13 @@ function accept($m$)
 
 	From the list of rules, a graph can now be constructed of possible executions, as seen in Figure \ref{fig:execution-sequence-graph-example1}.
 	In order to extract an actual valid execution sequence, a topological ordering needs to be applied, but as this is only valid in acyclic graphs, cycles are collapsed into single nodes, as shown in Figure \ref{fig:execution-sequence-graph-example2}.
-	A topological ordering can then be performed resulting in the valid execution sequence of $A_1D_1B_1E_1E_2F_1F_2C_1$
+	This is still valid, as cycles in the happened-before relationships of executions, entails that the executions happened concurrently.
+	And since the locking rules from section \ref{subsec:event-locking}, only allow concurrent executions when the events are dynamically independent, any linearisation of the concurrent executions must result in the same state of the graph. 
+	After collapsing any cycles, topological ordering can then be performed resulting in the valid execution sequence of $A_1D_1B_1E_1E_2F_1F_2C_1$
 	
-	The complexity of this operation is dominated by the process of ensuring a consistent cut, as for \textit{n} events, each with a sequence of length \textit{m}, each element, of which there are them $n \cdot m$, has to be checked against the elements in the list of the executed element, \textit{m} again and since an inconsistency can lead to a new inconsistency, the worst case means this has to be iterated over $\frac{n}{2}$ times.
+	The complexity of this operation is dominated by the process of ensuring a consistent cut.
+	If there are \textit{n} events, each with a sequence of length \textit{m}, there is a total of $n \cdot m$ elements.
+	Each element has to be checked against the elements in the list of the executed element, \textit{m} again and since an inconsistency can lead to a new inconsistency, the worst case means this has to be iterated over $\frac{n}{2}$ times.
 	This results in a complexity of $\frac{n^2}{2}\cdot m^2$, which is significantly expensive, but well within the reasonable limit of local computations.
 
 	\section{Security analysis}
