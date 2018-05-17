@@ -1174,11 +1174,14 @@ function accept($m$)
 
 
 %mangler beskrivelse af happend-before og consistent cut
-
+	One way to achieve a global history, is to implement Chandra and Lamport's Snapshot algorithm~\cite{chandy_distributed_1985}.
+	This would require incorporation of this algorithm into the snapshot, increasing the complexity even more.
+	Instead, we present an alternative solution, where the client requesting the global history requests the execution log from each event cluster.
 	The algorithm we present for collecting the global history, does so without locking or pausing the network.	
 	There is, however, considerations in that each event will then have their individual perceived sequence of executions, which might be dissimilar due to arbitrary message delays.
+	After receiving an answer from each cluster, the client is able to merge the local executions sequences into a consistent cut, using the following algorithm. 
 
-	% One way to achieve a global history, is to 
+
 %mangler kort beskrivelse af vi bare spørger alle leaders
 
 
