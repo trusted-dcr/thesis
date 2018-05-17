@@ -1156,10 +1156,10 @@ function accept($m$)
 	In this section we will refer to each cluster as the event itself, for simplicity.
 		
 	For a global history to be collectible, each event need to track more than just their own executions.
-	Events must also track all executions that changes its state and enabledness, since it is required that an event always knows it own state and enabledness.
+	Events must also track all executions that changes the state and enabledness of the former.
 	As locked events are implicitly notified of an execution upon unlocking, tracking these are trivial.
 	There are, however, cases where locking is not performed, as locking is mostly concerned with preventing race conditions, but where enabledness is affected, such as the case of: $\ev{A} \crel \ev{B}$, where \texttt{B} can not execute before \texttt{A} is executed or excluded.
-	In addition to locking, events in which enabledness is affected by an execution must therefore also be informed about that execution, so that they are able to execute, as described in section~\ref{subsec:event-locking}.
+	In addition to locking, events in which enabledness is affected by an execution must therefore also be informed about that execution, so that they are able to execute.
 
 	It is assumed that informing events is attempted until the informed event responds.
 	Under this assumption, an arbitrary amount of time can pass before an event is actually notified, but as this does not allow executions to happen which violate the semantics of DCR; it is reduced to a question of fairness, which will not be discussed in this thesis\footnote{Fairness in the sense that two events which enabledness is affected by an execution will not necessarily be notified of that execution at the same time, thereby allowing one event to execute before the other.}.
@@ -1184,6 +1184,11 @@ function accept($m$)
 	The algorithm we present for collecting the global history, does so without locking or pausing the network.	
 	There is, however, considerations in that each event will then have their individual perceived sequence of executions, which might be dissimilar due to arbitrary message delays.
 	After receiving an answer from each cluster, the client is able to merge the local executions sequences into a consistent cut, using the following algorithm. 
+
+	Given a cut from a graph, it is always possible to reduce the cut until consistency is at some point attained.
+	Transactions, in terms of execution sequences, is represented in executions of an event stored returned in the sequence of that event, sent messages, and in events notified of that execution, received messages.
+	Therefore if any event returns an execution of another event and that execution is not present in the sequence returned by the latter event, it must be disregarded from the cut as it violates HB2.
+	Since this could lead to violation of HB1, each execution recorded after the disregarded execution is also disregarded.
 
 	Consider a simple graph of two events with a condition between them: $\ev{A} \crel \ev{B}$.
 	A global history collection is started, by a client requesting it from every cluster, and \texttt{A} is the first to send its execution sequence $\{\}$, after which it executes, followed by an execution of \texttt{B}.
