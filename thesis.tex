@@ -954,6 +954,9 @@
 
 	As discussed in section \ref{sec:analysis}, the execution of non-independent events must be synchronised.
 	This is achieved through locking of individual events.
+	%
+	%A lock on an event is defined as...
+	%.... we say that event A locks event B
 
 	For this section, we apply terms used in directed graphs and define variations of neighbourhoods with regards to DCR graphs as:
 	\begin{description}
@@ -968,10 +971,10 @@
 	Consider a graph consisting of two events with a condition between them: $\ev{A} \crel \ev{B}$
 	Events \texttt{A} and \texttt{B} are dynamically dependent, as executing first \texttt{A} and then \texttt{B} results in a different graph than executing first \texttt{B} and then \texttt{A}, since \texttt{B} cannot be executed in the latter case.
 	According to the goal of preventing dynamically dependent events from executing simultaneously, when event \texttt{A} is executing, event \texttt{B} must therefore be locked.
-	This is unnecessary as it is impossible for event \texttt{B} to be executing before event \texttt{A} is either executed or excluded.
+	This is unnecessary as it is impossible for event \texttt{B} to execute before event \texttt{A} has been either executed or excluded.
 	Both of the constraints share this property and since constraints furthermore do not modify states, there is no need for \texttt{A} to lock \texttt{B} or indeed for any event to lock events which it is targeting only with a constraint.
 
-	\begin{figure}[ht!] 
+	\begin{figure}[ht!]
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/race-condition.pdf}
 		\caption{Graph illustrating the need for locking effects in $N_{out}(v)$.}
@@ -979,7 +982,7 @@
 	\end{figure}
 
 	If \texttt{A} has effects originating from it, the need for synchronization arises as shown in Figure \ref{fig:race-condition}.
-	In the graph events \texttt{A} and \texttt{B} both modify the same states and a race condition is present as a result.
+	In the graph events \texttt{A} and \texttt{B} both modify the same event state attributes and a race condition is present as a result.
 	In order to prevent the race condition from having adverse effect, synchronization is needed between the two executing events, \texttt{A} and \texttt{B}.
 	This means that events with effects targeting events within $N_{out}(v)$, where $v$ is the event being executed, need to lock the targeted events.
 
@@ -988,17 +991,17 @@
 	\begin{figure}[ht!] 
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/second-degree-effect.pdf}
-		\caption{Graph illustrating the need for locking in either $N_{out}(N_{out}(v))$ or $N_{in}(v) \cup N_{out}(v)$.}
+		\caption{Graph illustrating the need for locking in either some subset of $N_{out}(N_{out}(v))$ or some subset of $N_{in}(v) \cup N_{out}(v)$.}
 		\label{fig:second-degree-effect}
 	\end{figure}
 
-	In the graph shown in Figure \ref{fig:second-degree-effect} it is shown that the locking set has to include either a subset of $N_{out}(N_{out}(v))$ or a subset $N_{in}(v) \cup N_{out}(v)$, in order to prevent the graph from ending in a state where both \texttt{A} and \texttt{B} have been executed, which should be impossible due to the execution of either including a condition on the other.
+	In the graph shown in Figure \ref{fig:second-degree-effect} it is shown that the locking set has to include either a subset of $N_{out}(N_{out}(v))$ or a subset $N_{in}(v) \cup N_{out}(v)$, in order to prevent the graph from ending in a state where both \texttt{A} and \texttt{B} have been executed, which should be impossible due to the execution of either including a condition on the other. %what about N_in(N_in(v))?
 	In this case, the two locking methods have the same results and as no strong argument for one over the other can be formed from this basis, the simplest method is chosen, namely the locking that includes a subset of $N_{out}(N_{out}(v))$.
 
 	According to the semantics of DCR relations (see section \ref{subsec:dcr}), the enabledness of an event, $v$, can only be changed by state changes in $N_{in}(v)$, and the state of the event can only be affected by an execution in $N_{in}(v)$. 
 	Consider an event $v$.
 	Executing $v$ can then change the state and enabledness of any event in $N_{out}(v)$. 
-	Changes of the enabledness of an event in $N_{out}(v)$ cannot propagate\footnote{unless the enabledness change of the event is a result of a state change of the event, e.g. if the event is excluded}, since no relation relies on the enabledness of the originating event.
+	Changes of the enabledness of an event in $N_{out}(v)$ cannot propagate\footnote{Unless the enabledness change of the event is a result of a state change of the event, e.g. if the event is excluded}, since no relation relies on the enabledness of the originating event.
 	Changes of the state of an event in $N_{out}(v)$, \textit{can} propagate, since the constraining relations relies on the state of the originating event.
 	But since only the constraining relations rely on the state of the originating event, the state change can only propagate enabledness changes, which in turn cannot propagate.
 	Summarized we have the following cases where locking must occur:
@@ -1020,14 +1023,14 @@
 	\end{figure}
 
 	In the graph shown in Figure \ref{fig:second-degree-no-effect} an execution of \texttt{A} no longer has an effect on the enabledness of \texttt{B}, as \texttt{C} has the same state before and after the execution of \texttt{A}.
-	An argument can be made here for the chosen locking scheme over $N_{in}(v) \cup N_{out}(v)$, as it allows for optimizations in that \texttt{B} strictly does not need to be locked.
-	This optimization is only possible when the state of \texttt{C} is known and since locking is only performed forwards, there is no implicit way to propagate executions backwards, meaning that \texttt{A} would not be notified of the state of \texttt{C} through executions. 
+	An argument can be made here for the $N_{out}(N_{out}(v))$ locking scheme over $N_{in}(v) \cup N_{out}(v)$, as it allows for optimizations in that \texttt{B} strictly does not need to be locked.
+	This optimization is only possible when the state of \texttt{C} is known and since locking is only performed forwards, there is no implicit way to propagate executions backwards, meaning that \texttt{A} would not be notified of the state of \texttt{C} through executions. %Isn't locking only performed forwards because of the $N_{out}(N_{out}(v))$ locking scheme?
 	The solution of simply notifying \texttt{A} of \texttt{C}'s state when changed, is insufficient as the notification might not arrive before \texttt{A} performs locking based on a previous state.
 	Fixing the notifications would require locking which would thereby invalidate the attempt to reduce locking by propagating state changes.
 	This means that \texttt{A} does not know the state of \texttt{C} on execution and would have to send a locking message to \texttt{C}, telling it to lock \texttt{B} if necessary.
 	However, locking in two stages has the disadvantage of potentially taking twice as long, assuming that transporting a message between \texttt{A} and \texttt{C} takes the same amount of time as between \texttt{A} and \texttt{B}.
 	An additional consideration, incidentally with the same trade-offs, is locking each individual event in lexicographical order, thereby minimizing the number of locks which have to be aborted, if leader collision occurs.
-	Both of these solutions aim to maximize concurrency, but at the cost of messages and round-trips, which could in practice be very time consuming.
+	Both of these solutions aim to maximize concurrency, but at the cost of messages and round-trips, which in practice could be very time consuming.
 
 	It should be noted that the semantics of locking described here is not maximally concurrent in relation to DCR semantics.
 	This is evident from the definition of dynamic independence, which describes what events should be allowed to execute concurrently.
@@ -1035,7 +1038,7 @@
 	\begin{itemize}
 		\item Consider a graph $\ev{A} \erel \ev{B}, \ev{C} \erel \ev{B}$. When \texttt{A} is executing, it locks \texttt{B}. If \texttt{C} then attempts to execute it will need a lock on \texttt{B} as well. \texttt{B} could choose to accept both of these locks, as they have exactly the same effect on the graph.
 		\item Consider a graph $\ev{A} \irel \ev{B}, \ev{C} \erel \ev{B}$. When \texttt{A} is executing, it locks \texttt{B}. If \texttt{C} attempts to execute, it is clear that it should not be allowed to obtain a lock until \texttt{A} finishes executing. However, even though \texttt{B} is locked by \texttt{A}, \texttt{B} should be allowed to execute, as it is dynamically independent with \texttt{A}.
-		\item Consider a graph $\ev{A} \irel \ev[100]{B}, \ev[100]{B} \crel \ev{C}$. When \texttt{A} is executing, it will lock \texttt{B} and \texttt{C} due to the constraint originating from \texttt{B} and targeting \texttt{C}. This is not needed, as the condition relation is invalidated by the fact that \texttt{A} is executed. 
+		\item Consider a graph $\ev{A} \irel \ev[100]{B}, \ev[100]{B} \crel \ev{C}$. When \texttt{A} is executing, it will lock \texttt{B} and \texttt{C} due to the constraint originating from \texttt{B} and targeting \texttt{C}. This is not needed, as the condition relation is invalidated by the fact that \texttt{B} is executed. 
 	\end{itemize}
 
 	For the implementation described in this thesis, the simpler rules of locking is implemented, namely always locking on \textbf{Effects} and on \textbf{Effect-Conditions} as described earlier.
@@ -1182,12 +1185,17 @@
 	In order to extract an actual valid execution sequence, a topological ordering needs to be applied, but as this is only valid in acyclic graphs, cycles are collapsed into single nodes, as shown in Figure \ref{fig:execution-sequence-graph-example2}.
 	This is still valid, as cycles in the happened-before relationships of executions, entails that the executions happened concurrently.
 	And since the locking rules from section \ref{subsec:event-locking}, only allow concurrent executions when the events are dynamically independent, any linearisation of the concurrent executions must result in the same state of the graph. 
-	After collapsing any cycles, topological ordering can then be performed resulting in the valid execution sequence of $A_1D_1B_1E_1E_2F_1F_2C_1$
+	After collapsing any cycles, topological ordering can then be performed resulting in a valid execution sequence, for example $A_1D_1B_1E_1E_2F_1F_2C_1$
 	
 	The complexity of this operation is dominated by the process of ensuring a consistent cut.
 	If there are \textit{n} events, each with a sequence of length \textit{m}, there is a total of $n \cdot m$ elements.
 	Each element has to be checked against the elements in the list of the executed element, \textit{m} again and since an inconsistency can lead to a new inconsistency, the worst case means this has to be iterated over $\frac{n}{2}$ times.
-	This results in a complexity of $\frac{n^2}{2}\cdot m^2$, which is expensive, but well within the reasonable limit of local computations.
+	This results in a complexity of $\frac{n^2}{2}\cdot m^2 = O(n^2 \cdot m^2)$.
+	When the consistent cut has been found, Johnson's algorithm for finding elementary circuits~\cite{johnson_finding_1975}, %can be changed!
+	can be used to find all simple cycles in $O((n+e)(c+1))$, where $n$ is the number of nodes, $e$ is the number of edges, and $c$ is the number of cycles.
+	At last, the graph must be topologically ordered into a linearisation, which can be done in $O(n+e)$ using depth-first search~\cite[section 22.4]{cormen_introduction_2009}.
+	All in all, the complexity of this operation is dominated by the process of ensuring a consistent cut, resulting in the complexity $O(n^2 \cdot m^2)$,which is expensive, but well within the reasonable limit of local computations.
+
 
 	\subsection{Raft}
 	Raft is a variation of multi-Paxos establishing consensus between processes over a continuous stream of commands.
@@ -1417,7 +1425,20 @@
 		This is a quite strong assumption, in that Intel might be required surrender these keys by law in some countries.
 		
 		\subsection{Analysis}
+		%if adv. takes over 1 process
+		%	- At most channel failures
+		%If adv. takes over $\leq$ f processes => f crashes/channel failures
+		%	- Raft still works
+		%If adv. takes over $>$ f processes => $>$ f crashes/channel failures
+		%	- Safety still guaranteed, and some availability
 		
+		%Special cases:
+		%If adv. takes over 2 processes in same cluser => liveness
+		%	- fixed
+		%If adv. takes over leader and stops client requests
+		%	- eventual leader change / can be fixed by broadcast
+
+
 	\section{DCR-TEE Implementation}
 
 	\section{Distributed Smart Contract Engine}
