@@ -1,0 +1,37 @@
+\documentclass{article}
+
+\usepackage[paperheight=8.5cm,paperwidth=15.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{mathtools}
+\pagestyle{empty}
+
+\include{msg-preamble}
+
+\begin{document}
+\begin{tikzpicture}[overlay, remember picture]
+\node[anchor=center] (graph)
+  at (current page.center)
+  {\includegraphics[width=7cm]{graph}};
+
+\node[anchor=west, xshift=0.4cm, yshift=2.4cm]
+  at (graph.center)
+  {$\dfrac{\MSG{\REQ\COMMAND, tag_{lock}, e, \ENUM{LOCK}}_{client}}{append\ (tag_{lock}, e, \ENUM{LOCK})}
+  $};
+
+\node[anchor=west, xshift=0.4cm, yshift=0.4cm]
+  at (graph.center)
+  {$\dfrac{committed\ (tag_{lock}, e, \ENUM{LOCK})}{\MSG{\REQ\COMMAND, tag_{lock}, e, \ENUM{LOCK}}_{1 \dots n}}
+  $};
+
+\node[anchor=east, xshift=-1.7cm, yshift=-1.8cm]
+  at (graph.center)
+  {$\dfrac{\MSG{\RSP\COMMAND, tag_{lock}, false}_{1|\dots|n}}{\splitdfrac{\MSG{\REQ\COMMAND, tag_{abort}, e, \ENUM{ABORT}}_{1 \dots n}\ \land}{append\ (tag_{abort}, e, \ENUM{ABORT})}}
+  $};
+
+\node[anchor=west, xshift=1.3cm, yshift=-1.8cm]
+  at (graph.center)
+  {$\dfrac{\MSG{\RSP\COMMAND, tag_{lock}, true}_{1 \dots n}}{\splitdfrac{\MSG{\REQ\COMMAND, tag_{exec}, e, \ENUM{EXEC}}_{1 \dots n}\ \land}{append\ (tag_{exec}, e, \ENUM{EXEC})}}
+  $};
+\end{tikzpicture}
+\end{document}

@@ -18,37 +18,33 @@
 \usepackage{booktabs}
 \usepackage{rotating}
 \usepackage{pdflscape}
+\usepackage[inline]{enumitem}
+\usepackage{framed}
+\usepackage{mathtools}
+\usepackage{bm}
 
 \include{dcr-preamble}
+\include{msg-preamble}
 
 \title{DCR/TEE \\
 \large Working subtitle in a trusted execution environment}
 \author{Mikkel Gaub \and Malthe Ettrup Kirkbro \and Mads Frederik Madsen}
 
 % Allow line break at ',' in math mode:
-\makeatletter
-\def\old@comma{,}
-\catcode`\,=13
-\def,{%
-  \ifmmode%
-	\old@comma\discretionary{}{}{}%
-  \else%
-	\old@comma%
-  \fi%
-}
-\makeatother
+% \makeatletter
+% \def\old@comma{,}
+% \catcode`\,=13
+% \def,{%
+%   \ifmmode%
+% 	\old@comma\discretionary{}{}{}%
+%   \else%
+% 	\old@comma%
+%   \fi%
+% }
+% \makeatother
 
 % C++ command
 \newcommand\cpp{C\nolinebreak[4]\hspace{-.05em}\raisebox{.4ex}{\relsize{-1}{\textbf{++}}}}
-\newcommand{\STATE}[1]{\texttt{#1}}
-\newcommand{\MSG}[1]{\langle{#1}\rangle}
-\newcommand{\REQ}[1]{\overrightarrow{#1}}
-\newcommand{\RSP}[1]{\overleftarrow{#1}}
-\newcommand{\COMMAND}{\texttt{COMMAND}}
-\newcommand{\APPEND}{\texttt{APPEND}}
-\newcommand{\CAMPAIGN}{\texttt{CAMPAIGN}}
-
-
 
 \begin{document}
 \sloppy
@@ -1071,81 +1067,6 @@
 	Basic Raft is vulnerable to DDoS attack if two peers cannot receive messages from each other.
 	We have therefore extended the basic algorithm slightly, to protect against this vulnerability.
 	We have done so, since we assume byzantine errors on the SGX-transformed algorithm, which means that the byzantine errors can effect the channel-wrappers on each peers, and cause coordinated message omission.
-	The pseudo code for the extended Raft implementation can be viewed below.
-
-% 	\hrule
-% \begin{lstlisting}[style=pseudo,caption={},captionpos=b]
-% $\MSG{\REQ\COMMAND, tag, event, type}$
-% $\MSG{\RSP\COMMAND, tag, success, leader}$
-
-% $\MSG{\REQ\APPEND, t, prev_t, prev_i, commit_i, entries}$
-% $\MSG{\RSP\APPEND, term, prev_t, prev_i, success}$
-
-% $\MSG{\REQ\CAMPAIGN, t, prev_t, prev_i}$
-% $\MSG{\RSP\CAMPAIGN, term, t, success}$
-
-% \end{lstlisting}
-% \hrule
-\begin{lstlisting}[style=pseudo]
-$state \leftarrow \STATE{F}$
-$log \leftarrow \emptyset$
-
-$term \leftarrow 0$
-$index \leftarrow 0$
-$committed \leftarrow 0$
-$indices[1 \dots n] \leftarrow 0$ // define n as size of quorum
-
-$vote \leftarrow nil$
-$p_l \leftarrow nil$
-
--- loop --
-receive $m$ from $p_s$ or time
-accept($m$)
-
-function accept($m$)
-  match $m$ with
-  // client commands
-  | $\MSG{\REQ\COMMAND, tag, \_, \_}$ when $state \ne \STATE{L}$ $\longrightarrow$
-    send $\MSG{\RSP\COMMAND, tag, false, p_l}$ to $p_s$
-  | $\MSG{\REQ\COMMAND, tag, event, type}$ $\longrightarrow$
-    $index \leftarrow index + 1$
-    $entry \leftarrow (term, index, event, type)$
-    $log \leftarrow log \cup \{entry\}$
-    broadcast $\MSG{\REQ\APPEND, term, index, \{entry\}}$
-
-  // peer surpassed our term
-  | $\MSG{\REQ\APPEND, t, \_, \_, \_, \_}$ when $t > term$ $\longrightarrow$
-    $state \leftarrow \STATE{F}$
-    $term \leftarrow t$
-    $p_l \leftarrow p_s$
-    accept($m$)
-  | $\MSG{\RSP\APPEND, t, \_, \_, \_}$ when $t > term$
-  | $\MSG{\REQ\CAMPAIGN, t, \_, \_}$ when $t > term$
-  | $\MSG{\RSP\CAMPAIGN, t, \_, \_}$ when $t > term$ $\longrightarrow$
-    $state \leftarrow \STATE{F}$
-    $term \leftarrow t$
-    accept($m$)
-
-  // leader is in old term or
-  // log mismatch during append
-  | $\MSG{\REQ\APPEND, t, prev_t, prev_i, \_, \_}$ when $t < term$
-  | $\MSG{\REQ\APPEND, \_, prev_t, prev_i, \_, \_}$ when $\nexists l \in log, l_{term} = prev_t \land l_{index} = prev_i$ $\longrightarrow$
-    send $\MSG{\RSP\APPEND, term, prev_t, prev_i, false}$ to $p_s$
-
-  // candidate is in old term
-  | $\MSG{\REQ\CAMPAIGN, t, \_, \_}$ when $t < term$ $\longrightarrow$
-    send $\MSG{\RSP\CAMPAIGN, term, t, false}$ to $p_s$
-
-  // remove mismatching entries from log
-  // and append new entries
-  | $\MSG{\REQ\APPEND, \_, prev_t, prev_i, c, entries}$ $\longrightarrow$
-    $log \leftarrow entries\cup \{l \in log | l_{term} \le prev_t \land l_{index} \le prev_i\}$
-    $committed \leftarrow c$
-    send $\MSG{\RSP\APPEND, term, prev_t, prev_i, true}$ to $p_s$
-
-\end{lstlisting}
-
-
 
 	\subsection{Global history collection} % CheapShot
 	\label{subsec:global-history-collection}
@@ -1267,6 +1188,223 @@ function accept($m$)
 	If there are \textit{n} events, each with a sequence of length \textit{m}, there is a total of $n \cdot m$ elements.
 	Each element has to be checked against the elements in the list of the executed element, \textit{m} again and since an inconsistency can lead to a new inconsistency, the worst case means this has to be iterated over $\frac{n}{2}$ times.
 	This results in a complexity of $\frac{n^2}{2}\cdot m^2$, which is expensive, but well within the reasonable limit of local computations.
+
+	\subsection{Raft}
+	Raft is a variation of multi-Paxos establishing consensus between processes over a continuous stream of commands.
+	Like Paxos, Raft uses a leader to order commands and tolerates $f = \lfloor \frac{n - 1}{2} \rfloor$ (crash) faults.
+	The implementation of the Raft algorithm differs heavily from that of multi-Paxos, but the guarantees provided are very similar.
+
+	In Raft, a processor is either a leader, follower, or (leader) candidate.
+	To circumvent FLP, Raft operates under partial synchrony \cite{dwork_consensus_1988} and only keeps a leader for a single term.
+	If a processor has not heard from the leader for some time period $\Delta$, the processor will start an election to move processors to the next term and elect a new leader.
+	As for any partially synchronous consensus algorithms, these elections can potentially go on forever if network latency permanently exceeds $\Delta$.
+	However, in real-life systems where $\Delta$ is set above the normal network latency, this is a reasonable restriction.
+
+	Every processor keeps an indexed log of commands and what term they were added in.
+	A processor keeps track of the current term and, upon receiving any request or response with a higher term, updates its term and becomes a follower.
+	A processor also keep track of the last known command it knows the leader deems to be committed.
+	Log entries at or below the commit index are durable while log entries above the commit index may change following an election.
+
+	\subsubsection*{Election}
+	During an election, a follower experiencing a leader timeout will become a candidate. The candidate attempts to receive a majority vote from the remaining processors, endorsing it as leader in the following term.
+	Followers will grant the vote if
+	\begin{enumerate*}[label=\textbf{(\alph*)}]
+	  \item the candidate's term is not below the follower's term,
+	  \item the follower has not yet voted in the term,
+	  \item and the candidate's log is at least as up-to-date as the follower's log.
+	\end{enumerate*}
+	Specifically we say that the candidate broadcasts the message $\MSG{\REQ\ELECTION, t, last_t, last_i}$, where $t$ is the term the candidate is attempting to win, while $last_t$ and $last_i$ are the term and index of last entry in the candidate's log.
+	For a candidate's log to be up-to-date with a follower's log, the follower's log must neither contain an entry $l$ with $l_{(term)} > last_t$ nor $l_{(term)} = last_t$ and $l_{(index)} > last_i$.
+	When a candidate receives a majority vote (including its own vote), it becomes the leader.
+	Like followers timing out after time period $\Delta$ of not hearing from the leader, a candidate times out after time period $\Delta$ of not winning the election.
+	This can happen when split votes occur or when the network is in a period of asynchrony.
+	Candidate timeouts work exactly like follower timeouts; the candidate starts an election for the next term.
+	To reduce the chance of split votes following leader crashes, in practice $\Delta$ is set to a random value between some $\Delta_{min}$ and $\Delta_{max}$ at each processor.
+
+	\subsubsection*{Leading}
+	A leader receives commands from clients, directs followers to replicate the commands in their logs, and ensures that a majority of the network agree on the order of commands in their logs.
+	To accomplish this, the leader will broadcast $\MSG{\REQ\APPEND, t, prev_t, prev_i, commit_i, entries}$ messages either following client requests or as no-op heartbeats to prevent follower timeouts.
+	Here $t$ is the leader's term, $prev_t$ and $prev_i$ the term and index of the last entry in the leader's log, $commit_i$ the index of the last committed log entry, and $entries$ a series of log entries followers should append after the $(prev_t, prev_i)$ entry.
+	Followers will either accept or deny such a request.
+	\begin{itemize}
+	  \item If a majority of followers has accepted to append an entry at index $i$, and $i > commit_i$ for the leader, the leader will set $commit_i \leftarrow i$ as a majority-replication makes the entry durable even through elections.
+	  The next append message will propagate the new $commit_i$ to followers.
+	  This has no relation to the durability of committed entries, but simply allows followers to apply committed commands to their state machine safely.
+	  \item If a follower denies a request to append, the follower is missing the $(prev_t, prev_i)$ entry in its log.
+	  Following a denial, the leader will send a new append message $\MSG{\REQ\APPEND, term, prev_t', prev_i', commit_i, entries'}$, where $prev_i' = prev_i - 1$, $prev_t' = log[prev_i']_{(term)}$, and $entries' = append(entries, log[prev_i'])$.
+	  Repeating this process the log entry at which the follower and leader logs diverge will eventually be reached.
+	\end{itemize}
+
+	\subsubsection*{Following}
+	Finally a follower processor will receive $\MSG{\REQ\APPEND, t, prev_t, prev_i, commit_i, entries}$ requests from leaders.
+	A follower will deny such a request if
+	\begin{enumerate*}[label=\textbf{(\alph*)}]
+	  \item the followers $term > t$ or
+	  \item no entry with term $prev_t$ and index $prev_i$ exists in the follower's log.
+	\end{enumerate*}
+	Otherwise the request is accepted.
+	As logs may have diverged between the follower and leader, the follower must remove all entries following the $(prev_t, prev_i)$ entry from its log.
+	After this operation all $entries$ can be safely appended to the follower's log.
+	Further, following an accepted append request, the follower can apply any log entry $l$ for which $l_{(index)} \le commit_i$. (Note that $log[commit_i]$ does not necessarily exist in the followers log yet, as commits require majority, not unanimity.)
+
+	\subsubsection*{Properties of Raft}
+	Raft guarantees the following properties when the amount of faults is $\le \lfloor \frac{n - 1}{2} \rfloor$ (the highest achievable fault tolerance for the consensus problem \cite{lamport_lower_2006}).
+	\begin{figure}[h]
+	  \centering
+	  \begin{minipage}{0.8\textwidth}
+	    \begin{framed}
+	      \begin{description}
+	        \item[Election Safety:]  at most one leader can be elected in a given term.
+	        \item[Leader Append-Only:] a leader never overwrites or deletes entries in its log; it only appends new entries.
+	        \item[Log Matching:] if two logs contain an entry with the same index and term, then the logs are identical in all entries up through the given index.
+	        \item[Leader Completeness:] if a log entry is committed in a given term, then that entry will be present in the logs of the leaders for all higher-numbered  terms.
+	        \item[State Machine Safety:] if a server has applied a log entry at a given index to its state machine, no other server will ever apply a different log entry for the same index.
+	      \end{description}
+	    \end{framed}
+	  \end{minipage}
+	  \caption{Guarantees given by raft. (From fig. 3 of \cite{ongaro_search_2014}.)}
+	  \label{fig:raft-properties}
+	\end{figure}
+
+	\subsubsection*{Timeout liveness vulnerability}
+	\begin{figure}[t]
+	  \centering
+	  \includegraphics[width=\textwidth]{figures/raft-liveness-vuln.pdf}
+	  \caption{Denial of service attack from malicious processor $M$ against correct processors $C_1$ and $C_2$. $M$ can repeat the above to continue the attack.}
+	\end{figure}
+
+	As previously discussed, Raft in its basic structure is vulnerable to disruption of liveness even after a byzantine transformation via SGX.
+	A malicious processor may exploit this weakness by
+	\begin{enumerate*}[label=\textbf{(\alph*)}]
+	  \item dropping all heartbeat (empty append) messages from leaders when follower and
+	  \item dropping all messages to and from any processor when leader.
+	\end{enumerate*}
+	As a result of \textbf{(a)}, the malicious processor will timeout and start an election whenever the leader has nothing to append for time period $\Delta_{min}$ (resulting in a heartbeat instead of regular append).
+	The malicious processor is likely to win this election as, as the leader has not actually crashed.
+	The correct processors will only contest such an election if the leader actually crashes or the network is sufficiently delayed.
+	The malicious processor must not drop non-empty append messages, as a candidate must be up to date from the viewpoint of a majority of processors.
+
+	As a result of \textbf{(b)}, immediately after becoming leader, the malicious processor will stop communicating with the rest of the network, causing correct processors to timeout and start yet another election.
+	When a new leader is elected, the process starts over from \textbf{(a)}.
+	In this situation, there is a window between \textbf{(b)} and \textbf{(a)} where a correct leader can append entries before the malicious processor becomes leader again.
+	Thus, liveness may not be completely lost, but the throughput of the algorithm is negatively affected.
+	If two malicious processors collude to swap leadership using the above strategy, liveness will be lost until the network becomes asynchronous and possibly elects a correct processor as leader.
+
+	To mitigate the effect of this vulnerability, \cite{ongaro_search_2014} suggest an extra message phase before a processor starts an election.
+	In this pre-election phase, a timed out processor will poll the other processors on whether or not they would grant their vote in a potential election.
+	The other processors will say yes if
+	\begin{enumerate*}[label=\textbf{(\alph*)}]
+	  \item the conditions of a normal election are fulfilled (newest term, have not voted in term, up-to-date log) and
+	  \item they have not themselves received a message from the leader for time period $\Delta_{min}$.
+	\end{enumerate*}
+	Only after receiving a majority of pre-election endorsement, the timed out processor will increment its term and start a proper election.
+	Because of \textbf{(b)} a malicious processor can not convince an SGX-transformed Raft algorithm to start an election by dropping leader messages.
+
+	\subsubsection*{Leader liveness vulnerability}
+	Another liveness vulnerability exists when a malicious processor drops selected messages.
+	A malicious processor can temporarily prevent liveness by
+	\begin{enumerate*}[label=\textbf{(\alph*)}]
+	  \item acting correctly when not leader and
+	  \item dropping all client messages when leader.
+	\end{enumerate*}
+	The malicious processor will eventually become leader in an asynchronous setting following \textbf{(a)} and then prevent any commands to be committed following \textbf{(b)}.
+	The first solution that comes to mind allows the client to accuse the leader of being malicious, forcing the remaining processors to elect a new leader.
+	However, this solution opens the network up for a denial of service attack by a malicious client.
+	A second solution allows a client to broadcast a command to all processors when unable to contact the leader.
+	The processors will piggyback the broadcast command on their next message to the leader, forcing the leader to either drop all messages or appending the command.
+	We have chosen to implement neither of these solutions and instead disregard the problem as it cannot permanently prevent liveness.
+	Given the argument that \textbf{(a)} causes the malicious processor to eventually become leader, it follows that another processor will eventually overthrow the malicious processor, restoring liveness.
+
+	\subsection{Protocol}
+	We use Raft to implement event locking (section \ref{subsec:event-locking}) and cluster consensus (section \ref{subsec:cluster-consensus}), by exploiting the guarantees given by figure \ref{fig:raft-properties}.
+	We define three command types for accomplishing this:
+	\begin{description}
+	  \item[\normalfont$\MSG{\REQ\COMMAND, tag, e, \ENUM{LOCK}}$:] request the exclusive lock to execute event $e$.
+	  \item[\normalfont$\MSG{\REQ\COMMAND, tag, e, \ENUM{ABORT}}$:] release the lock to execute event $e$ without modifying any state.
+	  \item[\normalfont$\MSG{\REQ\COMMAND, tag, e, \ENUM{EXEC}}$:] execute the event $e$ and modify state accordingly.
+	\end{description}
+	Recall the definition of a DCR graph $G(E, R)$ comprising of event set $E$ and relation set $R$.
+	Also recall the definition of the set of events to be locked when executing an event $e$ as $L(e)$ (semantically defined in section \ref{subsec:event-locking}).
+	% L(e) might have two definitions in locking section
+	We define the set of processors replicating event $e$ (cluster for $e$) as $C(e)$ and their leader as $C_{leader}(e)$.
+	With this we define the set of cluster leader processors that must be locked when executing en event $e$ as $L_{leaders}(e) = \bigcup_{e' \in L(e)} C_{leader}(e')$.
+	We say $committed(entry, leader)$ is true iff $entry$ has been added to the log of $leader$ at index $i$ and $commit_i \ge i$.
+
+	For processors in the leader state, we extend Raft with a state machine that can intercept incoming Raft messages, send new \ENUM{COMMAND} messages, and gets notified when a log entry is committed.
+
+	\subsubsection*{Normal Operation}
+	A cluster leader $p_l$ receives $\MSG{\REQ\COMMAND, tag_{lock}, e, \ENUM{LOCK}}$ requests from clients or other cluster leaders.
+	During intercept the extension checks whether the leader's log is in a lockable state: is the last log entry not a $\ENUM{LOCK}$ and, based on the log, is $e$ enabled?
+	If no, respond with $\MSG{\RSP\COMMAND, tag_{lock}, false}$.
+	If yes, pass the $\REQ\COMMAND$ request onto Raft.
+
+	When a $(tag_{lock}, e, \ENUM{LOCK})$ entry is committed, a cluster leader will do one of two things:
+	If $p_l \ne C_{leader}(e)$, $p_l$ is not responsible for the terminating the execution attempt.
+	In this case we rely on Raft to respond to the $\REQ\COMMAND$ request to let $C_{leader}(e)$ know $p_l$'s cluster is locked for execution of $e$.
+	If instead $p_l = C_{leader}(e)$, $p_l$ must continue terminating the execution attempt by locking $L(e)$.
+	To do this $p_l$ sends $\MSG{\REQ\COMMAND, tag_{lock}, e, \ENUM{LOCK}}$ to processors $L_{leaders}(e)$.
+	Notice the tag is reused for this secondary lock.
+	Further, $p_l$ notes $lock_{count}(tag_{lock}) \leftarrow 0$.
+
+	A cluster leader $p_l$ will intercept $\MSG{\RSP\COMMAND, tag, success}$ responses when the last log entry is $(tag_{lock}, e, \ENUM{LOCK})$ and $tag = tag_{lock}$.
+	If $success = true$, $p_l$ increments $lock_{count}(tag_{lock})$.
+	Otherwise a lock on the cluster of an event in $L(e)$ was denied and $p_l$ must abort the execution attempt.
+	To do this $p_l$ simultaneously passes $\MSG{\REQ\COMMAND, tag_{abort}, e, \ENUM{ABORT}}$ to its Raft component and sends the request to $L_{leaders}(e)$.
+
+	When $lock_{count}(tag_{lock}) = |L(e)|$, $e$ can safely be executed. $p_l$ sends $\MSG{\REQ\COMMAND, tag_{exec}, e, \ENUM{EXEC}}$, $m_{exec}$, to its Raft module.
+	When $(tag_{exec}, e, \ENUM{EXEC})$ is committed, $p_l$ sends $m_{exec}$ to $L_{leaders}(e)$.
+
+	\subsubsection*{Leader Recovery}
+	As cluster leaders may crash at arbitrary times, we must be able to safely continue from any step of an execution attempt as a newly elected leader.
+	We accomplish this mainly by exploiting the Leader Completeness property (figure \ref{fig:raft-properties}).
+	After being elected, a new leader $p_l'$ will look at last log entry to determine if it needs to restart a step to finish an execution attempt of a previous leader.
+	Recall that an entry, which has been committed by a leader, will not necessarily be in the committed state for the successor.
+	The Leader Completeness property only ensures that it eventually will be committed at the successor.
+	If the last entry is not committed at $p_l'$, no action is needed as normal operation will handle when it eventually commits.
+	Similarly, if the last entry is $(tag, e, type)$ where $p_l' \ne C_{leader}(e)$, no extra action is needed from $p_l'$.
+	Otherwise if $p_l' = C_{leader}(e)$, branch on the last entry as follows:
+	\begin{itemize}
+	  \item $(tag_{lock}, e, \ENUM{LOCK})$\\
+	  Send $\MSG{\REQ\COMMAND, tag_{lock}, e, \ENUM{LOCK}}$ to $L_{leaders}(e)$. Recall that $\REQ\COMMAND$ requests with the same tag will not result in duplicate entries. If the old leader already sent some or all of these requests, $p_l'$ will simply be notified of their result.
+
+	  \item $(tag_{abort}, e, \ENUM{ABORT})$\\
+	  Send $\MSG{\REQ\COMMAND, tag_{abort}, e, \ENUM{ABORT}}$ to $L_{leaders}(e)$.
+
+	  \item $(tag_{exec}, e, \ENUM{EXEC})$\\
+	  Send $\MSG{\REQ\COMMAND, tag_{exec}, e, \ENUM{EXEC}}$ to $L_{leaders}(e)$.
+	\end{itemize}
+	As a final note on leader recovery, we must ensure progress at some $p_l$ when attempting to execute $e$ even though leaders of $L_{leaders}(e)$ crash.
+	This requires $p_l$ to resend any $\REQ\COMMAND$ requests it does not receive a $\RSP\COMMAND$ response from for some set time period.
+
+	\subsubsection*{Termination Argument}
+	\begin{figure}[t]
+  	\includegraphics[width=\textwidth]{figures/raft-2pc.pdf}
+	  \caption{State machine for $C_{leader}(e)$ during execution of $e$ with states start ($\bm{S}$), intermediate locked ($\bm{L}'$), locked ($\bm{L}$), abort ($\bm{A}$), and execute ($\bm{E}$). Similar to \cite{skeen_nonblocking_1981} we show received and sent messages above and below the line subscripted with the origin or destination process. We also show appending and committing entries in $C(e)$ as messages.}
+	  \label{fig:raft-2pc}
+	\end{figure}
+
+	This locking scheme is very similar to centralized two phase commit \cite{skeen_nonblocking_1981}, where a leader safely advances a set of replicas to a commit or abort state.
+	As described in \cite{skeen_nonblocking_1981}, two phase commit is a blocking protocol, meaning a leader or replica processor crash will halt the system until the crashed processor recovers.
+	This is still true for our application of the two phase commit protocol, but we have augmented each site with an event cluster.
+	Because of this a single processor crash cannot block the two phase commit.
+	Blocking of an attempt to execute $e$ can occur at the earliest when a cluster in $\bigcup_{e' \in L(e)} C(e')$ experiences crashing of a majority of processors.
+
+	To show our proposed algorithm always terminates, when no involved cluster experiences a majority crash, we will examine the event of a cluster leader crashing during an execution attempt.
+	Specifically we will examine the $C(e)$ cluster when attempting to execute some event $e$, as the argument for termination at clusters $\bigcup_{e' \in L(e)} C(e')$ will follow naturally.
+	After having entered state $\bm{L}'$ of figure \ref{fig:raft-2pc}, $C_{leader}(e)$ will have begun committing a lock entry at its cluster. Because Leader Completeness only applies to committed entries, we need this extra state to ensure that a successor of $C_{leader}(e)$ will be aware of the lock.
+	Was $C_{leader}(e)$ to append the lock entry locally while simultaneously commanding clusters $\bigcup_{e' \in L(e)} C(e')$ to append the lock entry, we risk that a successor of $C_{leader}(e)$ would be unaware of the lock commands by its predecessor resulting in a stuck state for $\bigcup_{e' \in L(e)} C(e')$.
+	If $C_{leader}(e)$ crashes at $\bm{L}'$, the lock entry will either exist in the successor's log, and we simply continue, or it will be lost, sending the successor back to state $\bm{S}$.
+	This is fine as the client requesting the execution must be ready to resend commands, when leaders crash, as per the Raft algorithm design.
+
+	At state $L$ a crash of $C_{leader}(e)$ is safe, as Leader Completeness guarantees the lock to be known by the successor.
+	By redoing the $\bm{L}' \rightarrow \bm{L}$ transition, the successor can safely reenter $\bm{L}$ as duplicate command messages are allowed by Raft.
+
+	Notice when transitioning from $\bm{L}$ to $\bm{A}$ or $\bm{E}$, no intermediate state is needed and an entry can be appended to $C(e)$ simultaneously with sending commands to $\bigcup_{e' \in L(e)} C(e')$.
+	If $C_{leader}$ crashes at $\bm{A}$ or $\bm{E}$, a successor risks moving back to $\bm{L}'$, as the $\ENUM{ABORT}$ or $\ENUM{EXEC}$ entry may be lost completely and the $\ENUM{LOCK}$ entry may not yet be committed at the successor.
+	It is possible to prevent this by introducing intermediate states $\bm{A}'$ and $\bm{E}'$, but it is not necessary to guarantee termination.
+	Commands can be resent without resulting in duplicate entries as long as the tag remains the same.
+	Thus, if a successor of a leader in state $\bm{A}$ or $\bm{E}$ is in state $\bm{L}'$, it will simply redo the commands for $\bm{L'} \rightarrow \bm{L}$ followed by $\bm{L} \rightarrow \bm{A}$ or $\bm{L} \rightarrow \bm{E}$.
+	This is guaranteed to result in the same state as the predecessor, as two different command responses for the same tag are impossible by the properties of Raft.
 
 	\section{Security analysis}
 	The following is a security analysis of the algorithm described in section~\ref{sec:analysis}.
