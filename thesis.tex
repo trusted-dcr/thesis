@@ -1163,23 +1163,10 @@
 	An aggregation of these sequences needs to be found, which can be accomplished through the construction of a directed graph and topologically sorting it.
 	Before an aggregation can be performed, we define each sequence as a series of execution relations.
 	For example the execution sequence recorded by \texttt{B} could also be formulated as: $A_1 \rightarrow B_1, B_1 \rightarrow E_1, E_1 \rightarrow F_1, F_1 \rightarrow E_2, E_2 \rightarrow F_2$.
-	Once each execution sequence is formulated in that way, they are aggregated to make a complete list of rules that any valid execution sequence must follow.
-	For the example illustrated in Figure \ref{fig:global-history-collection-example}, this results in the following list of rules: $A_1 \rightarrow B_1, A_1 \rightarrow D_1, B_1 \rightarrow E_1, E_1 \rightarrow F_1, F_1 \rightarrow E_2, E_2 \rightarrow F_2, E_1 \rightarrow E_2, E_2 \rightarrow F_1, F_1 \rightarrow F_2, F_2 \rightarrow C_1$
 
-	\begin{figure}[ht!]
-		\centering
-		\begin{minipage}[b]{0.49\textwidth}
-			\includegraphics[width=\textwidth]{figures/dcr-graphs/execution-sequence-graph-example1.pdf}
-			\caption{Initial graph made from sequence rule aggregation.}
-			\label{fig:execution-sequence-graph-example1}
-		\end{minipage}
-		\hfill
-		\begin{minipage}[b]{0.49\textwidth}
-			\includegraphics[width=\textwidth]{figures/dcr-graphs/execution-sequence-graph-example2.pdf}
-			\caption{Directed acyclic graph version of graph shown in Figure \ref{fig:execution-sequence-graph-example1}.	}
-			\label{fig:execution-sequence-graph-example2}
-		\end{minipage}
-	\end{figure}
+	From each execution set, or set of execution ordering rules, an aggregation can be computed by performing a pairwise comparison of sequences.
+	We define a sequence as $S_n$ where $n$ is the node that returned that sequence.
+	Each sequence consists of up to $m$ elements, where $m$ is the number of executions performed in the entire graph.
 
 	From the list of rules, a graph can now be constructed of possible executions, as seen in Figure \ref{fig:execution-sequence-graph-example1}.
 	In order to extract an actual valid execution sequence, a topological ordering needs to be applied, but as this is only valid in acyclic graphs, cycles are collapsed into single nodes, as shown in Figure \ref{fig:execution-sequence-graph-example2}.
@@ -1196,6 +1183,57 @@
 	At last, the graph must be topologically ordered into a linearisation, which can be done in $O(n+e)$ using depth-first search~\cite[section 22.4]{cormen_introduction_2009}.
 	All in all, the complexity of this operation is dominated by the process of ensuring a consistent cut, resulting in the complexity $O(n^2 \cdot m^2)$,which is expensive, but well within the reasonable limit of local computations.
 
+	For the aggregation, $S_a$ of two sequences, $S_1$ and $S_2$, we compare each element in each sequence starting from the left and apply the following rules:
+	\begin{itemize}
+		\item if the compared elements are dissimilar, the element from $S_1$ is appended to $S_a$ and the subsequent element from $S_1$ is then compared to the current element of $S_2$
+		\item if the compared elements are identical, the rest of $S_1$ is appended to $S_a$, including the current element, and then the rest of $S_2$ is appended to $S_a$, excluding the current element.
+		\item if either element is void, meaning that there are no more elements in that sequence, the remainder of the non-empty sequence is appended to $S_a$.
+	\end{itemize}
+
+	After aggregation $S_a$ possibly contains duplicate executions, which is not possible in a global history.
+	Since the rules implied by a sequence only designate what has happened before something else, each subsequent duplicate of an element can be deleted from $S_a$.                      
+	This results in a complete order of executions, for example in the graph shown in \ref{fig:global-history-collection-example} where the result would be:
+	\begin{itemize}
+		\item 
+	\end{itemize}
+
+
+	% Once each execution sequence is formulated in that way, they are aggregated to make a complete list of rules that any valid execution sequence must follow.
+	% For the example illustrated in Figure \ref{fig:global-history-collection-example}, this results in the following list of rules: $A_1 \rightarrow B_1, A_1 \rightarrow D_1, B_1 \rightarrow E_1, E_1 \rightarrow F_1, F_1 \rightarrow E_2, E_2 \rightarrow F_2, E_1 \rightarrow E_2, E_2 \rightarrow F_1, F_1 \rightarrow F_2, F_2 \rightarrow C_1$
+
+	% \begin{figure}[ht!]
+	% 	\centering
+	% 	\begin{minipage}[b]{0.49\textwidth}
+	% 		\includegraphics[width=\textwidth]{figures/dcr-graphs/execution-sequence-graph-example1.pdf}
+	% 		\caption{Initial graph made from sequence rule aggregation.}
+	% 		\label{fig:execution-sequence-graph-example1}
+	% 	\end{minipage}
+	% 	\hfill
+	% 	\begin{minipage}[b]{0.49\textwidth}
+	% 		\includegraphics[width=\textwidth]{figures/dcr-graphs/execution-sequence-graph-example2.pdf}
+	% 		\caption{Directed acyclic graph version of graph shown in Figure \ref{fig:execution-sequence-graph-example1}.	}
+	% 		\label{fig:execution-sequence-graph-example2}
+	% 	\end{minipage}
+	% \end{figure}
+
+	% From the list of rules, a graph can now be constructed of possible executions, as seen in Figure \ref{fig:execution-sequence-graph-example1}.
+	% In order to extract an actual valid execution sequence, each perceived order is aggregated 
+
+	% a topological ordering needs to be applied, but as this is only valid in acyclic graphs, cycles are collapsed into single nodes, as shown in Figure \ref{fig:execution-sequence-graph-example2}.
+	% This is still valid, as cycles in the happened-before relationships of executions, entails that the executions happened concurrently.
+	% And since the locking rules from section \ref{subsec:event-locking}, only allow concurrent executions when the events are dynamically independent, any linearisation of the concurrent executions must result in the same state of the graph. 
+	% After collapsing any cycles, topological ordering can then be performed resulting in a valid execution sequence, for example $A_1D_1B_1E_1E_2F_1F_2C_1$
+	
+	% The complexity of this operation is dominated by the process of ensuring a consistent cut.
+	% If there are \textit{n} events, each with a sequence of length \textit{m}, there is a total of $n \cdot m$ elements.
+	% Each element has to be checked against the elements in the list of the executed element, \textit{m} again and since an inconsistency can lead to a new inconsistency, the worst case means this has to be iterated over $\frac{n}{2}$ times.
+	% This results in a complexity of $\frac{n^2}{2}\cdot m^2 = O(n^2 \cdot m^2)$.
+	% When the consistent cut has been found, Johnson's algorithm for finding elementary circuits~\cite{johnson_finding_1975}, %can be changed!
+	% can be used to find all simple cycles in $O((n+e)(c+1))$, where $n$ is the number of nodes, $e$ is the number of edges, and $c$ is the number of cycles.
+	% At last, the graph must be topologically ordered into a linearisation, which can be done in $O(n+e)$ using depth-first search~\cite[section 22.4]{cormen_introduction_2009}.
+	% All in all, the complexity of this operation is dominated by the process of ensuring a consistent cut, resulting in the complexity $O(n^2 \cdot m^2)$,which is expensive, but well within the reasonable limit of local computations.
+
+		\subsubsection{Reduction of DCR linearisation to NP}
 
 	\subsection{Raft}
 	\label{sub:raft}
