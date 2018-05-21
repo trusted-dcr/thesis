@@ -89,16 +89,16 @@
 	DCR graphs formulate processes in terms of events and relations between those events.
 	The relations specify the order in which events can transpire, and what paths can be taken in the workflow.
 	DCR graphs provide a concise and simple way of describing workflows, as executing an event can only affect events within a limited range, graph-wise.
-	
+
 	This property of limited effects on execution means that DCR graphs allow for highly localized states and depending on how a specific DCR graph is constructed, it can therefore allow for a very high degree of concurrency in a distributed setting.
 	Central servers would be an easy solution to this problem, but would require trust and payment, due to a third party being involved and managing the process.
 	An alternative to central servers is, of course, a decentralized solution, with participants acting as peers in a peer-to-peer network. 
 	Decentralisation brings with it a completely different set of challenges, in that a core necessity of distributed collaboration is the agreement of all parties on what has transpired in the workflow and what the state of the workflow is at any given point, a non-trivial problem in decentralized DCR.
 	This set of challenges is the problem we will present and solve during this thesis.
-	
+
 	As DCR graphs are concerned with maintaining a consistent state, the issue of making DCR graphs distributed is closely related to that of synchronizing distributed state replications.
 	However, the innate properties of DCR graphs would be heavily constrained by existing solutions to distributed state replication, due to the large number of messages required and the low degree of concurrency provided by the strict synchronization of these algorithms.
-	
+
 	The problem, and solution, described in this thesis is not limited to applications of DCR, but can also be applied in other software concerned with maintaining a distributed, fragmented state.
 	An example of such an application is also given, in the form of a distributed smart contract algorithm, as popularized by Ethereum \cite{_ethereum_2018}.
 
@@ -120,7 +120,7 @@
 	Distributing DCR graphs is not a trivial problem, as there are considerations for the distribution of that graph, especially given the desire for a higher degree of concurrency than simply having all peers be responsible for the entire DCR graph.
 	Alternatively, the DCR graph would have to be distributed on an event basis, but this is a much harder problem as changes only have to be propagated to the relevant events, meaning that multiple, possible conflicting, executions can happen simultaneously and would need synchronization intermittently.
 	Actors interacting with the graph simultaneously should be allowed only when the ordering of those interactions is inconsequential.
-	
+
 	At any given time an actor should be able to collect the state of the graph and be ensured that any future state will not be incompatible with a previously collected state, with regards to the semantics specified by the graph.
 
 	In summary, the system must:
@@ -491,7 +491,7 @@
 	A finite state machine can only be in one state at any time, and transitions to another state by accepting a bit-string as input, and optionally outputs another bit-string. 
 	A transition has the form $(s_{from}, i, o, s_{to})$, where $i$ is an input consisting of a tuple of a bit-string and the channel the bit-string was received on, and $o$ is the output consisting of a set of bit-string/channel pair, each representing that bit-string being sent on the appertaining channel.
 	For example, the finite state machine in Figure \ref{fig:simple-nfa} will transition from the starting state $s_0$ to $s_2$ on input $"010"$ from channel $c_0$, and will during the transition output $"101"$ to channel $c_1$ and $"100"$ to $c_2$.
-	
+
 	A channel can either be reliable or unreliable, and is bi-directional. 
 	A reliable channel guarantees that messages sent on it will be delivered in the order the messages was sent, and will not be changed during transmission.
 	An unreliable channel gives no such guarantees, and can thus experience loss, reordering and corruption of messages.
@@ -651,7 +651,7 @@
 		A redirected message will be not by verified by the receiving process, as it's $id_p$ will not match the intended recipient, and the message will be discarded.
 		A duplicated message is equivalent to a duplicated message on the unreliable channel, which the protocol already handles.
 	\end{itemize}
-		
+
 	This concludes the argument that Intel SGX and cryptography can change correct process behaviour under byzantine faults to behaviour equivalent that under crash faults, and thereby, using the above transformation, make a crash-resistant protocol into a byzantine-fault-tolerant protocol.
 	As we will apply this transformation to our solution, we will therefore, from here on in, only consider a fault model of crashing processes.
 
@@ -866,7 +866,7 @@
 	 	\item and enabling dynamic independence concurrency of event executions.
 	 \end{itemize}  
 	The following is a short summary of each approach:
-	
+
 	\paragraph{Central server approach}
 	The first approach is a simple central server. 
 	There is a single leader, $L$, each of the other peers replicate some subset of $E$ and can redirect requests to the leader. 
@@ -883,7 +883,7 @@
 	The next approach tries to improve on the fault tolerance of the central server approach.
 	This is a classic SMR/consensus solution with crash fault tolerance.
 	There are several protocols that fits this description, for instance in~\cite{bracha_asynchronous_1985,lamport_part-time_1998,lamport_lower_2006,ongaro_search_2014}, but for the purposes of this comparison, an abstract solution that utilizes a leader, $L$, to achieve an optimal crash fault tolerance of $f = \lfloor \frac{(n-1)}{2} \rfloor$ is enough.
-	
+
 	In this approach, every peer must replicate all events, as all executions must be committed to at least $f+1$ replicas.
 	This ensures that if a leader dies, a new leader can be chosen (using $O(n)$ messages), which gives us the aforementioned fault tolerance.
 	However, now $L$ must synchronise all requests, to ensure that they are applied in the same order by all replicas, which translates to no DCR concurrency.
@@ -963,7 +963,7 @@
 		\item[Out-neighbourhood] denoted $N_{out}(v)$, defined as the set of events where event $v'$ is in $N_{out}(v)$ iff there is a relation in $G$ that originates from $v$ and targets $v'$.
 		\item[In-neighbourhood] denoted $N_{in}(v)$, defined as the set of events where event $v'$ is in $N_{in}(v)$ iff there is a relation in $G$ that originates from $v'$ and targets $v$.
 	\end{description}
-		
+
 	In order to ensure that dynamically dependent events, as described in section \ref{subsubsec:concurrency}, cannot be executed simultaneously, locking is applied as a way of synchronizing attempts to execute.
 	In a graph, $G(E,V)$, we define the set of locked events, $L$, on the execution of an event, $v$, as $L(v)$.
 	As the way DCR propagates changes from an execution by relations and one execution cannot set any other event to executed, the locking semantics must adhere to the rules of the relations.
@@ -1078,7 +1078,7 @@
 	We define a global history to be a DCR run, i.e. it is a sequence of event executions.
 	Both as documentation of the process at deprecation of the workflow and during the life cycle of the workflow, the global history is relevant, in the latter case because the global state can be derived from the global history.
 	In this section we will refer to each cluster as the event itself, for simplicity.
-		
+
 	For a global history to be collectible, each event need to track more than just their own executions.
 	Events must also track all executions that changes the state and enabledness of the former.
 	As locked events are implicitly notified of an execution upon unlocking, tracking these are trivial.
@@ -1089,7 +1089,7 @@
 	Under this assumption, an arbitrary amount of time can pass before an event is actually notified, but as this does not allow executions to happen which violate the semantics of DCR; it is reduced to a question of fairness, which will not be discussed in this thesis\footnote{Fairness in the sense that two events which enabledness is affected by an execution will not necessarily be notified of that execution at the same time, thereby allowing one event to execute before the other.}.
 
 	The standard for representing the state of a continuous system in an asynchronous setting is by finding a consistent cut \cite{lamport_time_1978}, which is defined by the happened-before relations:
-	
+
 	\begin{description}
 		\item[Happened-before 1 (HB1)] Process events occurring on the same process can be ordered in happened-before relations.
 		\item[Happened-before 2 (HB2)] There is a happened-before relation between the sending and the reception of a message.
@@ -1105,7 +1105,7 @@
 	One way to achieve a consistent cut, is to implement Chandra and Lamport's Snapshot algorithm~\cite{chandy_distributed_1985}.
 	This would require incorporation of the snapshot algorithm into the raft algorithm, increasing the complexity even more.
 	Instead, we present an alternative solution, where the client requesting the global history requests the execution log from each event cluster.
-	The algorithm we present for collecting the global history, does so without locking or pausing the network.	
+	The algorithm we present for collecting the global history, does so without locking or pausing the network.
 	There is, however, considerations in that each event will then have their individual perceived sequence of executions, which might be dissimilar due to arbitrary message delays.
 	After receiving an answer from each cluster, the client is able to merge the local executions sequences into a consistent cut, using the following algorithm. 
 
@@ -1186,7 +1186,7 @@
 	This is still valid, as cycles in the happened-before relationships of executions, entails that the executions happened concurrently.
 	And since the locking rules from section \ref{subsec:event-locking}, only allow concurrent executions when the events are dynamically independent, any linearisation of the concurrent executions must result in the same state of the graph. 
 	After collapsing any cycles, topological ordering can then be performed resulting in a valid execution sequence, for example $A_1D_1B_1E_1E_2F_1F_2C_1$
-	
+
 	The complexity of this operation is dominated by the process of ensuring a consistent cut.
 	If there are \textit{n} events, each with a sequence of length \textit{m}, there is a total of $n \cdot m$ elements.
 	Each element has to be checked against the elements in the list of the executed element, \textit{m} again and since an inconsistency can lead to a new inconsistency, the worst case means this has to be iterated over $\frac{n}{2}$ times.
@@ -1198,6 +1198,7 @@
 
 
 	\subsection{Raft}
+	\label{sub:raft}
 	Raft is a variation of multi-Paxos establishing consensus between processes over a continuous stream of commands.
 	Like Paxos, Raft uses a leader to order commands and tolerates $f = \lfloor \frac{n - 1}{2} \rfloor$ (crash) faults.
 	The implementation of the Raft algorithm differs heavily from that of multi-Paxos, but the guarantees provided are very similar.
@@ -1309,6 +1310,7 @@
 	Because of \textbf{(b)} a malicious processor can not convince an SGX-transformed Raft algorithm to start an election by dropping leader messages.
 
 	\subsubsection*{Leader liveness vulnerability}
+	\label{subsub:leader-liveness-vulnerability}
 	Another liveness vulnerability exists when a malicious processor drops selected messages.
 	A malicious processor can temporarily prevent liveness by
 	\begin{enumerate*}[label=\textbf{(\alph*)}]
@@ -1415,23 +1417,61 @@
 	This is guaranteed to result in the same state as the predecessor, as two different command responses for the same tag are impossible by the properties of Raft.
 
 	\section{Security analysis}
-	The following is a security analysis of the algorithm described in section~\ref{sec:analysis}.
+	The following is a security analysis of the algorithm described in section \ref{sec:analysis}.
 
 		\subsection{Adversary model}
-		We allow for a very strong adversary that can coordinate faulty nodes, delay communication and delay correct nodes, but not indefinitely. 
-		We assume that the adversary is computationally bound, so that they are probabilistically unable to subvert the cryptographic techniques described above.
-		We also assume that the adversary does not have access to our cryptographic secrets.
+		We allow for a strong adversary known as a Dolev-Yao adversary~\cite{dolev_security_1983}, which is an adversary that can coordinate faulty nodes, delay communication and delay correct nodes, but is unable to subvert the cryptographic techniques described above, and does not have access to our cryptographic secrets.
 		These include the shared common secret between the processes of the network, but also the processor specific PID key provisioned by Intel, as well as the associated group private keys stored by Intel.
-		This is a quite strong assumption, in that Intel might be required surrender these keys by law in some countries.
-		
+		This is a quite strong assumption, in that Intel does not necessarily share priorities with the peers and users of the system, and can, in some situations, have incentive to surrender these keys.
+
 		\subsection{Analysis}
+		Essentially, an adversary has the same limitations in attacking the system, as a byzantine fault has in breaking it.
+		That is, if the adversary takes over a process, they cannot change the SGX component without correct processes rejecting any messages the process will send them.
+		Thereby they only have the possibility of tampering with the wrapper-components, and the channels, as seen in section \ref{sec:transforming-byzantine-faults}.
+		But as the wrapper-components only serve to pass messages, this is the same as tampering with the channels.
+		As such, an adversary can at most create attacks by crashing processes, message omissions, message delays and tampering with messages, where tampering will be noticed by the correct peers, as the adversary does not have the MAC secret.
+		With these restraints, an adversary can induce several attacks on liveness.
+
+		With message omissions and message delays, the adversary is able to give any process a cluster leadership.
+		They can do this by intercepting and removing all messages from the current leader, and intercept and remove all messages from candidates timing out before their desired candidate process.
+
+		By chaining these leader elections without resolving any of them, they can mount an attack on the liveness of a cluster.
+		One such chaining look like this: omit messages from the leader to $f+1$ processes until one of them, $p_1$, becomes a candidate.
+		Then omit messages from $p_1$ to $f+1$ other processes, until another process, $p_2$, becomes a candidate and repeat.
+		Thereby the cluster will stay in a continuous election process, and cannot commit any client requests.
+		Assuming that the adversary cannot continue omitting messages, however, the cluster will eventually successfully complete an election, and resume operation.
+		And due to election pre-election phase, the original leader will still be the leader after the attack has been terminated.
+		As such, any valid requests received by the leader will eventually be agreed upon after the attack has been terminated, if the leader does not crash during or immediately after the attack.
+
+		Note that this is an attack that exactly simulates the FLP-impossibility in Raft:
+		FLP-impossibility~\cite{fischer_impossibility_1985} shows that there will always exist a sequence of message omissions that violates availability (i.e. liveness in SMR), if the system is an asynchronous setting and handles crashing processes.
+		As such, any fault-tolerant SMR in an asynchronous setting will have such an attack.
+		This sequence in Raft is present under the leader election; any unresolved heartbeat will eventually result in a leader election, which might then never terminate if no process wins the election, which is what the adversary exploits in this attack.
+
+		Another attack on liveness is described in section~\ref{subsub:leader-liveness-vulnerability}.
+		Basically, the attack is for the adversary to omit all client messages to the leader of cluster.
+		By doing this, the adversary does not only attack the liveness of that cluster, but also all other clusters for which an execution requires a lock on the cluster under attack.
+		We argue in section~\ref{subsub:leader-liveness-vulnerability} that eventually a new process will become the leader, which prevents an indefinite liveness attack.
+		However, under a Dolev-Yao adversary, the adversary can prevent any other process in wining the election, thus prolonging the liveness attack indefinitely.
+
+		Notice that these attacks both happens on a single cluster, and therefore at most affect a subset of the clusters that make up the entire system.
+		If the adversary wants to mount an attack on the entire system that prevents liveness in any state of the graph, they must mount a liveness attack on a subset of clusters $A$ for which $\forall e \in A. \not \exists e'. e' \in I_{stat}(e) \land e' \not \in A$.
+		In other words, the subset of clusters must contain all events that are statically independent.
+		Calculating $I_{stat}(e)$ of a all $e's$ is infeasible for large enough graphs (see section~\ref{subsubsec:concurrency}), so the adversary must either attack an approximation, or all clusters, both of which is inefficient solutions.
+		An alternative is to attack $I_{dyn}(G,e)$ for the current $G$ and all $e$'s, but the adversary is not guaranteed that the global state reported by the log-augmented snapshot described in~\ref{subsec:global-history-collection}, and is therefore guaranteed that their attack will completely prevent any further execution of graph.
+		So an adversary must mount a suboptimal attack to prevent liveness in the entire system.
+
+		Safety cannot be attacked by the safety guarantees provided by Raft.
+
+
+
 		%if adv. takes over 1 process
 		%	- At most channel failures
 		%If adv. takes over $\leq$ f processes => f crashes/channel failures
 		%	- Raft still works
 		%If adv. takes over $>$ f processes => $>$ f crashes/channel failures
 		%	- Safety still guaranteed, and some availability
-		
+
 		%Special cases:
 		%If adv. takes over 2 processes in same cluser => liveness
 		%	- fixed
@@ -1457,7 +1497,7 @@
 		By mapping snooping software to the same cache set as the enclave, the snooping software can evict the enclave's memory from the cache and use timing to figure out if it is accessed again.
 		Lastly, processors with hyper-threading support are vulnerable to instruction snooping, as a snooping process sharing physical core with an enclave can use performance counters to determine which instructions the out-of-order scheduler is able to run in parallel with the enclave.
 		The presence of these attacks means that enclaves using data-dependent memory access will likely not ensure confidentiality.
-		However, to our knowledge, no publicly known vulnerabilities exist on the integrity guarantee. 
+		However, to our knowledge, no publicly known vulnerabilities exist on the integrity guarantee.
 		And since our system has very few confidentiality requirements, the known vulnerabilities do not seem problematic for the purposes of this project.
 
 		As mentioned SGX does not protect against flawed software, so it is up to the developer to prevent side-channel attacks through OCALLs that might expose secret data.
@@ -1491,7 +1531,7 @@
 	% Crash recovery
 
 	% \subsection{Message composition}
-	% In order to reduce the amount of messages needed in the system, the locking of an event can incorporate. 
+	% In order to reduce the amount of messages needed in the system, the locking of an event can incorporate.
 
 	\newpage
 	\bibliography{bibliography}{}
