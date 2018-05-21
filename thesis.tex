@@ -1071,7 +1071,7 @@
 	We have therefore extended the basic algorithm slightly, to protect against this vulnerability.
 	We have done so, since we assume byzantine errors on the SGX-transformed algorithm, which means that the byzantine errors can effect the channel-wrappers on each peers, and cause coordinated message omission.
 
-	\subsection{Global history collection} % CheapShot
+	\subsection{Global history collection}
 	\label{subsec:global-history-collection}
 
 	Since changes in the workflow are not synchronized across every peer, the global history of the workflow at any given time is not readily available.
@@ -1160,80 +1160,45 @@
 	Note that each execution of an event is uniquely identifiable, which is also the case in the algorithm described in this thesis, as it is needed by the cluster consensus part described in section \ref{subsec:cluster-consensus}.
 
 	From each sequence, an implicit valid ordering is present, in the sense that from event \texttt{B} it is shown that execution $B_1$ can happen before $A_1$ happens.
-	An aggregation of these sequences needs to be found, which can be accomplished through the construction of a directed graph and topologically sorting it.
-	Before an aggregation can be performed, we define each sequence as a series of execution relations.
-	For example the execution sequence recorded by \texttt{B} could also be formulated as: $A_1 \rightarrow B_1, B_1 \rightarrow E_1, E_1 \rightarrow F_1, F_1 \rightarrow E_2, E_2 \rightarrow F_2$.
+	An aggregation of these sequences needs to be found, which can be accomplished through the construction of a directed graph and topologically ordering the vertices.
+	Before an aggregation can be performed, we define each sequence as a set of execution relationships.
+	For example the execution sequence recorded by \texttt{B} could also be formulated as: $\{A_1 \rightarrow B_1, B_1 \rightarrow E_1, E_1 \rightarrow F_1, F_1 \rightarrow E_2, E_2 \rightarrow F_2\}$.
 
-	From each execution set, or set of execution ordering rules, an aggregation can be computed by performing a pairwise comparison of sequences.
-	We define a sequence as $S_n$ where $n$ is the node that returned that sequence.
-	Each sequence consists of up to $m$ elements, where $m$ is the number of executions performed in the entire graph.
+	If each sequence is formulated as a series of execution relationships they can easily be aggregated in order to define the rules which a valid execution sequence must adhere to for this specific DCR graph and its state.
+	For the example in Figure \ref{fig:global-history-collection-example} where a union of the execution relationships result in the following set of relationships: $\{A_1 \rightarrow D_1, A_1 \rightarrow B_1, B_1 \rightarrow E_1, E_1 \rightarrow E_2, E_1 \rightarrow F_1, F_1 \rightarrow F_2, F_1 \rightarrow E_2, E_2 \rightarrow F_2, F_2 \rightarrow C_1\}$
 
-	From the list of rules, a graph can now be constructed of possible executions, as seen in Figure \ref{fig:execution-sequence-graph-example1}.
-	In order to extract an actual valid execution sequence, a topological ordering needs to be applied, but as this is only valid in acyclic graphs, cycles are collapsed into single nodes, as shown in Figure \ref{fig:execution-sequence-graph-example2}.
+	\begin{figure}[ht!]
+		\center
+		\includegraphics[scale=0.6]{figures/dcr-graphs/execution-sequence-graph-example.pdf}
+		\caption{Initial graph made from sequence rule aggregation.}
+		\label{fig:execution-sequence-graph-example}
+	\end{figure}
+
+	From the total list of relationships, a graph can now be constructed of possible executions, as seen in Figure \ref{fig:execution-sequence-graph-example}.
+	Because the execution of dynamically dependent events is not required to be synchronized, a cycle is present in that relationship $F_1 \rightarrow E_2$ is present in the set as well as the, seemingly contradictory, $E_2 \rightarrow F_1$. 
 	This is still valid, as cycles in the happened-before relationships of executions, entails that the executions happened concurrently.
-	And since the locking rules from section \ref{subsec:event-locking}, only allow concurrent executions when the events are dynamically independent, any linearisation of the concurrent executions must result in the same state of the graph. 
-	After collapsing any cycles, topological ordering can then be performed resulting in a valid execution sequence, for example $A_1D_1B_1E_1E_2F_1F_2C_1$
+	And since the locking rules from section \ref{subsec:event-locking}, only allow concurrent executions when the events are dynamically independent, any linearisation of the concurrent executions must result in the same state of the graph.
+	Topological ordering behaviour with regards to cyclical graphs is however undefined and as cycles in the graphs created from execution relationships define concurrent executions, any ordering of executions in a cycle is valid.
 
-	The complexity of this operation is dominated by the process of ensuring a consistent cut.
-	If there are \textit{n} events, each with a sequence of length \textit{m}, there is a total of $n \cdot m$ elements.
-	Each element has to be checked against the elements in the list of the executed element, \textit{m} again and since an inconsistency can lead to a new inconsistency, the worst case means this has to be iterated over $\frac{n}{2}$ times.
-	This results in a complexity of $\frac{n^2}{2}\cdot m^2 = O(n^2 \cdot m^2)$.
-	When the consistent cut has been found, Johnson's algorithm for finding elementary circuits~\cite{johnson_finding_1975}, %can be changed!
-	can be used to find all simple cycles in $O((n+e)(c+1))$, where $n$ is the number of nodes, $e$ is the number of edges, and $c$ is the number of cycles.
-	At last, the graph must be topologically ordered into a linearisation, which can be done in $O(n+e)$ using depth-first search~\cite[section 22.4]{cormen_introduction_2009}.
-	All in all, the complexity of this operation is dominated by the process of ensuring a consistent cut, resulting in the complexity $O(n^2 \cdot m^2)$,which is expensive, but well within the reasonable limit of local computations.
+	A topological ordering of event executions is obtained by performing a Depth-First Search (DFS) in a Reverse Post-Order (RPO).
+	The DFS traversal is started at an arbitrary node and once it reaches a leaf node, it backtracks.
+	For each node reached while backtracking, if that node only has child nodes which have already been visited is prepended to the result.
+	If a node encountered while backtracking has child nodes which have not yet been visited, a recursive DFS-RPO traversal is started at that child node.
 
-	For the aggregation, $S_a$ of two sequences, $S_1$ and $S_2$, we compare each element in each sequence starting from the left and apply the following rules:
-	\begin{itemize}
-		\item if the compared elements are dissimilar, the element from $S_1$ is appended to $S_a$ and the subsequent element from $S_1$ is then compared to the current element of $S_2$
-		\item if the compared elements are identical, the rest of $S_1$ is appended to $S_a$, including the current element, and then the rest of $S_2$ is appended to $S_a$, excluding the current element.
-		\item if either element is void, meaning that there are no more elements in that sequence, the remainder of the non-empty sequence is appended to $S_a$.
-	\end{itemize}
+	There are thereby four different steps, to the process of collecting the execution history of a graph.
+	\begin{enumerate}
+		\item Collecting the perceived execution sequences of each event cluster. 
+		This requires $O(n)$ messages, where $n$ is the number of event clusters.
+		\item Carving a consistent cut. 
+		This is accomplished by creating a look-up table which maps an execution to a set of all occurrences of that execution in returned sequences. 
+		For each of $m$ executions in each of $n$ returned sequences, the event which that execution pertains' returned sequence is checked for the presence of that execution. 
+		If an execution is deleted this way, it could have cascading effects, but under the assumptions that look-ups in the aforementioned table and checking whether or not a sequence contains a specific execution is constant.
+		For a graph with $n$ events and $m$ unique executions performed during the lifetime of the graph, this has computational complexity of $O(n\cdot m)$. 
+		\item Creating a graph from execution relationships. As each relationship is represented with an edge, this has computational complexity of $O(e)$ where $e$ is the number of execution relationships.
+		\item Finding a topological ordering. Using DFS-RPO, means visiting each node twice via its edges and therefore this operation has a computational complexity of $O(v+e)$, where $v$ is the number of vertices in the graph and $e$ is the number of edges in the graph.
+	\end{enumerate}
 
-	After aggregation $S_a$ possibly contains duplicate executions, which is not possible in a global history.
-	Since the rules implied by a sequence only designate what has happened before something else, each subsequent duplicate of an element can be deleted from $S_a$.                      
-	This results in a complete order of executions, for example in the graph shown in \ref{fig:global-history-collection-example} where the result would be:
-	\begin{itemize}
-		\item 
-	\end{itemize}
-
-
-	% Once each execution sequence is formulated in that way, they are aggregated to make a complete list of rules that any valid execution sequence must follow.
-	% For the example illustrated in Figure \ref{fig:global-history-collection-example}, this results in the following list of rules: $A_1 \rightarrow B_1, A_1 \rightarrow D_1, B_1 \rightarrow E_1, E_1 \rightarrow F_1, F_1 \rightarrow E_2, E_2 \rightarrow F_2, E_1 \rightarrow E_2, E_2 \rightarrow F_1, F_1 \rightarrow F_2, F_2 \rightarrow C_1$
-
-	% \begin{figure}[ht!]
-	% 	\centering
-	% 	\begin{minipage}[b]{0.49\textwidth}
-	% 		\includegraphics[width=\textwidth]{figures/dcr-graphs/execution-sequence-graph-example1.pdf}
-	% 		\caption{Initial graph made from sequence rule aggregation.}
-	% 		\label{fig:execution-sequence-graph-example1}
-	% 	\end{minipage}
-	% 	\hfill
-	% 	\begin{minipage}[b]{0.49\textwidth}
-	% 		\includegraphics[width=\textwidth]{figures/dcr-graphs/execution-sequence-graph-example2.pdf}
-	% 		\caption{Directed acyclic graph version of graph shown in Figure \ref{fig:execution-sequence-graph-example1}.	}
-	% 		\label{fig:execution-sequence-graph-example2}
-	% 	\end{minipage}
-	% \end{figure}
-
-	% From the list of rules, a graph can now be constructed of possible executions, as seen in Figure \ref{fig:execution-sequence-graph-example1}.
-	% In order to extract an actual valid execution sequence, each perceived order is aggregated 
-
-	% a topological ordering needs to be applied, but as this is only valid in acyclic graphs, cycles are collapsed into single nodes, as shown in Figure \ref{fig:execution-sequence-graph-example2}.
-	% This is still valid, as cycles in the happened-before relationships of executions, entails that the executions happened concurrently.
-	% And since the locking rules from section \ref{subsec:event-locking}, only allow concurrent executions when the events are dynamically independent, any linearisation of the concurrent executions must result in the same state of the graph. 
-	% After collapsing any cycles, topological ordering can then be performed resulting in a valid execution sequence, for example $A_1D_1B_1E_1E_2F_1F_2C_1$
-	
-	% The complexity of this operation is dominated by the process of ensuring a consistent cut.
-	% If there are \textit{n} events, each with a sequence of length \textit{m}, there is a total of $n \cdot m$ elements.
-	% Each element has to be checked against the elements in the list of the executed element, \textit{m} again and since an inconsistency can lead to a new inconsistency, the worst case means this has to be iterated over $\frac{n}{2}$ times.
-	% This results in a complexity of $\frac{n^2}{2}\cdot m^2 = O(n^2 \cdot m^2)$.
-	% When the consistent cut has been found, Johnson's algorithm for finding elementary circuits~\cite{johnson_finding_1975}, %can be changed!
-	% can be used to find all simple cycles in $O((n+e)(c+1))$, where $n$ is the number of nodes, $e$ is the number of edges, and $c$ is the number of cycles.
-	% At last, the graph must be topologically ordered into a linearisation, which can be done in $O(n+e)$ using depth-first search~\cite[section 22.4]{cormen_introduction_2009}.
-	% All in all, the complexity of this operation is dominated by the process of ensuring a consistent cut, resulting in the complexity $O(n^2 \cdot m^2)$,which is expensive, but well within the reasonable limit of local computations.
-
-		\subsubsection{Reduction of DCR linearisation to NP}
+	In conclusion the global history can be collected in $O(n)$ messages and within $O(n\cdot m)$ computational complexity.
 
 	\subsection{Raft}
 	\label{sub:raft}
@@ -1296,7 +1261,7 @@
 
 	\subsubsection*{Properties of Raft}
 	Raft guarantees the following properties when the amount of faults is $\le \lfloor \frac{n - 1}{2} \rfloor$ (the highest achievable fault tolerance for the consensus problem \cite{lamport_lower_2006}).
-	\begin{figure}[h]
+	\begin{figure}[ht!]
 	  \centering
 	  \begin{minipage}{0.8\textwidth}
 	    \begin{framed}
