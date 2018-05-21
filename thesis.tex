@@ -1452,16 +1452,18 @@
 		Basically, the attack is for the adversary to omit all client messages to the leader of cluster.
 		By doing this, the adversary does not only attack the liveness of that cluster, but also all other clusters for which an execution requires a lock on the cluster under attack.
 		We argue in section~\ref{subsub:leader-liveness-vulnerability} that eventually a new process will become the leader, which prevents an indefinite liveness attack.
-		However, under a Dolev-Yao adversary, the adversary can prevent any other process in wining the election, thus prolonging the liveness attack indefinitely.
+		However, under a Dolev-Yao adversary, the adversary can prevent any other process in winning the election, thus prolonging the liveness attack indefinitely.
 
-		Notice that these attacks both happens on a single cluster, and therefore at most affect a subset of the clusters that make up the entire system.
-		If the adversary wants to mount an attack on the entire system that prevents liveness in any state of the graph, they must mount a liveness attack on a subset of clusters $A$ for which $\forall e \in A. \not \exists e'. e' \in I_{stat}(e) \land e' \not \in A$.
+		Notice that both these attacks happens on a single cluster, and therefore at most affect a subset of the clusters that make up the entire system.
+		We have not identified any single attacks that spans the entire system.
+		If the adversary wants to mount an attack on the entire system that prevents liveness in any state of the graph, they must mount a liveness attack on a subset of clusters $A$ for which $\forall e \in A.\ \nexists e'.\ e' \in I_{stat}(e) \land e' \not \in A$.
 		In other words, the subset of clusters must contain all events that are statically independent.
 		Calculating $I_{stat}(e)$ of a all $e's$ is infeasible for large enough graphs (see section~\ref{subsubsec:concurrency}), so the adversary must either attack an approximation, or all clusters, both of which is inefficient solutions.
-		An alternative is to attack $I_{dyn}(G,e)$ for the current $G$ and all $e$'s, but the adversary is not guaranteed that the global state reported by the log-augmented snapshot described in~\ref{subsec:global-history-collection}, and is therefore guaranteed that their attack will completely prevent any further execution of graph.
+		An alternative is to attack the clusters of all dynamically independent event for the current $G$ state, but the adversary is not guaranteed that the global state reported by the log-augmented snapshot described in~\ref{subsec:global-history-collection}, and is therefore guaranteed that their attack will completely prevent any further execution of graph.
 		So an adversary must mount a suboptimal attack to prevent liveness in the entire system.
 
-		Safety cannot be attacked by the safety guarantees provided by Raft.
+
+		Safety cannot be attacked under the limitations of our adversary by the safety guarantees provided by Raft~\cite{ongaro_search_2014}.
 
 
 
