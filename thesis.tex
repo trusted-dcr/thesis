@@ -1432,43 +1432,39 @@
 		That is, if the adversary takes over a process, they cannot change the SGX component without correct processes rejecting any messages the process will send them.
 		Thereby they only have the possibility of tampering with the wrapper-components, and the channels, as seen in section \ref{sec:transforming-byzantine-faults}.
 		But as the wrapper-components only serve to pass messages, this is the same as tampering with the channels.
-		As such, an adversary can at most create attacks by crashing processes, message omissions, message delays and tampering with messages, where tampering will be noticed by the correct peers, as the adversary does not have the MAC secret.
+		As such, an adversary can at most attack by crashing processes, message omissions, delaying messages and tampering with messages, where tampering will be noticed by the correct peers, as the adversary does not have the MAC secret.
 		With these restraints, an adversary can induce several attacks on liveness.
 
 		With message omissions and message delays, the adversary is able to give any process a cluster leadership.
 		They can do this by intercepting and removing all messages from the current leader, and intercept and remove all messages from candidates timing out before their desired candidate process.
 
 		By chaining these leader elections without resolving any of them, they can mount an attack on the liveness of a cluster.
-		One such chaining look like this: omit messages from the leader to $f+1$ processes until one of them, $p_1$, becomes a candidate.
+		One such chain looks like this: omit messages from the leader to $f+1$ processes until one of them, $p_1$, becomes a candidate.
 		Then omit messages from $p_1$ to $f+1$ other processes, until another process, $p_2$, becomes a candidate and repeat.
 		Thereby the cluster will stay in a continuous election process, and cannot commit any client requests.
 		Assuming that the adversary cannot continue omitting messages, however, the cluster will eventually successfully complete an election, and resume operation.
-		And due to election pre-election phase, the original leader will still be the leader after the attack has been terminated.
+		And due to the election pre-election phase, the original leader will still be the leader after the attack has been terminated.
 		As such, any valid requests received by the leader will eventually be agreed upon after the attack has been terminated, if the leader does not crash during or immediately after the attack.
 
-		Note that this is an attack that exactly simulates the FLP-impossibility in Raft:
+		Note that this is an attack that exactly simulates the FLP-impossibility in Raft.
 		FLP-impossibility~\cite{fischer_impossibility_1985} shows that there will always exist a sequence of message omissions that violates availability (i.e. liveness in SMR), if the system is an asynchronous setting and handles crashing processes.
 		As such, any fault-tolerant SMR in an asynchronous setting will have such an attack.
 		This sequence in Raft is present under the leader election; any unresolved heartbeat will eventually result in a leader election, which might then never terminate if no process wins the election, which is what the adversary exploits in this attack.
 
 		Another attack on liveness is described in section~\ref{subsub:leader-liveness-vulnerability}.
-		Basically, the attack is for the adversary to omit all client messages to the leader of cluster.
+		The attack consists of the adversary to omitting all client messages to the leader of cluster.
 		By doing this, the adversary does not only attack the liveness of that cluster, but also all other clusters for which an execution requires a lock on the cluster under attack.
 		We argue in section~\ref{subsub:leader-liveness-vulnerability} that eventually a new process will become the leader, which prevents an indefinite liveness attack.
 		However, under a Dolev-Yao adversary, the adversary can prevent any other process in winning the election, thus prolonging the liveness attack indefinitely.
 
-		Notice that both these attacks happens on a single cluster, and therefore at most affect a subset of the clusters that make up the entire system.
+		Notice that both these attacks targets a single cluster, and therefore at most affect a subset of the clusters that make up the entire system.
 		We have not identified any single attacks that spans the entire system.
 		If the adversary wants to mount an attack on the entire system that prevents liveness in any state of the graph, they must mount a liveness attack on a subset of clusters $A$ for which $\forall e \in A.\ \nexists e'.\ e' \in I_{stat}(e) \land e' \not \in A$.
 		In other words, the subset of clusters must contain all events that are statically independent.
 		Calculating $I_{stat}(e)$ of a all $e's$ is infeasible for large enough graphs (see section~\ref{subsubsec:concurrency}), so the adversary must either attack an approximation, or all clusters, both of which is inefficient solutions.
-		An alternative is to attack the clusters of all dynamically independent event for the current $G$ state, but the adversary is not guaranteed that the global state reported by the log-augmented snapshot described in~\ref{subsec:global-history-collection}, and is therefore guaranteed that their attack will completely prevent any further execution of graph.
+		An alternative is to attack the clusters of all dynamically independent event for the current $G$ state, but the adversary is not guaranteed that the global history reported by the log-augmented snapshot described in~\ref{subsec:global-history-collection}, and is therefore guaranteed that their attack will completely prevent any further execution of graph.
 		So an adversary must mount a suboptimal attack to prevent liveness in the entire system.
-
-
 		Safety cannot be attacked under the limitations of our adversary by the safety guarantees provided by Raft~\cite{ongaro_search_2014}.
-
-
 
 		%if adv. takes over 1 process
 		%	- At most channel failures
@@ -1482,8 +1478,7 @@
 		%	- fixed
 		%If adv. takes over leader and stops client requests
 		%	- eventual leader change / can be fixed by broadcast
-
-
+		
 	\section{DCR-TEE Implementation}
 
 	\section{Distributed Smart Contract Engine}
