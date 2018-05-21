@@ -58,7 +58,7 @@
 \lstdefinestyle{pseudo}{
   mathescape=true,
   escapeinside={<|}{|>},
-  morekeywords={function, send, to, receive, from, broadcast, timeout, match, with, when, and, or, if, else},
+  morekeywords={function, send, to, receive, from, broadcast, timeout, match, with, when, and, or, if, else, while, do},
   morecomment=[l]{//},
   keepspaces=true,
   basicstyle=\small\ttfamily,
@@ -1085,11 +1085,12 @@
 	Both as documentation of the process at deprecation of the workflow and during the life cycle of the workflow, the global history is relevant, in the latter case because the global state can be derived from the global history.
 	In this section we will refer to each cluster as the event itself, for simplicity.
 
-	For a global history to be collectible, each event need to track more than just their own executions.
+	For a global history to be collectible, each event must track more than just their own executions.
 	Events must also track all executions that changes the state and enabledness of the former.
 	As locked events are implicitly notified of an execution upon unlocking, tracking these are trivial.
-	There are, however, cases where locking is not performed, as locking is mostly concerned with preventing race conditions, but where enabledness is affected, such as the case of: $\ev{A} \crel \ev{B}$, where \texttt{B} can not execute before \texttt{A} is executed or excluded.
-	In addition to locking, events in which enabledness is affected by an execution must therefore also be informed about that execution, so that they are able to execute.
+	There are, however, cases where locking is not performed, as locking is mostly concerned with preventing race conditions, but where enabledness is affected.
+	One such case is $\ev{A} \crel \ev{B}$, where \texttt{B} cannot execute before \texttt{A} is executed or excluded.
+	In addition to locking, events in which enabledness is affected by an execution must therefore also be informed about that execution.
 
 	It is assumed that informing events is attempted until the informed event responds.
 	Under this assumption, an arbitrary amount of time can pass before an event is actually notified, but as this does not allow executions to happen which violate the semantics of DCR; it is reduced to a question of fairness, which will not be discussed in this thesis\footnote{Fairness in the sense that two events which enabledness is affected by an execution will not necessarily be notified of that execution at the same time, thereby allowing one event to execute before the other.}.
@@ -1102,33 +1103,34 @@
 		\item[Happened-before 3 (HB3)] Happened-before relations are transitive.
 	\end{description}
 
-	A consistent cut means that all events obey the happened-before rules within the cut, meaning:
+	A consistent cut means that all process events obey the happened-before rules within the cut, meaning:
 	\begin{itemize}
-		\item If an event, \textit{a}, happened before another event, \textit{b}, and \textit{b} is included in the cut, then so is \textit{a}.
+		\item If a process event, \textit{a}, happened-before another process event, \textit{b}, and \textit{b} is included in the cut, then so is \textit{a}.
 		\item If a message is received within the cut, the sending of that message must also be within the cut.
 	\end{itemize}
 
 	One way to achieve a consistent cut, is to implement Chandra and Lamport's Snapshot algorithm~\cite{chandy_distributed_1985}.
 	This would require incorporation of the snapshot algorithm into the raft algorithm, increasing the complexity even more.
-	Instead, we present an alternative solution, where the client requesting the global history requests the execution log from each event cluster.
+	Instead, we present an alternative solution, where the client requiring the global history requests the execution log from each event cluster.
 	The algorithm we present for collecting the global history, does so without locking or pausing the network.
 	There is, however, considerations in that each event will then have their individual perceived sequence of executions, which might be dissimilar due to arbitrary message delays.
 	After receiving an answer from each cluster, the client is able to merge the local executions sequences into a consistent cut, using the following algorithm.
 
-	Given a cut from a graph, it is always possible to reduce the cut until consistency is at some point attained.
-	Transactions, in terms of execution sequences, is represented in executions of an event stored returned in the sequence of that event, sent messages, and in events notified of that execution, received messages.
+	Given a cut from a DCR graph, it is always possible to reduce the cut until consistency is at some point attained.
+	In happened-before terms, an execution being committed locally and another event being notified of that execution, corresponds to sending a message (committing locally) and it being received (committing externally). 
 	Therefore if any event returns an execution of another event and that execution is not present in the sequence returned by the latter event, it must be disregarded from the cut as it violates HB2.
 	Since this could lead to violation of HB1, each execution recorded after the disregarded execution is also disregarded.
 
 	Consider a simple graph of two events with a condition between them: $\ev{A} \crel \ev{B}$.
-	A global history collection is started, by a client requesting it from every cluster, and \texttt{A} is the first to send its execution sequence $\{\}$, after which it executes, followed by an execution of \texttt{B}.
-	\texttt{B} then receives the message asking for state and responds with a sequence of $\{\texttt{A}, \texttt{B}\}$.
+	A global history collection is started, by a client requesting it from every cluster, and \texttt{A} is the first event to send its execution sequence $\{\}$. After sending the empty execution sequence it executes.
+	Following \texttt{A}'s execution, \texttt{B} has been enabled, and upon receiving this information, \texttt{B} executes.
+	\texttt{B} then receives the execution sequence request and responds with a sequence of $\{\texttt{A}, \texttt{B}\}$.
 	In this specific example it is not immediately apparent it could be problematic to assume that \texttt{B} is correct and therefore accept its sequence as the global history.
 	However, if \texttt{A} is not able to be executed immediately, it is impossible to interpolate what has happened.
 	An example of this is the graph $\ev{A} \erel \ev{B} \crel \ev{C} \crel \ev{D}$, where the collection of the global history could return an empty sequence for \texttt{A}, \texttt{B} and \texttt{C}, but a sequence of $\{\texttt{C}, \texttt{D}\}$ from \texttt{D}.
 	It is unknown whether an execution of \text{A} or an execution of \texttt{B} allowed the execution of \texttt{C} and then \texttt{D}.
 	To solve this, any execution not present in the sequence returned by the event itself is considered invalid and therefore that execution is deleted from the sequence of all events, as well as all following executions in that sequence.
-	In the above example, this would mean that the execution of \texttt{B} in the history of \texttt{C} would be deleted, along with the execution of \texttt{C} as it follows the execution of \texttt{B}.
+	In the above example, this would mean that the execution of \texttt{B} in the history of \texttt{C} would be deleted, along with the execution of \texttt{C} as the execution of \texttt{B} happened-before the execution of \texttt{A}.
 	The reason for this procedure is that if these executions are not omitted, a consistent cut is no longer guaranteed.
 
 	\begin{figure}[ht!]
@@ -1139,16 +1141,25 @@
 	\end{figure}
 
 	In Figure \ref{fig:global-history-collection-consistent-cut} the example from above is shown.
-	As a consistent cut requires that any message received within the cut must also be sent within the cut, it is clear that the cut described in the figure is inconsistent.
-	The method of fixing an inconsistent cut described earlier, is the equivalent of ignoring that \texttt{D}'s cluster has received an execution message from \texttt{C}, which also renders the execution of \texttt{D} invalid.
+	As a consistent cut requires that any message received within the cut must also be sent within the cut (HB2), it is clear that the cut described in the figure is inconsistent.
+	The method of carving an inconsistent cut described earlier, is the equivalent of ignoring that \texttt{D}'s cluster has received an execution message from \texttt{C}, which also renders the execution of \texttt{D} invalid.
 	Cuts made in a DCR graph adhering to the tracking rules outlined here, and the implicit tracking of locks, will always be locally consistent up to a point, meaning that they are guaranteed to uphold the first premise of happened-before relations (HB1), namely ordering of local process events.
+
 	Given that these events will always present a local sequence adhering to HB1, there must be some point for each process which is consistent with another point in each other process.
 	Each event will always be able to present an empty sequence, as an example of a consistent cut.
-	Since all messages received within the cut are discarded along with all later executions if the message is not sent within the same cut, it follows that it is eventually possible to obtain a consistent cut, as worst case an empty sequence of executions would be applicable.
+
+	Since all messages received within the cut are discarded along with all later executions if the message is not sent within the same cut, it follows that it is eventually possible to obtain a consistent cut, in the worst case an empty sequence of executions.
+
+	In fact, this method guarantees a consistent cut containing the entire execution sequence of the process that recieved the request first (in the happened-before sense of first), due to the rules of happened-before.
+	For locked events, the executing events record the execution after having received all locks, and before informing the locked events that execution has been achieved.
+	For non-locking constraints, there can only exist the cases where the executing event has recorded an execution, but the constrained event has not, or when both has recoded the execution. 
+	As such, execution is always recorded locally before externally.
+	But having a cut with a locally recorded execution that has not been externally recorded does not violate HB2, as the consistent cut contains the sending of the message (recording locally) but not the received message (recording externally).
+	As such, any locally recorded executions of the first-receiving event does not require any external records and any external executions recorded must already have been recorded on locally by their respective events. 
 
 	Note that dynamically independent activities can cause sequences apparently contradicting one another.
-	For example, a graph of $\ev{A} \crel \ev{B}, \ev{A} \crel \ev{C}, \ev{D} \crel \ev{B}, \ev{D} \crel \ev{C}$ could by executing \texttt{A} and \texttt{D} cause events \texttt{B} and \texttt{C} to perceive execution sequences of $\{\texttt{A}, \texttt{D}\}$ and $\{\texttt{D}, \texttt{A}\}$ respectively.
-	This would appear to violate HB1, but since an event is notified of another events execution without locking, it should be seen as sent and received messages.
+	For example, a graph of $\ev{A} \crel \ev{B}, \ev{A} \crel \ev{C}, \ev{D} \crel \ev{B}, \ev{D} \crel \ev{C}$ could, by executing \texttt{A} and \texttt{D} concurrently, cause events \texttt{B} and \texttt{C} to perceive execution sequences of $\{\texttt{A}, \texttt{D}\}$ and $\{\texttt{D}, \texttt{A}\}$ respectively.
+	This would appear to violate HB1, but since an event is notified of another event's execution without locking, it should be seen as sent and received messages.
 	When \texttt{A} executes, it sends a notification to \texttt{C} and notes it in its execution sequence.
 	When \texttt{C} receives a notification it notes it in its execution sequence.
 	Thereby HB1 is not violated, as the execution of \texttt{A} is represented by two different events, meaning that it is covered by HB2.
@@ -1158,16 +1169,16 @@
 	\begin{figure}[ht!]
 		\center
 		\includegraphics[scale=0.6]{figures/dcr-graphs/global-history-collection-example.pdf}
-		\caption{Example graph illustrating global history collection.}
+		\caption{Example graph illustrating global history collection. The sets within a DCR event represent that event's execution sequence.}
 		\label{fig:global-history-collection-example}
 	\end{figure}
 
 	From the graph shown in Figure \ref{fig:global-history-collection-example}, the shown sequences are collected for each event and form a consistent cut.
-	Note that each execution of an event is uniquely identifiable, which is also the case in the algorithm described in this thesis, as it is needed by the cluster consensus part described in section \ref{subsec:cluster-consensus}.
+	Note that each execution of an event is uniquely identifiable by a tag, which is also the case in the algorithm described in this thesis, as it is needed by the cluster consensus part described in section~\ref{subsec:cluster-consensus}.
 
 	From each sequence, an implicit valid ordering is present, in the sense that from event \texttt{B} it is shown that execution $B_1$ can happen before $A_1$ happens.
-	An aggregation of these sequences needs to be found, which can be accomplished through the construction of a directed graph and topologically ordering the vertices.
-	Before an aggregation can be performed, we define each sequence as a set of execution relationships.
+	An linearisation of these sequences needs to be found, which can be accomplished through the construction of a directed graph and topologically ordering the vertices of that graph.
+	Before a linearisation can be performed, we define each sequence as a set of execution relationships.
 	For example the execution sequence recorded by \texttt{B} could also be formulated as: $\{A_1 \rightarrow B_1, B_1 \rightarrow E_1, E_1 \rightarrow F_1, F_1 \rightarrow E_2, E_2 \rightarrow F_2\}$.
 
 	If each sequence is formulated as a series of execution relationships they can easily be aggregated in order to define the rules which a valid execution sequence must adhere to for this specific DCR graph and its state.
@@ -1184,24 +1195,50 @@
 	Because the execution of dynamically dependent events is not required to be synchronized, a cycle is present in that relationship $F_1 \rightarrow E_2$ is present in the set as well as the, seemingly contradictory, $E_2 \rightarrow F_1$.
 	This is still valid, as cycles in the happened-before relationships of executions, entails that the executions happened concurrently.
 	And since the locking rules from section \ref{subsec:event-locking}, only allow concurrent executions when the events are dynamically independent, any linearisation of the concurrent executions must result in the same state of the graph.
-	Topological ordering behaviour with regards to cyclical graphs is however undefined and as cycles in the graphs created from execution relationships define concurrent executions, any ordering of executions in a cycle is valid.
+	Topological ordering behaviour with regards to cyclical graphs is, however, undefined and as cycles in the graphs created from execution relationships define concurrent executions, any ordering of executions in a cycle is valid.
 
-	A topological ordering of event executions is obtained by performing a Depth-First Search (DFS) in a Reverse Post-Order (RPO).
-	The DFS traversal is started at an arbitrary node and once it reaches a leaf node, it backtracks.
-	For each node reached while backtracking, if that node only has child nodes which have already been visited is prepended to the result.
-	If a node encountered while backtracking has child nodes which have not yet been visited, a recursive DFS-RPO traversal is started at that child node.
+	A topological ordering of event executions is obtained by performing a Depth-First Search (DFS), and returning its reverse postorder graph traversal.
+	The DFS traversal is started at an arbitrary vertex.
+	The vertex is marked as visited, and the DFS is continued in an unmarked neighbour.
+	When a vertex is reached that has no unmarked neighbours, that vertex is prepended to the resulting linearisation.
+	When the DFS has been run, we choose another unmarked arbitrary vertex and run the DFS from that vertex.
+	Note that a reverse postorder DFS graph traversal is exactly a topological order, if the graph is a directed \textit{acyclic} graph~\cite[chapter 4]{sedgewick_algorithms_2011}.
+	If the algorithm reaches a vertex that has already been marked, there are two possibilities of why it is marked:
+	\begin{enumerate}
+		\item The marked neighbour has been visited in an earlier DFS traversal, and thus will correctly appear after the current vertex in the ordering.
+		\item The marked neighbour has been visited in the \textit{same} DFS traversal, implying that the two vertices are part of a cycle. But in this case, any ordering of the two vertices are acceptable, as it implies that the event executions, that the two vertices represent, happened concurrently.
+	\end{enumerate}
+	Pseudo code of the DFS traversal algorithm can be seen in Listing~\ref{lst:dfs-traversal}.
 
-	There are thereby four different steps, to the process of collecting the execution history of a graph.
+\begin{minipage}{\linewidth}
+	\begin{lstlisting}[style=pseudo, caption={Reversed postorder DFS traversal algorithm. Adapted from~\cite{_topological_2018}}, label={lst:dfs-traversal}]
+L <- Empty list that will contain the sorted vertices
+while there are unmarked nodes do
+    select an unmarked node n
+    visit(n)
+
+ function visit(node n)
+    if n is marked then return
+    mark n
+    for each node m with an edge from n to m do
+        visit(m)
+    add n to head of L
+	\end{lstlisting}
+\end{minipage}
+
+	There are thereby four different steps to the process of collecting the execution history of a graph.
 	\begin{enumerate}
 		\item Collecting the perceived execution sequences of each event cluster.
 		This requires $O(n)$ messages, where $n$ is the number of event clusters.
 		\item Carving a consistent cut.
 		This is accomplished by creating a look-up table which maps an execution to a set of all occurrences of that execution in returned sequences.
 		For each of $m$ executions in each of $n$ returned sequences, the event which that execution pertains' returned sequence is checked for the presence of that execution.
-		If an execution is deleted this way, it could have cascading effects, but under the assumptions that look-ups in the aforementioned table and checking whether or not a sequence contains a specific execution is constant.
-		For a graph with $n$ events and $m$ unique executions performed during the lifetime of the graph, this has computational complexity of $O(n\cdot m)$.
+		If an execution is deleted this way, it could have cascading effects.
+		But under the assumptions that look-ups in the aforementioned table, as well as checking whether or not a sequence contains a specific execution, is constant, we can at most do this operation once for each execution entry in all sequences.
+		For a graph with $n$ events and $m$ unique executions performed during the lifetime of the graph, this then has computational complexity of $O(n\cdot m)$.
 		\item Creating a graph from execution relationships. As each relationship is represented with an edge, this has computational complexity of $O(e)$ where $e$ is the number of execution relationships.
-		\item Finding a topological ordering. Using DFS-RPO, means visiting each node twice via its edges and therefore this operation has a computational complexity of $O(v+e)$, where $v$ is the number of vertices in the graph and $e$ is the number of edges in the graph.
+		\item Finding a topological ordering. 
+		Using the DFS traversal algorithm, means visiting each node twice via its edges and therefore this operation has a computational complexity of $O(|V|+|E|)$, where $V$ is the vertices in the graph and $E$ is the edges in the graph. %could be rewritten to something like $O(n \cdot m + |E|)$ or even reducing E as well?
 	\end{enumerate}
 
 	In conclusion the global history can be collected in $O(n)$ messages and within $O(n\cdot m)$ computational complexity.
@@ -1462,6 +1499,8 @@
 		By doing this, the adversary does not only attack the liveness of that cluster, but also all other clusters for which an execution requires a lock on the cluster under attack.
 		We argue in section~\ref{subsub:leader-liveness-vulnerability} that eventually a new process will become the leader, which prevents an indefinite liveness attack.
 		However, under a Dolev-Yao adversary, the adversary can prevent any other process in winning the election, thus prolonging the liveness attack indefinitely.
+		A solution is also described in section~\ref{subsub:leader-liveness-vulnerability}, in which clients that does not receive a response in due time will broadcast to the entire cluster, which will force the leader to either accept the request, or force a leader change in the cluster.
+		However, this solution does not necessarily prevent the attack, since the adversary intercept the client broadcast. 
 
 		Notice that both these attacks targets a single cluster, and therefore at most affect a subset of the clusters that make up the entire system.
 		We have not identified any single attacks that spans the entire system.
@@ -1470,6 +1509,7 @@
 		Calculating $I_{stat}(e)$ of a all $e's$ is infeasible for large enough graphs (see section~\ref{subsubsec:concurrency}), so the adversary must either attack an approximation, or all clusters, both of which is inefficient solutions.
 		An alternative is to attack the clusters of all dynamically independent event for the current $G$ state, but the adversary is not guaranteed that the global history reported by the log-augmented snapshot described in~\ref{subsec:global-history-collection}, and is therefore guaranteed that their attack will completely prevent any further execution of graph.
 		So an adversary must mount a suboptimal attack to prevent liveness in the entire system.
+
 		Safety cannot be attacked under the limitations of our adversary by the safety guarantees provided by Raft~\cite{ongaro_search_2014}.
 
 		%if adv. takes over 1 process
@@ -1564,7 +1604,7 @@ $\MSG{\RSP\ELECTION, term, success}$
 	\end{mdframed}
 
 	\begin{mdframed}[backgroundcolor=Papyrus]
-	\begin{lstlisting}[style=pseudo, caption={Logic shared between follwer, candidate and leader states.}]
+	\begin{lstlisting}[style=pseudo, caption={Logic shared between follower, candidate and leader states.}]
 $log \leftarrow []$
 $term \leftarrow 0$
 $commit_i \leftarrow 0$
