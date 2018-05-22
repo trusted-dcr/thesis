@@ -106,7 +106,7 @@
 	However, the innate properties of DCR graphs would be heavily constrained by existing solutions to distributed state replication, due to the large number of messages required and the low degree of concurrency provided by the strict synchronization of these algorithms.
 
 	The problem, and solution, described in this thesis is not limited to applications of DCR, but can also be applied in other software concerned with maintaining a distributed, fragmented state.
-	An example of such an application is also given, in the form of a distributed smart contract algorithm, as popularized by Ethereum \cite{_ethereum_2018}.
+	An example of such an application is also given, in the form of a distributed smart contract algorithm, as popularized by Ethereum~\cite{_ethereum_2018}.
 
 	Recent technological advances in the field of \textit{Trusted Execution Environments} (TEEs), specifically \textit{Intel Software Guard Extensions} (SGX) have already made waves within state replication solutions~\cite{kapitza_cheapbft_2012,veronese_efficient_2013,liu_scalable_2016} and could potentially be leveraged to provide a solution to the described problem, while achieving the goals of a low number of messages and a high degree of concurrency.
 	Intel Software Guard Extensions (SGX), which provide a verifiable trusted subsystem to each participant, which is especially interesting in a decentralized system of mutually untrusting nodes.
@@ -302,8 +302,6 @@
 			For DCR graphs to have a meaningful application, each event is typically assigned a number of actors who are allowed to execute that event.
 			Rights to execute can also be assigned based on role.
 
-
-
 		\subsection{Consensus}
 		\label{subsec:consensus}
 		Consensus is the problem of achieving agreement between the processes in a distributed system.
@@ -353,7 +351,7 @@
 		It has been shown that $2f+1$ processes are necessary and sufficient to solve SMR with relaxed liveness if faulty processes only exhibit crashes~\cite{bracha_asynchronous_1985}.
 		Similarly it has been shown that $3f+1$ processes are necessary and sufficient to solve SMR with relaxed liveness if faulty processes can exhibit byzantine faults~\cite{bracha_asynchronous_1985,pease_reaching_1980}.
 		Recent advances have been made in BFT-algorithms, which increase fault tolerance from $3f+1$ to $2f+1$ by utilizing TEE features~\cite{liu_scalable_2016,kapitza_cheapbft_2012,veronese_efficient_2013}.
-		When we take the proofs of sufficient and necessary amounts of processes in BFT systems into account, these advanced strongly indicates that TEEs might be able to reduce byzantine faults to crash faults, a statement we will explore further in section \ref{sec:transforming-byzantine-faults}.
+		When we take the proofs of sufficient and necessary amounts of processes in BFT systems into account, these advanced strongly indicates that TEEs might be able to reduce byzantine faults to crash faults, a statement we will explore further in Section~\ref{sec:transforming-byzantine-faults}.
 		SMR brings with it the taxing job of pushing each update to all nodes in the network, which leads to obvious scalability issues in large networks.
 
 		One solution to that problem is delegating the responsibility of segments of data to each node in the network.
@@ -361,7 +359,7 @@
 		PSMR, by necessity, allows multiple simultaneous leaders and only synchronizes state changes when those state changes are conflicting.
 		Due to allowing multiple leaders, PSMR provides high availability as any node can request a state change.
 		High concurrency and performance also follows from the partial states reducing the number of nodes which have to be notified of a state change leading to both fewer messages and less chance of two state changes overlapping, requiring ordering.
-		Relatively few solutions exists for the PSMR problem and the ones that do require a large amount of messages \cite{sousa_partial_2001}.
+		Relatively few solutions exists for the PSMR problem and the ones that do require a large amount of messages~\cite{sousa_partial_2001}.
 		To the best of our knowledge, no solution to the PSMR problem using a trusted execution environment exists.
 
 		\subsection{Intel Software Guard Extensions}
@@ -478,7 +476,6 @@
 
 	% We will assume that if $p_e$ stores the state of $e$, then $p_e$ has a channel to all $p$s that stores the state of $e$'s approximate static dependence set, $D_{appr}(e)$.
 
-
 	\section{Transforming byzantine faults to crashes}
 	\label{sec:transforming-byzantine-faults}
 	We conjecture that the correct use of Intel SGX can transform all byzantine faults in a distributed system with unreliable channels, such that correct processes in the protocol treat faulty processes as equivalent to processes crashing and losing messages.
@@ -496,7 +493,7 @@
 	A finite state machine consists of a current state, $s_{current}$, a finite set of $n$ distinct states, $S=\{s_1, s_2, \dots, s_n\}$, and a finite set of $m$ distinct state-transitions, $T$.
 	A finite state machine can only be in one state at any time, and transitions to another state by accepting a bit-string as input, and optionally outputs another bit-string.
 	A transition has the form $(s_{from}, i, o, s_{to})$, where $i$ is an input consisting of a tuple of a bit-string and the channel the bit-string was received on, and $o$ is the output consisting of a set of bit-string/channel pair, each representing that bit-string being sent on the appertaining channel.
-	For example, the finite state machine in Figure \ref{fig:simple-nfa} will transition from the starting state $s_0$ to $s_2$ on input $"010"$ from channel $c_0$, and will during the transition output $"101"$ to channel $c_1$ and $"100"$ to $c_2$.
+	For example, the finite state machine in Figure~\ref{fig:simple-nfa} will transition from the starting state $s_0$ to $s_2$ on input $"010"$ from channel $c_0$, and will during the transition output $"101"$ to channel $c_1$ and $"100"$ to $c_2$.
 
 	A channel can either be reliable or unreliable, and is bi-directional.
 	A reliable channel guarantees that messages sent on it will be delivered in the order the messages was sent, and will not be changed during transmission.
@@ -513,27 +510,27 @@
 		\caption{A simple example of distributed protocol model.\label{fig:simple-model}}
 	\end{figure}
 
-	Figure \ref{fig:simple-model} is a model of a simple distributed protocol, consisting of the processes $P_0$ and $P_1$, each of which has three state machines $SM_0 - SM_5$.
+	Figure~\ref{fig:simple-model} is a model of a simple distributed protocol, consisting of the processes $P_0$ and $P_1$, each of which has three state machines $SM_0 - SM_5$.
 	Each state machine is connected to other state machines on the same process with reliable channels $c_0-c_3$, and $SM_1$ on $P_0$ is connected to $SM_3$ on $P_1$ with the unreliable channel $c_4$.
 
 	A distributed protocol can experience a plethora of different errors.
 	Apart from the channel faults already described, we will model crashes and byzantine faults, as these are the ones we are concerned about in this transformation.
-	We model a crash fault in the state machine by adding an empty input transition ("$\epsilon$") from every state to an error-state, which cannot transition to another state (see $s_{error}$ in Figure \ref{fig:simple-nfa}).
+	We model a crash fault in the state machine by adding an empty input transition ("$\epsilon$") from every state to an error-state, which cannot transition to another state (see $s_{error}$ in Figure~\ref{fig:simple-nfa}).
 	As the state machine will not be able to transition to another state, and thus also cannot output anything from this state, this serves to model a component crashing in distributed protocol.
 	We model a byzantine fault by exchanging a process with a new process.
 	This potentially includes the removal of state machines, the addition of state machines or the exchange of old state machine with new state machines with new current states and new channels (we will refer to this last case as \textit{corrupted} state machines).
 	This models a process beginning to exhibit arbitrary behaviour.
 
-	To transform a crash-resistant distributed protocol into a byzantine-fault-tolerant protocol, we utilize the verification in Remote Attestation (see section \ref{subsec:attestation}) and the integrity guarantees provided by Intel SGX.
+	To transform a crash-resistant distributed protocol into a byzantine-fault-tolerant protocol, we utilize the verification in Remote Attestation (see Section~\ref{subsec:attestation}) and the integrity guarantees provided by Intel SGX.
 	To model the integrity guarantees, we introduce the notion of a cryptographic secret state machine $SM_{s}$, and an integrity protected area of the process.
 	We assume that any byzantine fault can replicate $SM_{s}$, but cannot replicate the secrets contained in $SM_s$ if $SM_s$ is changed.
-	This models that faulty processes cannot access the cryptographic secrets of a correct process, which is a reasonable assumption by the integrity and confidentiality guarantees given by Intel SGX, given that the secrets are stored in an enclave (see section \ref{subsec:enclave}).
+	This models that faulty processes cannot access the cryptographic secrets of a correct process, which is a reasonable assumption by the integrity and confidentiality guarantees given by Intel SGX, given that the secrets are stored in an enclave (see Section~\ref{subsec:enclave}).
 	State machines running in the integrity protected area of the process can be uniquely identified by $SM_{s}$, but cannot have channels to state machines running on other processes.
 	This models the integrity protection in Intel SGX and the QE' abilities, as well as an enclave's inability to access peripheral hardware such as network cards.
 
 	To model the Remote Attestation verification, we introduce a Remote Attestation process, $P_{RA}$ and an Attestation state machine, $P_A$, which will communicate with $P_{RA}$ to verify and provision $SM_s$ with a symmetric secret key.
 	We will not go into detail with, or model the protocol used by, the Remote Attestation protocol, and just use it at an abstract for readability.
-	For more information on the Remote Attestation protocol, see section \ref{subsec:attestation}, \textit{Intel SGX explained}~\cite{costan_intel_2016} and/or \textit{Intel SGX Developer guide}~\cite{intel_sgx_guide}.
+	For more information on the Remote Attestation protocol, see Section~\ref{subsec:attestation}, \textit{Intel SGX explained}~\cite{costan_intel_2016} and/or \textit{Intel SGX Developer guide}~\cite{intel_sgx_guide}.
 
 	We will also assume that each process has a process unique identifier, $id_p$, that $SM_s$ knows $id_p$, and that each untransformed state machine includes both this $id_p$ and the $id_p$ of the intended receiver it's outgoing messages.
 	In the case of broadcast messages, the $id_p$ of the receiving processes can be omitted.
@@ -577,7 +574,7 @@
 	\begin{figure}[ht!]
 		\center
 		\includegraphics[scale=0.39]{figures/state-machines/distributed-protocol-model-transformation4.pdf}
-		\caption{Transformation of figure \ref{fig:simple-model} from crash-resistant protocol to byzantine fault-tolerant protocol.\label{fig:tranformation-model}}
+		\caption{Transformation of Figure~\ref{fig:simple-model} from crash-resistant protocol to byzantine fault-tolerant protocol.\label{fig:tranformation-model}}
 	\end{figure}
 	\FloatBarrier
 
@@ -604,7 +601,7 @@
 	Notice that this transformation is linear in the number of messages, under the assumption that the MAC, and MAC-verification sub-routines in $SM_s$ does not add any messages.
 	Each input message in the transitions is transformed to exactly one new state, three new state transitions and one MAC-verification sub-routine on $SM_s$.
 	Each output-set is transformed to exactly one new state, two new state transitions and $n$ MAC sub-routines on $SM_s$ where $n$ is the size of the output set.
-	Under the assumption that $SM_s$ sends no additional messages during the MAC and MAC-verification sub-routines, and no failures, $m$ messages in the original state machine will become $7m$ messages after the transformation (see table \ref{tab:number-of-messages-transformed}).
+	Under the assumption that $SM_s$ sends no additional messages during the MAC and MAC-verification sub-routines, and no failures, $m$ messages in the original state machine will become $7m$ messages after the transformation (see table~\ref{tab:number-of-messages-transformed}).
 	If we only count the messages sent between processes, there is no change in the number of messages sent.
 
 	\begin{table}[ht!]
@@ -628,7 +625,7 @@
 	\begin{figure}[ht!]
 		\center
 		\makebox[\textwidth][c]{\includegraphics[scale=0.6]{figures/state-machines/NFA-transformation.pdf}}
-		\caption{Transformation of figure \ref{fig:simple-nfa} from state machine in crash-resistant protocol to integrity protected state machine in byzantine fault-tolerant protocol, if all channels are to other processes.\label{fig:nfa-transformation}}
+		\caption{Transformation of Figure~\ref{fig:simple-nfa} from state machine in crash-resistant protocol to integrity protected state machine in byzantine fault-tolerant protocol, if all channels are to other processes.\label{fig:nfa-transformation}}
 	\end{figure}
 	\FloatBarrier
 
@@ -662,7 +659,7 @@
 	As we will apply this transformation to our solution, we will therefore, from here on in, only consider a fault model of crashing processes.
 
 		\subsection{Example: Central Server Mutual Exclusion}
-		We will now show a practical example of how the transformation in section \ref{sec:transforming-byzantine-faults} can be utilised.
+		We will now show a practical example of how the transformation in Section~\ref{sec:transforming-byzantine-faults} can be utilised.
 		The protocol that we will transform is the central server protocol for mutual exclusion.
 		The central server protocol for mutual exclusion (from here on in CSME) is a protocol which partly solves the \textit{distributed mutual exclusion} problem.
 		In the distributed mutual exclusion problem, a collection of processes share one or more resources (referred to as the \textit{critical section}), and need to do read/writes on these resources.
@@ -687,7 +684,7 @@
 		Under byzantine faults, neither safety nor liveness can be guaranteed.
 		For instance, the server could serve the tokens to all requests without waiting for acknowledgements from the clients.
 
-		We will now show how the transformation from section \ref{sec:transforming-byzantine-faults}, can transform CSME to give the same guarantees in a byzantine system as the untransformed protocol gives in a crash-fault system.
+		We will now show how the transformation from Section~\ref{sec:transforming-byzantine-faults}, can transform CSME to give the same guarantees in a byzantine system as the untransformed protocol gives in a crash-fault system.
 		Notice that there is no formal definition of how the critical section access and token is implemented in CSME | it can be implemented with cryptography, as partial states, with append-only memory, as another process, etc.
 		We will keep this abstraction in the following transformation, but the implementation of this is also required to undergo the same transformation.
 		We will omit the handling of unreliable channels on the state machines for readability, but assume that it is handled.
@@ -703,7 +700,7 @@
 		\end{figure}
 		\FloatBarrier
 
-		The client state machine is modelled in Figure \ref{fig:CSME-client-NFA}.
+		The client state machine is modelled in Figure~\ref{fig:CSME-client-NFA}.
 		It can either not have requested access to the critical section ($s_0$), wait for the token from the server ($s_1$), or have the token and be in the critical section ($s_2$).
 		Naturally it can also crash ($s_{error}$).
 
@@ -716,7 +713,7 @@
 		\FloatBarrier
 
 		The server state machine is a bit more complex as it must be modelled to account for the number of client processes.
-		Figure \ref{fig:CSME-server-NFA} is a model of the server state machine in a protocol with two client processes.
+		Figure~\ref{fig:CSME-server-NFA} is a model of the server state machine in a protocol with two client processes.
 		It encompasses 6 states: $s_0$ where no client has access to the critical section, and no requests has been , $s_1$ where client $1$ has requested the token and the token has been sent, $s_2$ where client $2$ has requested the token and the token has been sent, $s_3$ where client $1$ has the token and client $2$ has requested the token, $s_4$ where client $2$ has the token and client $1$ has requested the token and $s_{error}$ where the state machine has crashed.
 
 		\FloatBarrier
@@ -727,11 +724,11 @@
 		\end{figure}
 		\FloatBarrier
 
-		Figure \ref{fig:CSME-protocol} shows the processes and channels in CSME with two client processes.
-		$P_1$ and $P_2$ are the clients, each running an instance of the state machine from figure \ref{fig:CSME-client-NFA}, with an unreliable channel to the server process $P_0$, which runs an instance of the state machine from figure \ref{fig:CSME-server-NFA}.
+		Figure~\ref{fig:CSME-protocol} shows the processes and channels in CSME with two client processes.
+		$P_1$ and $P_2$ are the clients, each running an instance of the state machine from Figure~\ref{fig:CSME-client-NFA}, with an unreliable channel to the server process $P_0$, which runs an instance of the state machine from Figure~\ref{fig:CSME-server-NFA}.
 
 		We start the transformation by transforming the state machines to have their messages MAC'ed by $SM_s$, and to have $SM_s$ verify the messages they receive.
-		This is done by rules for state machine transformation in section \ref{sec:transforming-byzantine-faults}.
+		This is done by rules for state machine transformation in Section~\ref{sec:transforming-byzantine-faults}.
 
 		\FloatBarrier
 		\begin{figure}[ht!]
@@ -741,10 +738,10 @@
 		\end{figure}
 		\FloatBarrier
 
-		Figure \ref{fig:CSME-client-NFA-transformed} shows the client state machine after the transformation.
+		Figure~\ref{fig:CSME-client-NFA-transformed} shows the client state machine after the transformation.
 		Whenever the client wants to enter the critical section, the state machine sends the request to $SM_s$ for MAC'ing.
 		When the MAC'ed message is received from $SM_s$, this message is sent to the server process.
-		The state machine is now in $s_1$, which is equivalent to $s_1$ in the untransformed state machine (figure \ref{fig:CSME-client-NFA}).
+		The state machine is now in $s_1$, which is equivalent to $s_1$ in the untransformed state machine (Figure~\ref{fig:CSME-client-NFA}).
 		$c_s$ is now a channel from the wrapper state machine.
 		When a token is received from $c_s$, the message's MAC is sent to $SM_s$ for verification.
 		If the MAC is correct, the state machine will transition to $s_2$, which is in the critical section, and is equivalent to $s_2$ in the untransformed state machine.
@@ -758,9 +755,9 @@
 		\end{figure}
 		\FloatBarrier
 
-		Figure \ref{fig:CSME-server-NFA-transformed} shows the transformed server state machine.
+		Figure~\ref{fig:CSME-server-NFA-transformed} shows the transformed server state machine.
 		We have omitted $s_{error}$ for readability.
-		$s_0$, $s_1$, $s_2$, $s_3$ and $s_4$ are equivalent to the states by the same names in the untransformed state machine (figure \ref{fig:CSME-server-NFA}).
+		$s_0$, $s_1$, $s_2$, $s_3$ and $s_4$ are equivalent to the states by the same names in the untransformed state machine (Figure~\ref{fig:CSME-server-NFA}).
 		In $s_0$ the token has been released, and no client has requested the token.
 		In $s_1$, client $1$ has requested the token, $SM_s$ has verified the MAC of the request and MAC'ed the token which has then been sent to the servers wrapper state machine for redirection to the client $1$ process.
 		If the token is released by client $1$, and this message's MAC is verified, the state machine will transition to $s_0$.
@@ -777,7 +774,7 @@
 		\end{figure}
 		\FloatBarrier
 
-		Figure \ref{fig:CSME-protocol-transformed} show the process's transformation.
+		Figure~\ref{fig:CSME-protocol-transformed} show the process's transformation.
 		Each of the client processes ($P_1$ and $P_2$), is now running the transformed client state machines in the integrity protected area. The transformed client state machines have a reliable channel to a $SM_s$, and another to a wrapper state machine outside the integrity protected area, which is responsible for passing on the messages to the server process.
 		Each of the processes have has an $SM_A$ responsible for passing Remote Attestation messages from the $SM_s$ to the new Remote Attestation process.
 		The server process is running a transformed server state machine, connected to two wrapper state machines and an $SM_s$.
@@ -796,7 +793,7 @@
 		Let's see how a byzantine fault is reduced to a crash failure in the example where the server state machines tries to serve tokens on any request, without getting acknowledgement that the token has been released by the possessing client.
 		There are several ways this could be modelled, one of which is presented here:
 		We model this byzantine fault as $P_0$ being exchanged with $P_{byz}$.
-		$P_{byz}$ (see figure \ref{fig:CSME-protocol-transformed-byzantine}) is exactly equal to $P_0$, except that $SM_0$ has been exchanged with $SM_{byz}$ (see figure \ref{fig:CSME-server-NFA-transformed-byzantine}), which serves a token to any request by the clients.
+		$P_{byz}$ (see Figure~\ref{fig:CSME-protocol-transformed-byzantine}) is exactly equal to $P_0$, except that $SM_0$ has been exchanged with $SM_{byz}$ (see Figure~\ref{fig:CSME-server-NFA-transformed-byzantine}), which serves a token to any request by the clients.
 
 		\FloatBarrier
 		\begin{figure}[ht!]
@@ -807,7 +804,7 @@
 		\FloatBarrier
 
 		If this byzantine fault happens, none of the tokens are MAC'ed.
-		Thereby, any correct client process (figure \ref{fig:CSME-client-NFA-transformed}) will get stuck in a loop between $s_1$ and $s_1'$, when $SM_s$ rejects the (missing) MAC of the token.
+		Thereby, any correct client process (Figure~\ref{fig:CSME-client-NFA-transformed}) will get stuck in a loop between $s_1$ and $s_1'$, when $SM_s$ rejects the (missing) MAC of the token.
 		This is equivalent behaviour to the server process crashing, as a (correct) token will never be provided, and the client is unable to enter the critical section.
 
 	\section{Analysis}
@@ -824,27 +821,6 @@
 		\item[DCR linearisability] At any time before and after event executions, the states of $e_1, e_2, \dots, e_v$ must be the result of at least one run $R_G$ of $G$, such that $R_G$ contains only all successful execution requests.
 	\end{description}
 
-	% To achieve a solution to this problem there are several
-
-	% The problem can be solved by solving two somewhat independent sub-problems: state-machine replication (SMR) and distributed DCR graph execution.
-	% We need to solve consensus on a request log to ensure safety and liveness, and we need to solve distributed DCR graph execution to solve DCR linearisability and dependence synchronisation.
-	% To some extend, some SMR solutions also solve distributed DCR execution, in that they synchronise all requests from clients.
-	% As mentioned in section \ref{subsec:consensus} a solution to SMR is consensus on a log, and consensus and SMR are equivalent problems.
-
-	% There exist several solutions to both consensus and SMR, for instance \cite{bracha_asynchronous_1985,lamport_part-time_1998,castro_practical_1999,kotla_zyzzyva_2007,kapitza_cheapbft_2012,veronese_efficient_2013,ongaro_search_2014,liu_scalable_2016}.
-	% With regards to distributed DCR execution, there are only a few solutions: \cite{hildebrandt_safe_2011,hildebrandt_declarative_2012}.
-
-
-	% For the moment, we will just use an abstract solution to SMR with 2f+1 crash fault tolerance for liveness.
-
-
-
-	% The first issue thereby presents itself, in that simultaneous client requests can lead to execution of dynamically dependent events.
-	% Since the executed events are dependent, the order in which the executions are attempted is not inconsequential, as they can be mutually exclusive, or dependent on one another, such that one can be executed followed by the other, but not vice versa.
-	% To solve this, the involved parties must agree on which order these executions are applied, to avoid inconsistencies in the state of the events.
-
-	% Synchronizing state changes is a well-known problem and one solution is the election of a leader which orders the messages, such as in most BFT algorithms~\cite{castro_practical_1999,kapitza_cheapbft_2012,veronese_efficient_2013,liu_scalable_2016}.
-	% %A single-leader system does however neccesitate that each peer in the system manages the entire subject state | in the case of this project the entirety of the DCR graph.
 	\begin{landscape}
 		\begin{table}
 		\centering
@@ -922,7 +898,7 @@
 	The fault tolerance of this approach is quite bad, as any peer crashing will result in a data loss, and effect availability, even though it has the same property as the partial state, single leader approach of not effecting the events in $I_{stat}\{e\}$
 
 	\paragraph{Partial state, multi-leader approach}
-	The last is our chosen approach, and we will go into detail with it from section \ref{subsec:algorithm}.
+	The last is our chosen approach, and we will go into detail with it from Section~\ref{subsec:algorithm}.
 	It is build upon the partial state, single leader approach, except that the common leader is replaced with inter-cluster synchronisation using locks.
 	This has the benefit that even if a leader dies, the recovery has message complexity $O(m)$ (instead of $O(n^2)$ in the partial state, single leader approach and $O(n)$ in the SMR approach), and the number of concurrent client requests are not bounded by the processing speed of a single process.
 	From here on in, we will primarily concern ourselves with the details of the partial state, multi-leader approach.
@@ -937,32 +913,31 @@
 	The issue of synchronizing the ordering of simultaneous and incompatible executions, across multiple leaders is solved with the locking of events.
 	As locking is expensive both in regards to concurrency and the number of messages required, a minimal number of locks is desired.
 	Evaluating the need for locking is concerned with how far changes from an event execution can propagate, necessitating locking, and whether or not there are identifiable cases where locks can be spared.
-	A method of discerning which events need to be locked and when is described in subsection \ref{subsec:event-locking}.
+	A method of discerning which events need to be locked and when is described in Section~\ref{subsec:event-locking}.
 
 	Given a method of ordering event executions, ensuring that the system can sustain faults means that each event needs to not only be stored by a leader, but rather a number of peers, called a \textit{cluster}, one of which is the leader at any given time.
 	Clusters being responsible for events rather than single peers means that executions and locks need to be synchronized for each individual cluster.
 	Due to the fact that these clusters can be seen as completely individual networks of peers, any consensus algorithm can be used to solve the problem of synchronizing executions and locks as it is completely detached from the locking mechanism and reduces to the problem of consensus.
 	Choosing a consensus algorithm to manage the clusters is however still an important decision, as the wrong choice could form significant bottlenecks in the system.
-	For this implementation we have chosen Raft \cite{ongaro_search_2014}, as the basis for the cluster consensus algorithm, with the addition of Intel SGX to reduce byzantine faults to crash-stop failures and an additional requirement with regards to leader election, to avoid deliberate crashes live-locking the network.
+	For this implementation we have chosen Raft~\cite{ongaro_search_2014}, as the basis for the cluster consensus algorithm, with the addition of Intel SGX to reduce byzantine faults to crash-stop failures and an additional requirement with regards to leader election, to avoid deliberate crashes live-locking the network.
 	The reason for choosing Raft is that it is widely used commercially, relatively simple and able to achieve consensus in very few messages.
-	Additionally Raft only handles crash faults and is therefore an ideal candidate for the transformation of byzantine faults to crashes, as described earlier in section \ref{sec:transforming-byzantine-faults}.
-	The consensus algorithm applied in the clusters is described in subsection \ref{subsec:cluster-consensus}.
+	Additionally Raft only handles crash faults and is therefore an ideal candidate for the transformation of byzantine faults to crashes, as described earlier in Section~\ref{sec:transforming-byzantine-faults}.
+	The consensus algorithm applied in the clusters is described in Section~\ref{subsec:cluster-consensus}.
 
 	With the two parts described above, the graph can now progress, in the sense that events can be executed safely, but since each peer only knows the state of events which clusters it belongs to, what has transpired in the graph is implicitly distributed.
 	Since the algorithm does at this point guarantee that any event can only execute, when the semantics of the graph permits it, collecting the global state is only interesting from a documentation perspective.
 	Suppose that a node which is only a member of clusters of events which are never executed, that node will have no way of knowing if anything in the graph is being executed at all.
 	Additionally, it is useful to know the entire state of the graph, when evaluating whether or not the graph has served its purpose.
-	For these reasons, we present a simple method of collecting the global state of a DCR graph in subsection \ref{subsec:global-history-collection}.
+	For these reasons, we present a simple method of collecting the global state of a DCR graph in Section~\ref{subsec:global-history-collection}.
 
 
 	\subsection{Event Locking}
 	\label{subsec:event-locking}
 
-	As discussed in section \ref{sec:analysis}, the execution of non-independent events must be synchronised.
+	As discussed in Section~\ref{sec:analysis}, the execution of non-independent events must be synchronised.
 	This is achieved through locking of individual events.
-	%
-	%A lock on an event is defined as...
-	%.... we say that event A locks event B
+	
+	% Definition of lockign: A lock on an event is defined as ... we say that event Alocks event B
 
 	For this section, we apply terms used in directed graphs and define variations of neighbourhoods with regards to DCR graphs as:
 	\begin{description}
@@ -970,7 +945,7 @@
 		\item[In-neighbourhood] denoted $N_{in}(v)$, defined as the set of events where event $v'$ is in $N_{in}(v)$ iff there is a relation in $G$ that originates from $v'$ and targets $v$.
 	\end{description}
 
-	In order to ensure that dynamically dependent events, as described in section \ref{subsubsec:concurrency}, cannot be executed simultaneously, locking is applied as a way of synchronizing attempts to execute.
+	In order to ensure that dynamically dependent events, as described in Section~\ref{subsubsec:concurrency}, cannot be executed simultaneously, locking is applied as a way of synchronizing attempts to execute.
 	In a graph, $G(E,V)$, we define the set of locked events, $L$, on the execution of an event, $v$, as $L(v)$.
 	As the way DCR propagates changes from an execution by relations and one execution cannot set any other event to executed, the locking semantics must adhere to the rules of the relations.
 	Due to the semantics of DCR graphs, there is an advantage which can be leveraged with regards to when locking is needed.
@@ -987,7 +962,7 @@
 		\label{fig:race-condition}
 	\end{figure}
 
-	If \texttt{A} has effects originating from it, the need for synchronization arises as shown in Figure \ref{fig:race-condition}.
+	If \texttt{A} has effects originating from it, the need for synchronization arises as shown in Figure~\ref{fig:race-condition}.
 	In the graph events \texttt{A} and \texttt{B} both modify the same event state attributes and a race condition is present as a result.
 	In order to prevent the race condition from having adverse effect, synchronization is needed between the two executing events, \texttt{A} and \texttt{B}.
 	This means that events with effects targeting events within $N_{out}(v)$, where $v$ is the event being executed, need to lock the targeted events.
@@ -1001,10 +976,10 @@
 		\label{fig:second-degree-effect}
 	\end{figure}
 
-	In the graph shown in Figure \ref{fig:second-degree-effect} it is shown that the locking set has to include either a subset of $N_{out}(N_{out}(v))$ or a subset $N_{in}(v) \cup N_{out}(v)$, in order to prevent the graph from ending in a state where both \texttt{A} and \texttt{B} have been executed, which should be impossible due to the execution of either including a condition on the other. %what about N_in(N_in(v))?
+	In the graph shown in Figure~\ref{fig:second-degree-effect} it is shown that the locking set has to include either a subset of $N_{out}(N_{out}(v))$ or a subset $N_{in}(v) \cup N_{out}(v)$, in order to prevent the graph from ending in a state where both \texttt{A} and \texttt{B} have been executed, which should be impossible due to the execution of either including a condition on the other. %what about N_in(N_in(v))?
 	In this case, the two locking methods have the same results and as no strong argument for one over the other can be formed from this basis, the simplest method is chosen, namely the locking that includes a subset of $N_{out}(N_{out}(v))$.
 
-	According to the semantics of DCR relations (see section \ref{subsec:dcr}), the enabledness of an event, $v$, can only be changed by state changes in $N_{in}(v)$, and the state of the event can only be affected by an execution in $N_{in}(v)$.
+	According to the semantics of DCR relations (see Section~\ref{subsec:dcr}), the enabledness of an event, $v$, can only be changed by state changes in $N_{in}(v)$, and the state of the event can only be affected by an execution in $N_{in}(v)$.
 	Consider an event $v$.
 	Executing $v$ can then change the state and enabledness of any event in $N_{out}(v)$.
 	Changes of the enabledness of an event in $N_{out}(v)$ cannot propagate\footnote{Unless the enabledness change of the event is a result of a state change of the event, e.g. if the event is excluded}, since no relation relies on the enabledness of the originating event.
@@ -1028,7 +1003,7 @@
 		\label{fig:second-degree-no-effect}
 	\end{figure}
 
-	In the graph shown in Figure \ref{fig:second-degree-no-effect} an execution of \texttt{A} no longer has an effect on the enabledness of \texttt{B}, as \texttt{C} has the same state before and after the execution of \texttt{A}.
+	In the graph shown in Figure~\ref{fig:second-degree-no-effect} an execution of \texttt{A} no longer has an effect on the enabledness of \texttt{B}, as \texttt{C} has the same state before and after the execution of \texttt{A}.
 	An argument can be made here for the $N_{out}(N_{out}(v))$ locking scheme over $N_{in}(v) \cup N_{out}(v)$, as it allows for optimizations in that \texttt{B} strictly does not need to be locked.
 	This optimization is only possible when the state of \texttt{C} is known and since locking is only performed forwards, there is no implicit way to propagate executions backwards, meaning that \texttt{A} would not be notified of the state of \texttt{C} through executions. %Isn't locking only performed forwards because of the $N_{out}(N_{out}(v))$ locking scheme?
 	The solution of simply notifying \texttt{A} of \texttt{C}'s state when changed, is insufficient as the notification might not arrive before \texttt{A} performs locking based on a previous state.
@@ -1082,20 +1057,20 @@
 
 	Since changes in the workflow are not synchronized across every peer, the global history of the workflow at any given time is not readily available.
 	We define a global history to be a DCR run, i.e. it is a sequence of event executions.
-	Both as documentation of the process at deprecation of the workflow and during the life cycle of the workflow, the global history is relevant, in the latter case because the global state can be derived from the global history.
+	Both as documentation of the process upon completion of the workflow and during the life cycle of the workflow, the global history is relevant, in the latter case because the global state can be derived from the global history.
 	In this section we will refer to each cluster as the event itself, for simplicity.
 
-	For a global history to be collectible, each event must track more than just their own executions.
+	For a global history to be collectible, each event must track more than just their own executions, as the only relationships between executions that can be established are those that are observed locally on a single execution.
 	Events must also track all executions that changes the state and enabledness of the former.
 	As locked events are implicitly notified of an execution upon unlocking, tracking these are trivial.
-	There are, however, cases where locking is not performed, as locking is mostly concerned with preventing race conditions, but where enabledness is affected.
+	There are, however, cases where locking is not performed but where enabledness is affected, as locking is concerned with preventing race conditions and not necessarily changes in enabledness.
 	One such case is $\ev{A} \crel \ev{B}$, where \texttt{B} cannot execute before \texttt{A} is executed or excluded.
 	In addition to locking, events in which enabledness is affected by an execution must therefore also be informed about that execution.
 
 	It is assumed that informing events is attempted until the informed event responds.
 	Under this assumption, an arbitrary amount of time can pass before an event is actually notified, but as this does not allow executions to happen which violate the semantics of DCR; it is reduced to a question of fairness, which will not be discussed in this thesis\footnote{Fairness in the sense that two events which enabledness is affected by an execution will not necessarily be notified of that execution at the same time, thereby allowing one event to execute before the other.}.
 
-	The standard for representing the state of a continuous system in an asynchronous setting is by finding a consistent cut \cite{lamport_time_1978}, which is defined by the happened-before relations:
+	The standard for representing the state of a continuous system in an asynchronous setting is by finding a consistent cut~\cite{lamport_time_1978}, which is defined by the happened-before relations:
 
 	\begin{description}
 		\item[Happened-before 1 (HB1)] Process events occurring on the same process can be ordered in happened-before relations.
@@ -1103,30 +1078,32 @@
 		\item[Happened-before 3 (HB3)] Happened-before relations are transitive.
 	\end{description}
 
-	A consistent cut means that all process events obey the happened-before rules within the cut, meaning:
+	A consistent cut requires that all process events obey the happened-before rules within the cut, meaning:
 	\begin{itemize}
 		\item If a process event, \textit{a}, happened-before another process event, \textit{b}, and \textit{b} is included in the cut, then so is \textit{a}.
 		\item If a message is received within the cut, the sending of that message must also be within the cut.
 	\end{itemize}
 
 	One way to achieve a consistent cut, is to implement Chandra and Lamport's Snapshot algorithm~\cite{chandy_distributed_1985}.
-	This would require incorporation of the snapshot algorithm into the raft algorithm, increasing the complexity even more.
+	This would require incorporation of the snapshot algorithm into the Raft algorithm, significantly bloating the log used by the algorithm.
+	Additionally, the snapshot algorithm requires flooding of the entire network, which results in $O(r)$  messages, where $r$ is the number of relations in the DCR graph.
 	Instead, we present an alternative solution, where the client requiring the global history requests the execution log from each event cluster.
-	The algorithm we present for collecting the global history, does so without locking or pausing the network.
+	The algorithm we present for collecting the global history, does so without locking or pausing the network and in $O(e)$ messages, where $e$ is the number of events in the DCR graph.
+	As both algorithms requires graphs to be connected, it holds that $v = e-1$ in the case where v is minimal, but as each event can have one of each relation type to each event in the graph, $v$ can maximally be $v = 5\cdot e^2$, meaning that the message complexity of the proposed solution is significantly better than that of Chandra and Lamport's Snapshot algorithm.
 	There is, however, considerations in that each event will then have their individual perceived sequence of executions, which might be dissimilar due to arbitrary message delays.
 	After receiving an answer from each cluster, the client is able to merge the local executions sequences into a consistent cut, using the following algorithm.
 
-	Given a cut from a DCR graph, it is always possible to reduce the cut until consistency is at some point attained.
+	Given the observed executions of each event in the DCR graph, it is always possible to reduce the cut until consistency is at some point attained.
 	In happened-before terms, an execution being committed locally and another event being notified of that execution, corresponds to sending a message (committing locally) and it being received (committing externally). 
-	Therefore if any event returns an execution of another event and that execution is not present in the sequence returned by the latter event, it must be disregarded from the cut as it violates HB2.
+	Therefore if any event observes the execution of another event and that execution is not present in the sequence returned by the latter event, it must be disregarded from the cut as it violates HB2.
 	Since this could lead to violation of HB1, each execution recorded after the disregarded execution is also disregarded.
 
 	Consider a simple graph of two events with a condition between them: $\ev{A} \crel \ev{B}$.
-	A global history collection is started, by a client requesting it from every cluster, and \texttt{A} is the first event to send its execution sequence $\{\}$. After sending the empty execution sequence it executes.
+	A global history collection is started, by a client requesting it from every cluster, and assume that \texttt{A} is the first event to send its execution sequence $\{\}$, after which \texttt{A} executes. 
 	Following \texttt{A}'s execution, \texttt{B} has been enabled, and upon receiving this information, \texttt{B} executes.
 	\texttt{B} then receives the execution sequence request and responds with a sequence of $\{\texttt{A}, \texttt{B}\}$.
-	In this specific example it is not immediately apparent it could be problematic to assume that \texttt{B} is correct and therefore accept its sequence as the global history.
-	However, if \texttt{A} is not able to be executed immediately, it is impossible to interpolate what has happened.
+	In this specific example, nothing is lost by event \texttt{A}'s returned execution sequence not including the execution of \texttt{A}, as all executions are observed by \texttt{B}.
+	However, if \texttt{A} is not able to be executed, it is impossible to interpolate what has happened.
 	An example of this is the graph $\ev{A} \erel \ev{B} \crel \ev{C} \crel \ev{D}$, where the collection of the global history could return an empty sequence for \texttt{A}, \texttt{B} and \texttt{C}, but a sequence of $\{\texttt{C}, \texttt{D}\}$ from \texttt{D}.
 	It is unknown whether an execution of \text{A} or an execution of \texttt{B} allowed the execution of \texttt{C} and then \texttt{D}.
 	To solve this, any execution not present in the sequence returned by the event itself is considered invalid and therefore that execution is deleted from the sequence of all events, as well as all following executions in that sequence.
@@ -1136,21 +1113,19 @@
 	\begin{figure}[ht!]
 		\center
 		\includegraphics[scale=0.6]{figures/dcr-graphs/global-history-collection-consistent-cut.pdf}
-		\caption{Global history collection consistent cut. Note that each message represents the entire execution process. The green and blue executions illustrate two possibilities which could have preceded \texttt{D}'s perceived execution sequence of $\{\texttt{C}, \texttt{D}\}$. The red, dotted line shows an inconsistent cut and the black, dotted line shows the consistent cut.}
+		\caption{Global history collection consistent cut. Note that execution process of locking and then committing is illustrated as a single message, for brevity. The green and blue executions illustrate two possibilities which could have preceded \texttt{D}'s perceived execution sequence of $\{\texttt{C}, \texttt{D}\}$. The red, dotted line shows an inconsistent cut and the black, dotted line shows the consistent cut.}
 		\label{fig:global-history-collection-consistent-cut}
 	\end{figure}
 
-	In Figure \ref{fig:global-history-collection-consistent-cut} the example from above is shown.
+	In Figure~\ref{fig:global-history-collection-consistent-cut} the example from above is shown.
 	As a consistent cut requires that any message received within the cut must also be sent within the cut (HB2), it is clear that the cut described in the figure is inconsistent.
 	The method of carving an inconsistent cut described earlier, is the equivalent of ignoring that \texttt{D}'s cluster has received an execution message from \texttt{C}, which also renders the execution of \texttt{D} invalid.
-	Cuts made in a DCR graph adhering to the tracking rules outlined here, and the implicit tracking of locks, will always be locally consistent up to a point, meaning that they are guaranteed to uphold the first premise of happened-before relations (HB1), namely ordering of local process events.
+	Cuts made in a DCR graph adhering to the tracking rules outlined here, and the implicit tracking of locks, will always be locally consistent, meaning that they are guaranteed to uphold the first premise of happened-before relations (HB1), namely ordering of local process events.
 
-	Given that these events will always present a local sequence adhering to HB1, there must be some point for each process which is consistent with another point in each other process.
+	Given that these events will always present a local sequence adhering to HB1, there must be some point for each process which is consistent with a point in each other process.
 	Each event will always be able to present an empty sequence, as an example of a consistent cut.
+	Additionally, there will always be a guaranteed consistent cut, defined by the first\footnote{In the logical, happened-before, sense of first.} event cluster to reply with its observed execution sequence, as it will decide the lowest common denominator.
 
-	Since all messages received within the cut are discarded along with all later executions if the message is not sent within the same cut, it follows that it is eventually possible to obtain a consistent cut, in the worst case an empty sequence of executions.
-
-	In fact, this method guarantees a consistent cut containing the entire execution sequence of the process that recieved the request first (in the happened-before sense of first), due to the rules of happened-before.
 	For locked events, the executing events record the execution after having received all locks, and before informing the locked events that execution has been achieved.
 	For non-locking constraints, there can only exist the cases where the executing event has recorded an execution, but the constrained event has not, or when both has recoded the execution. 
 	As such, execution is always recorded locally before externally.
@@ -1173,7 +1148,7 @@
 		\label{fig:global-history-collection-example}
 	\end{figure}
 
-	From the graph shown in Figure \ref{fig:global-history-collection-example}, the shown sequences are collected for each event and form a consistent cut.
+	From the graph shown in Figure~\ref{fig:global-history-collection-example}, the shown sequences are collected for each event and form a consistent cut.
 	Note that each execution of an event is uniquely identifiable by a tag, which is also the case in the algorithm described in this thesis, as it is needed by the cluster consensus part described in section~\ref{subsec:cluster-consensus}.
 
 	From each sequence, an implicit valid ordering is present, in the sense that from event \texttt{B} it is shown that execution $B_1$ can happen before $A_1$ happens.
@@ -1182,7 +1157,7 @@
 	For example the execution sequence recorded by \texttt{B} could also be formulated as: $\{A_1 \rightarrow B_1, B_1 \rightarrow E_1, E_1 \rightarrow F_1, F_1 \rightarrow E_2, E_2 \rightarrow F_2\}$.
 
 	If each sequence is formulated as a series of execution relationships they can easily be aggregated in order to define the rules which a valid execution sequence must adhere to for this specific DCR graph and its state.
-	For the example in Figure \ref{fig:global-history-collection-example} where a union of the execution relationships result in the following set of relationships: $\{A_1 \rightarrow D_1, A_1 \rightarrow B_1, B_1 \rightarrow E_1, E_1 \rightarrow E_2, E_1 \rightarrow F_1, F_1 \rightarrow F_2, F_1 \rightarrow E_2, E_2 \rightarrow F_2, F_2 \rightarrow C_1\}$
+	For the example in Figure~\ref{fig:global-history-collection-example} where a union of the execution relationships result in the following set of relationships: $\{A_1 \rightarrow D_1, A_1 \rightarrow B_1, B_1 \rightarrow E_1, E_1 \rightarrow E_2, E_1 \rightarrow F_1, F_1 \rightarrow F_2, F_1 \rightarrow E_2, E_2 \rightarrow F_2, F_2 \rightarrow C_1\}$
 
 	\begin{figure}[ht!]
 		\center
@@ -1191,10 +1166,10 @@
 		\label{fig:execution-sequence-graph-example}
 	\end{figure}
 
-	From the total list of relationships, a graph can now be constructed of possible executions, as seen in Figure \ref{fig:execution-sequence-graph-example}.
+	From the total list of relationships, a graph can now be constructed of possible executions, as seen in Figure~\ref{fig:execution-sequence-graph-example}.
 	Because the execution of dynamically dependent events is not required to be synchronized, a cycle is present in that relationship $F_1 \rightarrow E_2$ is present in the set as well as the, seemingly contradictory, $E_2 \rightarrow F_1$.
 	This is still valid, as cycles in the happened-before relationships of executions, entails that the executions happened concurrently.
-	And since the locking rules from section \ref{subsec:event-locking}, only allow concurrent executions when the events are dynamically independent, any linearisation of the concurrent executions must result in the same state of the graph.
+	And since the locking rules from Section~\ref{subsec:event-locking}, only allow concurrent executions when the events are dynamically independent, any linearisation of the concurrent executions must result in the same state of the graph.
 	Topological ordering behaviour with regards to cyclical graphs is, however, undefined and as cycles in the graphs created from execution relationships define concurrent executions, any ordering of executions in a cycle is valid.
 
 	A topological ordering of event executions is obtained by performing a Depth-First Search (DFS), and returning its reverse postorder graph traversal.
@@ -1202,12 +1177,11 @@
 	The vertex is marked as visited, and the DFS is continued in an unmarked neighbour.
 	When a vertex is reached that has no unmarked neighbours, that vertex is prepended to the resulting linearisation.
 	When the DFS has been run, we choose another unmarked arbitrary vertex and run the DFS from that vertex.
-	Note that a reverse postorder DFS graph traversal is exactly a topological order, if the graph is a directed \textit{acyclic} graph~\cite[chapter 4]{sedgewick_algorithms_2011}.
-	If the algorithm reaches a vertex that has already been marked, there are two possibilities of why it is marked:
-	\begin{enumerate}
-		\item The marked neighbour has been visited in an earlier DFS traversal, and thus will correctly appear after the current vertex in the ordering.
+	Note that a reverse postorder DFS graph traversal is exactly a topological order, if the graph is a directed \textit{acyclic} graph~\cite[chapter 4, page 582]{sedgewick_algorithms_2011}.
+	In order to extend the algorithm to allow any order of vertices in cyclical components, the third case of the proof is replaced with the following:
+	\begin{itemize}
 		\item The marked neighbour has been visited in the \textit{same} DFS traversal, implying that the two vertices are part of a cycle. But in this case, any ordering of the two vertices are acceptable, as it implies that the event executions, that the two vertices represent, happened concurrently.
-	\end{enumerate}
+	\end{itemize}
 	Pseudo code of the DFS traversal algorithm can be seen in Listing~\ref{lst:dfs-traversal}.
 
 \begin{minipage}{\linewidth}
@@ -1226,7 +1200,7 @@ while there are unmarked nodes do
 	\end{lstlisting}
 \end{minipage}
 
-	There are thereby four different steps to the process of collecting the execution history of a graph.
+	There are four different steps to the process of collecting the execution history of a graph.
 	\begin{enumerate}
 		\item Collecting the perceived execution sequences of each event cluster.
 		This requires $O(n)$ messages, where $n$ is the number of event clusters.
@@ -1245,12 +1219,12 @@ while there are unmarked nodes do
 
 	\subsection{Raft}
 	\label{sub:raft}
-	Raft is a variation of multi-Paxos establishing consensus between processes over a continuous stream of commands.
+	Raft~\cite{ongaro_search_2014} is a variation of multi-Paxos establishing consensus between processes over a continuous stream of commands.
 	Like Paxos, Raft uses a leader to order commands and tolerates $f = \lfloor \frac{n - 1}{2} \rfloor$ (crash) faults.
-	The implementation of the Raft algorithm differs heavily from that of multi-Paxos, but the guarantees provided are very similar.
+	The implementation of the Raft algorithm differs heavily from that of multi-Paxos, but the guarantees provided are identical.
 
 	In Raft, a processor is either a leader, follower, or (leader) candidate.
-	To circumvent FLP, Raft operates under partial synchrony \cite{dwork_consensus_1988} and only keeps a leader for a single term.
+	To circumvent FLP, Raft operates under partial synchrony~\cite{dwork_consensus_1988} and only keeps a leader for a single term.
 	If a processor has not heard from the leader for some time period $\Delta$, the processor will start an election to move processors to the next term and elect a new leader.
 	As for any partially synchronous consensus algorithms, these elections can potentially go on forever if network latency permanently exceeds $\Delta$.
 	However, in real-life systems where $\Delta$ is set above the normal network latency, this is a reasonable restriction.
@@ -1303,7 +1277,7 @@ while there are unmarked nodes do
 	Further, following an accepted append request, the follower can apply any log entry $l$ for which $l_{(index)} \le commit_i$. (Note that $log[commit_i]$ does not necessarily exist in the followers log yet, as commits require majority, not unanimity.)
 
 	\subsubsection*{Properties of Raft}
-	Raft guarantees the following properties when the amount of faults is $\le \lfloor \frac{n - 1}{2} \rfloor$ (the highest achievable fault tolerance for the consensus problem \cite{lamport_lower_2006}).
+	Raft guarantees the following properties when the amount of faults is $\le \lfloor \frac{n - 1}{2} \rfloor$ (the highest fault tolerance achievable for the consensus problem~\cite{lamport_lower_2006} with the failure model of this project).
 	\begin{figure}[ht!]
 	  \centering
 	  \begin{minipage}{0.8\textwidth}
@@ -1317,7 +1291,7 @@ while there are unmarked nodes do
 	      \end{description}
 	    \end{mdframed}
 	  \end{minipage}
-	  \caption{Guarantees given by raft. (From fig. 3 of \cite{ongaro_search_2014}.)}
+	  \caption{Guarantees given by raft. (From fig. 3 of~\cite{ongaro_search_2014}.)}
 	  \label{fig:raft-properties}
 	\end{figure}
 
@@ -1339,13 +1313,13 @@ while there are unmarked nodes do
 	The correct processors will only contest such an election if the leader actually crashes or the network is sufficiently delayed.
 	The malicious processor must not drop non-empty append messages, as a candidate must be up to date from the viewpoint of a majority of processors.
 
-	As a result of \textbf{(b)}, immediately after becoming leader, the malicious processor will stop communicating with the rest of the network, causing correct processors to timeout and start yet another election.
+	As a result of \textbf{(b)}, immediately after becoming leader, the malicious processor will stop communicating with the rest of the network, causing correct processors to time-out and start yet another election.
 	When a new leader is elected, the process starts over from \textbf{(a)}.
 	In this situation, there is a window between \textbf{(b)} and \textbf{(a)} where a correct leader can append entries before the malicious processor becomes leader again.
 	Thus, liveness may not be completely lost, but the throughput of the algorithm is negatively affected.
 	If two malicious processors collude to swap leadership using the above strategy, liveness will be lost until the network becomes asynchronous and possibly elects a correct processor as leader.
 
-	To mitigate the effect of this vulnerability, \cite{ongaro_search_2014} suggest an extra message phase before a processor starts an election.
+	To mitigate the effect of this vulnerability, an extra message phase before a processor starts an election can be added~\cite{ongaro_search_2014}.
 	In this pre-election phase, a timed out processor will poll the other processors on whether or not they would grant their vote in a potential election.
 	The other processors will say yes if
 	\begin{enumerate*}[label=\textbf{(\alph*)}]
@@ -1364,7 +1338,7 @@ while there are unmarked nodes do
 	  \item dropping all client messages when leader.
 	\end{enumerate*}
 	The malicious processor will eventually become leader in an asynchronous setting following \textbf{(a)} and then prevent any commands to be committed following \textbf{(b)}.
-	The first solution that comes to mind allows the client to accuse the leader of being malicious, forcing the remaining processors to elect a new leader.
+	The most intuitive solution is allowing the client to accuse the leader of being malicious, forcing the remaining processors to elect a new leader.
 	However, this solution opens the network up for a denial of service attack by a malicious client.
 	A second solution allows a client to broadcast a command to all processors when unable to contact the leader.
 	The processors will piggyback the broadcast command on their next message to the leader, forcing the leader to either drop all messages or appending the command.
@@ -1372,7 +1346,7 @@ while there are unmarked nodes do
 	Given the argument that \textbf{(a)} causes the malicious processor to eventually become leader, it follows that another processor will eventually overthrow the malicious processor, restoring liveness.
 
 	\subsection{Protocol}
-	We use Raft to implement event locking (section \ref{subsec:event-locking}) and cluster consensus (section \ref{subsec:cluster-consensus}), by exploiting the guarantees given by figure \ref{fig:raft-properties}.
+	We use Raft to implement event locking (Section~\ref{subsec:event-locking}) and cluster consensus (Section~\ref{subsec:cluster-consensus}), by exploiting the guarantees given by Figure~\ref{fig:raft-properties}.
 	We define three command types for accomplishing this:
 	\begin{description}
 	  \item[\normalfont$\MSG{\REQ\COMMAND, tag, e, \ENUM{LOCK}}$:] request the exclusive lock to execute event $e$.
@@ -1380,7 +1354,7 @@ while there are unmarked nodes do
 	  \item[\normalfont$\MSG{\REQ\COMMAND, tag, e, \ENUM{EXEC}}$:] execute the event $e$ and modify state accordingly.
 	\end{description}
 	Recall the definition of a DCR graph $G(E, R)$ comprising of event set $E$ and relation set $R$.
-	Also recall the definition of the set of events to be locked when executing an event $e$ as $L(e)$ (semantically defined in section \ref{subsec:event-locking}).
+	Also recall the definition of the set of events to be locked when executing an event $e$ as $L(e)$ (semantically defined in Section~\ref{subsec:event-locking}).
 	% L(e) might have two definitions in locking section
 	We define the set of processors replicating event $e$ (cluster for $e$) as $C(e)$ and their leader as $C_{leader}(e)$.
 	With this we define the set of cluster leader processors that must be locked when executing en event $e$ as $L_{leaders}(e) = \bigcup_{e' \in L(e)} C_{leader}(e')$.
@@ -1412,7 +1386,7 @@ while there are unmarked nodes do
 
 	\subsubsection*{Leader Recovery}
 	As cluster leaders may crash at arbitrary times, we must be able to safely continue from any step of an execution attempt as a newly elected leader.
-	We accomplish this mainly by exploiting the Leader Completeness property (figure \ref{fig:raft-properties}).
+	We accomplish this mainly by exploiting the Leader Completeness property (Figure~\ref{fig:raft-properties}).
 	After being elected, a new leader $p_l'$ will look at last log entry to determine if it needs to restart a step to finish an execution attempt of a previous leader.
 	Recall that an entry, which has been committed by a leader, will not necessarily be in the committed state for the successor.
 	The Leader Completeness property only ensures that it eventually will be committed at the successor.
@@ -1435,25 +1409,25 @@ while there are unmarked nodes do
 	\subsubsection*{Termination Argument}
 	\begin{figure}[t]
   	\includegraphics[width=\textwidth]{figures/raft-2pc.pdf}
-	  \caption{State machine for $C_{leader}(e)$ during execution of $e$ with states start ($\bm{S}$), intermediate locked ($\bm{L}'$), locked ($\bm{L}$), abort ($\bm{A}$), and execute ($\bm{E}$). Similar to \cite{skeen_nonblocking_1981} we show received and sent messages above and below the line subscripted with the origin or destination process. We also show appending and committing entries in $C(e)$ as messages.}
+	  \caption{State machine for $C_{leader}(e)$ during execution of $e$ with states start ($\bm{S}$), intermediate locked ($\bm{L}'$), locked ($\bm{L}$), abort ($\bm{A}$), and execute ($\bm{E}$). Similar to~\cite{skeen_nonblocking_1981} we show received and sent messages above and below the line subscripted with the origin or destination process. We also show appending and committing entries in $C(e)$ as messages.}
 	  \label{fig:raft-2pc}
 	\end{figure}
 
-	This locking scheme is very similar to centralized two phase commit \cite{skeen_nonblocking_1981}, where a leader safely advances a set of replicas to a commit or abort state.
-	As described in \cite{skeen_nonblocking_1981}, two phase commit is a blocking protocol, meaning a leader or replica processor crash will halt the system until the crashed processor recovers.
+	This locking scheme is very similar to centralized two phase commit~\cite{skeen_nonblocking_1981}, where a leader safely advances a set of replicas to a commit or abort state.
+	As described in~\cite{skeen_nonblocking_1981}, two phase commit is a blocking protocol, meaning a leader or replica processor crash will halt the system until the crashed processor recovers.
 	This is still true for our application of the two phase commit protocol, but we have augmented each site with an event cluster.
 	Because of this a single processor crash cannot block the two phase commit.
 	Blocking of an attempt to execute $e$ can occur at the earliest when a cluster in $\bigcup_{e' \in L(e)} C(e')$ experiences crashing of a majority of processors.
 
 	To show our proposed algorithm always terminates, when no involved cluster experiences a majority crash, we will examine the event of a cluster leader crashing during an execution attempt.
 	Specifically we will examine the $C(e)$ cluster when attempting to execute some event $e$, as the argument for termination at clusters $\bigcup_{e' \in L(e)} C(e')$ will follow naturally.
-	After having entered state $\bm{L}'$ of figure \ref{fig:raft-2pc}, $C_{leader}(e)$ will have begun committing a lock entry at its cluster. Because Leader Completeness only applies to committed entries, we need this extra state to ensure that a successor of $C_{leader}(e)$ will be aware of the lock.
+	After having entered state $\bm{L}'$ of Figure~\ref{fig:raft-2pc}, $C_{leader}(e)$ will have begun committing a lock entry at its cluster. Because Leader Completeness only applies to committed entries, we need this extra state to ensure that a successor of $C_{leader}(e)$ will be aware of the lock.
 	Was $C_{leader}(e)$ to append the lock entry locally while simultaneously commanding clusters $\bigcup_{e' \in L(e)} C(e')$ to append the lock entry, we risk that a successor of $C_{leader}(e)$ would be unaware of the lock commands by its predecessor resulting in a stuck state for $\bigcup_{e' \in L(e)} C(e')$.
 	If $C_{leader}(e)$ crashes at $\bm{L}'$, the lock entry will either exist in the successor's log, and we simply continue, or it will be lost, sending the successor back to state $\bm{S}$.
 	This is fine as the client requesting the execution must be ready to resend commands, when leaders crash, as per the Raft algorithm design.
 
 	At state $L$ a crash of $C_{leader}(e)$ is safe, as Leader Completeness guarantees the lock to be known by the successor.
-	By redoing the $\bm{L}' \rightarrow \bm{L}$ transition, the successor can safely reenter $\bm{L}$ as duplicate command messages are allowed by Raft.
+	By redoing the $\bm{L}' \rightarrow \bm{L}$ transition, the successor can safely re-enter $\bm{L}$ as duplicate command messages are allowed by Raft.
 
 	Notice when transitioning from $\bm{L}$ to $\bm{A}$ or $\bm{E}$, no intermediate state is needed and an entry can be appended to $C(e)$ simultaneously with sending commands to $\bigcup_{e' \in L(e)} C(e')$.
 	If $C_{leader}$ crashes at $\bm{A}$ or $\bm{E}$, a successor risks moving back to $\bm{L}'$, as the $\ENUM{ABORT}$ or $\ENUM{EXEC}$ entry may be lost completely and the $\ENUM{LOCK}$ entry may not yet be committed at the successor.
@@ -1463,17 +1437,17 @@ while there are unmarked nodes do
 	This is guaranteed to result in the same state as the predecessor, as two different command responses for the same tag are impossible by the properties of Raft.
 
 	\section{Security analysis}
-	The following is a security analysis of the algorithm described in section \ref{sec:analysis}.
+	The following is a security analysis of the algorithm described in Section~\ref{sec:analysis}.
 
 		\subsection{Adversary model}
-		We allow for a strong adversary known as a Dolev-Yao adversary~\cite{dolev_security_1983}, which is an adversary that can coordinate faulty nodes, delay communication and delay correct nodes, but is unable to subvert the cryptographic techniques described above, and does not have access to our cryptographic secrets.
-		These include the shared common secret between the processes of the network, but also the processor specific PID key provisioned by Intel, as well as the associated group private keys stored by Intel.
-		This is a quite strong assumption, in that Intel does not necessarily share priorities with the peers and users of the system, and can, in some situations, have incentive to surrender these keys.
+		We allow for a strong adversary known as a Dolev-Yao adversary~\cite{dolev_security_1983}, which is an adversary that can coordinate faulty nodes, delay communication and delay correct nodes, but is unable to subvert the cryptographic techniques applied in this solution, and does not have access to our cryptographic secrets.
+		Essentially, it is assumed that an adversary has the same limitations in attacking the system, as a byzantine fault has in breaking it.
+		This is a quite strong assumption, in that Intel could theoretically be an adversary and would in that case know the processor specific PID key.
 
 		\subsection{Analysis}
-		Essentially, an adversary has the same limitations in attacking the system, as a byzantine fault has in breaking it.
+		
 		That is, if the adversary takes over a process, they cannot change the SGX component without correct processes rejecting any messages the process will send them.
-		Thereby they only have the possibility of tampering with the wrapper-components, and the channels, as seen in section \ref{sec:transforming-byzantine-faults}.
+		Thereby they only have the possibility of tampering with the wrapper-components, and the channels, as seen in Section~\ref{sec:transforming-byzantine-faults}.
 		But as the wrapper-components only serve to pass messages, this is the same as tampering with the channels.
 		As such, an adversary can at most attack by crashing processes, message omissions, delaying messages and tampering with messages, where tampering will be noticed by the correct peers, as the adversary does not have the MAC secret.
 		With these restraints, an adversary can induce several attacks on liveness.
@@ -1485,17 +1459,16 @@ while there are unmarked nodes do
 		One such chain looks like this: omit messages from the leader to $f+1$ processes until one of them, $p_1$, becomes a candidate.
 		Then omit messages from $p_1$ to $f+1$ other processes, until another process, $p_2$, becomes a candidate and repeat.
 		Thereby the cluster will stay in a continuous election process, and cannot commit any client requests.
-		Assuming that the adversary cannot continue omitting messages, however, the cluster will eventually successfully complete an election, and resume operation.
+		Assuming that the adversary cannot continue omitting messages indefinitely, however, the cluster will eventually successfully complete an election, and resume operation.
 		And due to the election pre-election phase, the original leader will still be the leader after the attack has been terminated.
 		As such, any valid requests received by the leader will eventually be agreed upon after the attack has been terminated, if the leader does not crash during or immediately after the attack.
 
-		Note that this is an attack that exactly simulates the FLP-impossibility in Raft.
-		FLP-impossibility~\cite{fischer_impossibility_1985} shows that there will always exist a sequence of message omissions that violates availability (i.e. liveness in SMR), if the system is an asynchronous setting and handles crashing processes.
-		As such, any fault-tolerant SMR in an asynchronous setting will have such an attack.
+		The proof of FLP-impossibility~\cite{fischer_impossibility_1985} shows that there will always exist a sequence of message omissions that violates availability (i.e. liveness in SMR), if the system is an asynchronous setting and handles crashing processes.
+		Therefore, any fault-tolerant SMR in an asynchronous setting will be vulnerable to such an attack.
 		This sequence in Raft is present under the leader election; any unresolved heartbeat will eventually result in a leader election, which might then never terminate if no process wins the election, which is what the adversary exploits in this attack.
 
 		Another attack on liveness is described in section~\ref{subsub:leader-liveness-vulnerability}.
-		The attack consists of the adversary to omitting all client messages to the leader of cluster.
+		The attack consists of the adversary omitting all client messages to the leader of cluster.
 		By doing this, the adversary does not only attack the liveness of that cluster, but also all other clusters for which an execution requires a lock on the cluster under attack.
 		We argue in section~\ref{subsub:leader-liveness-vulnerability} that eventually a new process will become the leader, which prevents an indefinite liveness attack.
 		However, under a Dolev-Yao adversary, the adversary can prevent any other process in winning the election, thus prolonging the liveness attack indefinitely.
