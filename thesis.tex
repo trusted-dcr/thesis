@@ -785,45 +785,50 @@ In order to attain a complete understanding of the problem at hand, there are th
 
 	\section{Analysis}
 	\label{sec:analysis}
-	
-	Recall the problem:
-	We have $n$ peers $\{p_1, p_2 \dots p_n\}$, and a DCR graph $G$, which consists of $v$ events $E = \{e_1, e_2, \dots, e_v\}$.
-	Each peer is responsible for $1$ or more events, where the peers responsible for $e$ stores the current and previous states of $e$.
+
+	With a better understanding of the prerequisite information, a more thorough definition of the problem can now be presented.
+	We define our system as having $n$ peers $\{p_1, p_2 \dots p_n\}$, and a DCR graph $G$, which consists of $v$ events $E = \{e_1, e_2, \dots, e_v\}$.
+	Each peer is responsible for one or more events, where the peers responsible for $e$ stores the current and previous states of $e$.
 	Responsibility for $e$ entails involvement in executions of $e$ and executions of other events $e'$ s.t. $e \in E_{eff}(G,e')$, as the state of $e$ must be agreed upon by all responsible peers.
 	A client can contact any peer responsible for $e$, requesting an execution of $e$, provided that the client has the correct credentials with regards to access control.
 	Furthermore the system must have the following properties:
 	\begin{description}
 		\item[Safety] all peers responsible for $e$ execute the requests on $e$ in the same order.
 		\item[Liveness] The client of a request eventually receives a reply to that request.
-		\item[DCR linearisability] At any time before and after event executions, the states of $e_1, e_2, \dots, e_v$ must be the result of at least one run $R_G$ of $G$, such that $R_G$ contains only all successful execution requests.
+		\item[DCR linearisability] At any time before and after event executions, the states of $e_1, e_2, \dots, e_v$ must be the result of at least one run $R_G$ of $G$. Recall that $R_G$ only contains all successful executions.
 	\end{description}
+
+	We wish to create a system in which:
+	\begin{itemize}
+	 	\item The state of an event is agreed upon in less that $O(n)$ messages,
+	 	\item while maintaining fault tolerance
+	 	\item and enabling dynamic independence concurrency of event executions.
+	 \end{itemize}
+
+	 Additionally, any peer should be able to collect the run, $R_G$, which is compatible with all prior collected runs, meaning that a run collected at logical time, $t$, must be prefixed by the run collected at time $t-1$, or an equivalent run if concurrent executions are present.
+	 We assume that collecting a run will always be possible, as long as maintaining the state of the graph is and therefore disregard it at this point in the analysis.
 
 	\begin{landscape}
 		\begin{table}
 		\centering
 		\makebox[\textwidth][c]{\begin{tabular}{ p{4cm} p{1.5cm} p{1.5cm} p{1.5cm} p{1.5cm} p{2cm} p{2.3cm} p{2cm} }
 		\toprule
-		\textbf{Approach}		  					& \textbf{FT: Availability}    & \textbf{FT: Safety} & \textbf{FT: Data integrity} & \textbf{Crash recovery} & \textbf{Minimum complexity for executing $e$} & \textbf{Concurrency}                 & \textbf{Request Bottleneck}    \\
+		\textbf{Approach}		  			& \textbf{FT: Availability}    			& \textbf{FT: Safety} & \textbf{FT: Data integrity} & \textbf{Crash recovery} 	& \textbf{Minimum complexity for executing $e$} 	& \textbf{Concurrency}      	& \textbf{Request Bottleneck}\\
 	    \midrule
-		Central Server 			  					& $0$                                        & $n$                      & $0$                         & n/a                       & $2$                                       		& $\leq$ Dynamic independence & $1$ \\
-		State Machine Replication 					& $\lfloor \frac{(n-1)}{2} \rfloor$          & $n$                      & $n-1$                       & $O(n)$                    & $2\cdot\lfloor\frac{(n-1)}{2}\rfloor$     		& $\leq$ Dynamic independence & $1$ \\
-		Partial state with 1 leader 				& $\lfloor \frac{(m-1)}{2} \rfloor^*$ & $n$                      & $m-1$                       & $O(n^2)$                  & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor$     		& Dynamic independence & $1$ \\
-		Complete distribution 					  	& $0^*$                               & $n$                      & $0$                         & n/a                       & $2\cdot D_{dyn}(G,e)$           				& Dynamic independence & $n$ \\
-		Event state clusters with no common leader 	& $\lfloor \frac{(m-1)}{2} \rfloor^*$ & $n$                      & $m-1$                       & $O(m)$                    & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor$     		& Dynamic independence & $\frac{n}{m}$ \\
+		Central Server 			  			& $0$                                   & $n$                 & $0$                         & n/a                       & $2$                                       		& $\leq$ Dynamic independence 	& $1$ \\
+		State Machine Replication 			& $\lfloor \frac{(n-1)}{2} \rfloor$     & $n$                 & $n-1$                       & $O(n)$                    & $2\cdot\lfloor\frac{(n-1)}{2}\rfloor$     		& $\leq$ Dynamic independence 	& $1$ \\
+		Partial state, single-leader 		& $\lfloor \frac{(m-1)}{2} \rfloor^*$ 	& $n$                 & $m-1$                       & $O(n^2)$                  & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor$     		& Dynamic independence 			& $1$ \\
+		Complete distribution 				& $0^*$                               	& $n$                 & $0$                         & n/a                       & $2\cdot D_{dyn}(G,e)$           					& Dynamic independence 			& $n$ \\
+		Partial state, multi-leader 		& $\lfloor \frac{(m-1)}{2} \rfloor^*$ 	& $n$                 & $m-1$                       & $O(m)$                    & $2\cdot\lfloor\frac{(m-1)}{2}\rfloor$     		& Dynamic independence 			& $\frac{n}{m}$ \\
 		\bottomrule
 		\end{tabular}}
 
 		\caption[caption]{Comparison of different approaches to solving the problem. $^*$ denotes partially. \textbf{FT: Availability} is the fault tolerance of the availability guarantee. \textbf{FT: Safety} is the fault tolerance of the safety guarantee. \textbf{FT: Data integrity} is the fault tolerance of data integrity. \textbf{Crash recovery} is the number of messages required to recover from a crashing process. \textbf{Minimum complexity for executing $e$} is the minimum number of messages needed for the execution of an event. \textbf{Concurrency} is the supported level of DCR concurrency. \textbf{Request Bottleneck} is how many processes' can handle execution requests at one time.}
-		\label{tab:approcach-comparison}
+		\label{tab:approach-comparison}
 		\end{table}
 	\end{landscape}
 
-	We wish to create a system in which:
-	\begin{itemize}
-	 	\item The state of an event is agreed upon in less that $O(n)$ messages (for any graphs where two or more events are statically independent)\footnote{Trivially, a DCR graph with a single event must require $O(n)$ messages, as each peer have responsibility for at least one event, so they must have responsibility for that event.}
-	 	\item while maintaining fault tolerance,
-	 	\item and enabling dynamic independence concurrency of event executions.
-	 \end{itemize}
+	We consider several possible approaches to solving this problem, the performance of which can be seen in Table~\ref{tab:approach-comparison}.
 	The following is a short summary of each approach:
 
 	\paragraph{Central server approach}
@@ -857,11 +862,11 @@ In order to attain a complete understanding of the problem at hand, there are th
 	We name these subsets \textit{clusters} and denote the size of these clusters $m$.
 	The system still utilizes a single leader, which synchronises the requests.
 	When event $e$ is requested executed, the leader runs an SMR algorithm similar to the one described in the SMR approach, but only with the cluster for $e$, and the clusters of $E_{eff}(G,e)$ -- to ensure that the clusters of $E_{eff}(G,e)$ has updated the state/enabledness of the events they are responsible for.
-	This ensures a lesser message complexity than SMR approach, given $n > m * (|E_{eff}(G,e)|+1)$.
-	Notice that $\forall e. n = m \cdot v \geq m * (|E_{eff}(G,e)|+1)$).
+	This ensures a lesser message complexity than SMR approach, given $n > m \cdot (|E_{eff}(G,e)|+1)$.
+	Notice that $\forall e. n = m \cdot v \geq m \cdot (|E_{eff}(G,e)|+1)$).
 	Another improvement is the fact that if more than half of a cluster crashes, only part of the availability is affected, since the statically independent clusters can continue operating normally.
 	However, $L$ must still synchronise all requests, and worse, cannot allow for concurrent request commits, since the peers would not necessarily be able to recreate the synchronisation between these.
-	The one exception is dynamically independent events, since the order of these does not matter.
+	The one exception is dynamically independent events, since the ordering of the execution of these does not matter.
 	Under leader crashes, all clusters need to synchronise their logs, which requires $O(n^2)$ messages.
 	There is an argument that one could simply reduce $n$ in the SMR approach to achieve the exact same message complexity.
 	While this is true for a system where we control the number of peers, it does not hold in system where the number of initial peers are constant (e.g. a system where all participants in a large DCR graph requires to be in control of some constant amount of peers), or systems where the peers independently join the network (in which case we do not control the number of peers).
@@ -876,16 +881,15 @@ In order to attain a complete understanding of the problem at hand, there are th
 
 	\paragraph{Partial state, multi-leader approach}
 	The last is our chosen approach, and we will go into detail with it from Section~\ref{subsec:algorithm}.
-	It is build upon the partial state, single leader approach, except that the common leader is replaced with inter-cluster synchronisation using locks.
+	It is built upon the partial state, single leader approach, except that the common leader is replaced with inter-cluster synchronisation using locks.
 	This has the benefit that even if a leader dies, the recovery has message complexity $O(m)$ (instead of $O(n^2)$ in the partial state, single leader approach and $O(n)$ in the SMR approach), and the number of concurrent client requests are not bounded by the processing speed of a single process.
 	From here on in, we will primarily concern ourselves with the details of the partial state, multi-leader approach.
 
-	Table~\ref{tab:approcach-comparison} shows the guarantees of the different approaches to solving the problem.
-
 	\subsection{Algorithm}
 	\label{subsec:algorithm}
+
 	To avoid the high number of messages associated with a fully replicated system and the message bottleneck associated with a single-leader system, we propose a multi-leader, partial state system.
-	Each event is represented by a leader, who can initiate execution of that event at any given time.
+	Each event is represented by an individual leader, who can initiate execution of that event at any given time.
 	Since events can affect each other and this system is in an asynchronous setting where messages can be delayed arbitrarily, having multiple leaders can potentially lead to situations where leaders disagree on which order events have been executed in, possibly resulting in disagreement on the state of the workflow.
 	The issue of synchronizing the ordering of simultaneous and incompatible executions, across multiple leaders is solved with the locking of events.
 	As locking is expensive both in regards to concurrency and the number of messages required, a minimal number of locks is desired.
@@ -902,11 +906,10 @@ In order to attain a complete understanding of the problem at hand, there are th
 	The consensus algorithm applied in the clusters is described in Section~\ref{subsec:cluster-consensus}.
 
 	With the two parts described above, the graph can now progress, in the sense that events can be executed safely, but since each peer only knows the state of events which clusters it belongs to, what has transpired in the graph is implicitly distributed.
-	Since the algorithm does at this point guarantee that any event can only execute, when the semantics of the graph permits it, collecting the global state is only interesting from a documentation perspective.
+	Since the algorithm does at this point guarantees that any event can only execute, when the semantics and the state of the graph permits it, collecting the global history is only interesting from a documentation perspective.
 	Suppose that a node which is only a member of clusters of events which are never executed, that node will have no way of knowing if anything in the graph is being executed at all.
-	Additionally, it is useful to know the entire state of the graph, when evaluating whether or not the graph has served its purpose.
-	For these reasons, we present a simple method of collecting the global state of a DCR graph in Section~\ref{subsec:global-history-collection}.
-
+	Additionally, it is useful to know the entire history of the graph, when evaluating whether or not the graph has served its purpose.
+	For these reasons, we present a simple method of collecting the global history of a DCR graph in Section~\ref{subsec:global-history-collection}.
 
 	\subsection{Event Locking}
 	\label{subsec:event-locking}
