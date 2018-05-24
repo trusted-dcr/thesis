@@ -424,30 +424,19 @@ In order to attain a complete understanding of the problem at hand, there are th
 			Under the EPID scheme, all issuer generated private keys share the same public key (EPID Group Public Key).
 			When remote attestation takes place, the client enclave generates a report and attests locally with the Quoting Enclave (QE).
 			The QE, now convinced of the client enclave's identify, strips the MAC off the report and instead signs it with the EPID Member Private Key, which the QE has special privileges to access\footnote{Enclaves signed by Intel have special privileges throughout SGX. This allows SGX to implement complicated SGX instructions in software.}.
-			The remote challenger can verify the signed report with the EPID Group Public Key and be sure that \textbf{(a)} the report is signed by an EPID Member Private Key, \textbf{(b)} EPID Member Private Keys are granted secret to QEs, and \textbf{(c)} QEs will not sign false reports~\cite{costan_intel_2016}.
+			The remote challenger can verify the signed report with the EPID Group Public Key and be sure that \textbf{(1)} the report is signed by an EPID Member Private Key, \textbf{(2)} EPID Member Private Keys are granted secret to QEs, and \textbf{(3)} QEs will not sign false reports~\cite{costan_intel_2016}.
 
 	\section{System model}
-	We consider a system of $n$ processes $P=\{p_1, p_2, \dots, p_n\}$, that communicate through message passing channels.
-	The system is asynchronous, in the sense that we make no assumptions about the execution speed of processes, or delivery time of messages.
 
-	We assume a byzantine fault model, in that processes may fail by exhibiting arbitrary behaviour, except %for enclave components which can only exhibit crash-failures because of the integrity and confidentiality guarantees given by Intel SGX.
-	%We also assume
-	that byzantine faults cannot guess or simulate our cryptographic secrets.
-	%corrupt data that has been cryptographically signed or encrypted by an enclave, in such a way that the data is still correctly signed/encrypted by the same key after the data has been corrupted.
+	We consider a system of $n$ processes $P=\{p_1, p_2, \dots, p_n\}$, that communicate through message-passing channels.
+	The system is asynchronous, in the sense that we make no assumptions about the execution speed of processes, or delivery time of messages.
+	We assume a byzantine fault model, in that processes may fail by exhibiting arbitrary behaviour, except	that byzantine faults cannot guess or simulate our cryptographic secrets.
 	Byzantine faults includes, but are not limited to, crashes and arbitrary change of local state.
 	Processes that never fail are \textit{correct}, and processes that are not correct are \textit{faulty}.
-	% Notice that after section \ref{sec:transforming-byzantine-faults} we will only consider crash-faults, due to the argument that Intel SGX can, in a system where faulty processes can exhibit byzantine faults, make correct processes exhibit behaviour equivalent to the faulty processes being crashed.
-
-	% The system includes a DCR-graph, $G$, which consists of $v$ events $E = \{e_1, e_2, \dots, e_v\}$. %, such that $n > m$. %\geq 3m$???
-	% Each $p$ stores the state of a subset of the events, $E_p$, such that $E_{p_1} \cup E_{p_2} \cup \dots \cup E_{p_n} = E$.
-	% The number of $p$s that stores an $e$'s state is the \textit{replication factor} of $e$, denoted $\rho_e$.
-	% $E_{p_1} \cup E_{p_2} \cup \dots \cup E_{p_n} = E \implies \rho_e \geq 1$, for all $e$.
-	% Or in other words, each event's state is stored on at least 1 $p$.
-
-	% We will assume that if $p_e$ stores the state of $e$, then $p_e$ has a channel to all $p$s that stores the state of $e$'s approximate static dependence set, $D_{appr}(e)$.
 
 	\section{Transforming byzantine faults to crashes}
 	\label{sec:transforming-byzantine-faults}
+
 	We conjecture that the correct use of Intel SGX can transform all byzantine faults in a distributed system with unreliable channels, such that correct processes in the protocol treat faulty processes as equivalent to processes crashing and losing messages.
 
 	Thereby a crash-fault-tolerant distributed protocol with unreliable channels which will exhibit undocumented behaviour under byzantine-faults (from here on in "crash-resistant protocol") can be transformed into a byzantine-fault-tolerant protocol using Intel SGX and cryptography.
