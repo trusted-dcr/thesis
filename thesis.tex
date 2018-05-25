@@ -891,10 +891,7 @@ In order to attain a complete understanding of the problem at hand, there are th
 	To avoid the high number of messages associated with a fully replicated system and the message bottleneck associated with a single-leader system, we propose a multi-leader, partial state system.
 	Each event is represented by an individual leader, who can initiate execution of that event at any given time.
 	Since events can affect each other and this system is in an asynchronous setting where messages can be delayed arbitrarily, having multiple leaders can potentially lead to situations where leaders disagree on which order events have been executed in, possibly resulting in disagreement on the state of the workflow.
-	The issue of synchronizing the ordering of simultaneous and incompatible executions, across multiple leaders is solved with the locking of events.
-	As locking is expensive both in regards to concurrency and the number of messages required, a minimal number of locks is desired.
-	Evaluating the need for locking is concerned with how far changes from an event execution can propagate, necessitating locking, and whether or not there are identifiable cases where locks can be spared.
-	A method of discerning which events need to be locked and when is described in Section~\ref{subsec:event-locking}.
+	The semantics for discerning when ordering is needed and how that ordering is applied is described in Section~\ref{subsec:execution-ordering}.
 
 	Given a method of ordering event executions, ensuring that the system can sustain faults means that each event needs to not only be stored by a leader, but rather a number of peers, called a \textit{cluster}, one of which is the leader at any given time.
 	Clusters being responsible for events rather than single peers means that executions and locks need to be synchronized for each individual cluster.
@@ -911,137 +908,116 @@ In order to attain a complete understanding of the problem at hand, there are th
 	Additionally, it is useful to know the entire history of the graph, when evaluating whether or not the graph has served its purpose.
 	For these reasons, we present a simple method of collecting the global history of a DCR graph in Section~\ref{subsec:global-history-collection}.
 
-	\subsection{Event Locking}
-	\label{subsec:event-locking}
-
-	As discussed in Section~\ref{sec:analysis}, the execution of non-independent events must be synchronised.
-	This is achieved through locking of individual events.
-	
-	% Definition of lockign: A lock on an event is defined as ... we say that event Alocks event B
+	\subsection{Execution Ordering}
+	\label{subsec:execution-ordering}
 
 	For this section, we apply terms used in directed graphs and define variations of neighbourhoods with regards to DCR graphs as:
 	\begin{description}
 		\item[Out-neighbourhood] denoted $N_{out}(v)$, defined as the set of events where event $v'$ is in $N_{out}(v)$ iff there is a relation in $G$ that originates from $v$ and targets $v'$.
 		\item[In-neighbourhood] denoted $N_{in}(v)$, defined as the set of events where event $v'$ is in $N_{in}(v)$ iff there is a relation in $G$ that originates from $v'$ and targets $v$.
 	\end{description}
+	Additionally, neighbourhoods can be defined as closed, specifying that the input is included in the output.
+	This is denoted with an $C$ prefix: $CN_{in}$ or $CN_{out}$.
 
-	In order to ensure that dynamically dependent events, as described in Section~\ref{subsubsec:concurrency}, cannot be executed simultaneously, locking is applied as a way of synchronizing attempts to execute.
-	In a graph, $G(E,V)$, we define the set of locked events, $L$, on the execution of an event, $v$, as $L(v)$.
-	As the way DCR propagates changes from an execution by relations and one execution cannot set any other event to executed, the locking semantics must adhere to the rules of the relations.
-	Due to the semantics of DCR graphs, there is an advantage which can be leveraged with regards to when locking is needed.
+	As discussed in Section~\ref{sec:analysis}, the execution of non-independent events must be synchronised.
+	The need for ordering executions is applicable in cases where two or more executions would have incompatible effects on at least one event.
+	As ordering must necessarily be detrimental to the concurrency of a DCR graph and must also require some amount of communication between events, minimizing the ordering required is a priority.
+	Recall the definitions from Section~\ref{subsubsec:concurrency}, where the dependencies in DCR graphs are explained, and realize that dynamic independence describes exactly the cases where ordering is not needed.
+	This means that the cases where ordering is needed would seem to be defined by \textit{dynamic dependence}, meaning cases where for two events, $e_1$ and $e_2$, it holds that $E(E(G, e_1),e_2) \neq E(E(G, e_2),e_1)$.
+	There is however a small caveat to this, as what is possible due to the semantics of DCR graphs grants an advantage which can be leveraged with regards to minimizing ordering.
+
 	Consider a graph consisting of two events with a condition between them: $\ev{A} \crel \ev{B}$
 	Events \texttt{A} and \texttt{B} are dynamically dependent, as executing first \texttt{A} and then \texttt{B} results in a different graph than executing first \texttt{B} and then \texttt{A}, since \texttt{B} cannot be executed in the latter case.
-	According to the goal of preventing dynamically dependent events from executing simultaneously, when event \texttt{A} is executing, event \texttt{B} must therefore be locked.
+	According to the goal of preventing dynamically dependent events from executing simultaneously, an execution of event \texttt{A} would require ordering on both \texttt{A} and \texttt{B}.
 	This is unnecessary as it is impossible for event \texttt{B} to execute before event \texttt{A} has been either executed or excluded.
-	Both of the constraints share this property and since constraints furthermore do not modify states, there is no need for \texttt{A} to lock \texttt{B} or indeed for any event to lock events which it is targeting only with a constraint.
+	Both of the constraints share this property and since constraints furthermore do not modify states, there is no need for \texttt{A} to ensure ordering of its execution on \texttt{B} or indeed for any event to ensure ordering of its execution on events which it is targeting only with a constraint.
 
 	\begin{figure}[ht!]
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/race-condition.pdf}
-		\caption{Graph illustrating the need for locking effects in $N_{out}(v)$.}
+		\caption{Graph illustrating the need for ordering effects in $N_{out}(v)$.}
 		\label{fig:race-condition}
 	\end{figure}
 
 	If \texttt{A} has effects originating from it, the need for synchronization arises as shown in Figure~\ref{fig:race-condition}.
 	In the graph events \texttt{A} and \texttt{B} both modify the same event state attributes and a race condition is present as a result.
 	In order to prevent the race condition from having adverse effect, synchronization is needed between the two executing events, \texttt{A} and \texttt{B}.
-	This means that events with effects targeting events within $N_{out}(v)$, where $v$ is the event being executed, need to lock the targeted events.
+	This means that events with effects targeting events within $N_{out}(v)$, where $v$ is the event being executed, need to ensure ordering on the targeted events, of $v$'s execution.
 
 	Since effects can modify events which in turn have constraints originating from it, there are situations where locking in the neighbourhood of the executed event is no longer sufficient.
 
 	\begin{figure}[ht!]
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/second-degree-effect.pdf}
-		\caption{Graph illustrating the need for locking in either some subset of $N_{out}(N_{out}(v))$ or some subset of $N_{in}(v) \cup N_{out}(v)$.}
+		\caption{Graph illustrating that ordering only within $CN_{out}(v)$ is insufficient.}
 		\label{fig:second-degree-effect}
 	\end{figure}
 
-	In the graph shown in Figure~\ref{fig:second-degree-effect} it is shown that the locking set has to include either a subset of $N_{out}(N_{out}(v))$ or a subset $N_{in}(v) \cup N_{out}(v)$, in order to prevent the graph from ending in a state where both \texttt{A} and \texttt{B} have been executed, which should be impossible due to the execution of either including a condition on the other. %what about N_in(N_in(v))?
-	In this case, the two locking methods have the same results and as no strong argument for one over the other can be formed from this basis, the simplest method is chosen, namely the locking that includes a subset of $N_{out}(N_{out}(v))$.
+	In the graph shown in Figure~\ref{fig:second-degree-effect} it is shown that the set of events requiring ordering of an execution has to include either a subset of $N_{out}(N_{out}(v))$, $N_{in}(v) \cup N_{out}(v)$ or $N_{in}(N_{in}(v))$.
+	Otherwise, the graph could end in a state where only \texttt{A} and \texttt{B} have been executed, which should be impossible due to the execution of either including a condition on the other.
+	As ordering within the set of $N_{in}(N_{in}(v))$ is not enough on its own, due to the case shown in Figure~\ref{fig:race-condition}, we regard this option as worse than any of the other two.
 
-	According to the semantics of DCR relations (see Section~\ref{subsec:dcr}), the enabledness of an event, $v$, can only be changed by state changes in $N_{in}(v)$, and the state of the event can only be affected by an execution in $N_{in}(v)$.
+	We now show that the cases shown in Figure~\ref{fig:race-condition} and in Figure~\ref{fig:second-degree-effect} cover all situations where ordering is needed.
+	According to the semantics of DCR relations (see Section~\ref{subsec:dcr}), the enabledness of an event, $v$, can only be changed by state changes in $CN_{in}(v)$, and the state of the event can only be affected by an execution in $CN_{in}(v)$.
 	Consider an event $v$.
-	Executing $v$ can then change the state and enabledness of any event in $N_{out}(v)$.
+	Executing $v$ can then change the state and enabledness of any event in $CN_{out}(v)$.
 	Changes of the enabledness of an event in $N_{out}(v)$ cannot propagate\footnote{Unless the enabledness change of the event is a result of a state change of the event, e.g. if the event is excluded}, since no relation relies on the enabledness of the originating event.
 	Changes of the state of an event in $N_{out}(v)$, \textit{can} propagate, since the constraining relations relies on the state of the originating event.
 	But since only the constraining relations rely on the state of the originating event, the state change can only propagate enabledness changes, which in turn cannot propagate.
-	Summarized we have the following cases where locking must occur:
+
+	Summarized we have the following cases where ordering must occur:
 	\begin{description}
 		\item[Effect] Consider a graph of two events: \ev{A} and \ev{B}, with an effect originating from \texttt{A}, targeting \texttt{B}.
-		If \texttt{A} is executed, \texttt{B} must first be locked.
+		If \texttt{A} is executed, ordering of that execution must be ensured on \texttt{B}.
 		\item[Effect-Condition] Consider a graph of three events: \ev{A}, \ev{B} and \ev{C}, with an effect originating from \texttt{A}, targeting \texttt{B} and a constraint originating from \texttt{B}, targeting \texttt{C}.
-		If \texttt{A} is executed, \texttt{B} and \texttt{C} must first be locked.
+		If \texttt{A} is executed, ordering of that execution must be ensured on \texttt{B} and \texttt{C}.
 	\end{description}
-
-	Given these two rules, all cases where locking is needed is covered.
-	However, there are special cases where locking can be omitted, due to the actual effect of the an effect-relation, for example when executing an event which includes another event that is already included.
+	Both of these cases can be covered by ordering in $CN_{out}(N_{out}(v))$ or $CN_{in}(v) \cup N_{out}(v)$.
 
 	\begin{figure}[ht!]
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/second-degree-no-effect.pdf}
-		\caption{Graph illustrating the advantage of locking in $N_{out}(N_{out}(v))$ rather than $N_{in}(v) \cup N_{out}(v)$.}
+		\caption{Graph illustrating the advantage of locking in $CN_{out}(CN_{out}(v))$ rather than $CN_{in}(v) \cup N_{out}(v)$.}
 		\label{fig:second-degree-no-effect}
 	\end{figure}
 
 	In the graph shown in Figure~\ref{fig:second-degree-no-effect} an execution of \texttt{A} no longer has an effect on the enabledness of \texttt{B}, as \texttt{C} has the same state before and after the execution of \texttt{A}.
-	An argument can be made here for the $N_{out}(N_{out}(v))$ locking scheme over $N_{in}(v) \cup N_{out}(v)$, as it allows for optimizations in that \texttt{B} strictly does not need to be locked.
-	This optimization is only possible when the state of \texttt{C} is known and since locking is only performed forwards, there is no implicit way to propagate executions backwards, meaning that \texttt{A} would not be notified of the state of \texttt{C} through executions. %Isn't locking only performed forwards because of the $N_{out}(N_{out}(v))$ locking scheme?
-	The solution of simply notifying \texttt{A} of \texttt{C}'s state when changed, is insufficient as the notification might not arrive before \texttt{A} performs locking based on a previous state.
-	Fixing the notifications would require locking which would thereby invalidate the attempt to reduce locking by propagating state changes.
-	This means that \texttt{A} does not know the state of \texttt{C} on execution and would have to send a locking message to \texttt{C}, telling it to lock \texttt{B} if necessary.
-	However, locking in two stages has the disadvantage of potentially taking twice as long, assuming that transporting a message between \texttt{A} and \texttt{C} takes the same amount of time as between \texttt{A} and \texttt{B}.
-	An additional consideration, incidentally with the same trade-offs, is locking each individual event in lexicographical order, thereby minimizing the number of locks which have to be aborted, if leader collision occurs.
-	Both of these solutions aim to maximize concurrency, but at the cost of messages and round-trips, which in practice could be very time consuming.
+	An argument can be made here for the $CN_{out}(CN_{out}(v))$ ordering scheme over $CN_{in}(v) \cup N_{out}(v)$, as it allows for optimizations in that ordering is not needed on \texttt{B}, meaning that the former ordering scheme would be more efficient than the latter.
+	This optimization is, however, only possible when the state of \texttt{C} is known and this is not a trivial problem.
+	The solution of simply notifying \texttt{A} of \texttt{C}'s state when changed, is insufficient as the notification might not arrive before \texttt{A} performs ordering based on a previous state.
+	A different solution could be to evaluate the need for ordering in steps, meaning that in the described example, \texttt{A} would inform \texttt{B} that it is executing an that ordering is required and \texttt{B} then evaluates whether or not ordering on \texttt{C} is needed, based on the state of \texttt{B}.
+	This two-step solution has the disadvantage of potentially taking twice as long, assuming that transporting a message between \texttt{A} and \texttt{C} takes the same amount of time as between \texttt{A} and \texttt{B}.
 
-	It should be noted that the semantics of locking described here is not maximally concurrent in relation to DCR semantics.
-	This is evident from the definition of dynamic independence, which describes what events should be allowed to execute concurrently.
-	We illustrate this in the three following cases:
+	There are additionally three cases where the ordering scheme described so far is not maximally concurrent:
 	\begin{itemize}
-		\item Consider a graph $\ev{A} \erel \ev{B}, \ev{C} \erel \ev{B}$. When \texttt{A} is executing, it locks \texttt{B}. If \texttt{C} then attempts to execute it will need a lock on \texttt{B} as well. \texttt{B} could choose to accept both of these locks, as they have exactly the same effect on the graph.
-		\item Consider a graph $\ev{A} \irel \ev{B}, \ev{C} \erel \ev{B}$. When \texttt{A} is executing, it locks \texttt{B}. If \texttt{C} attempts to execute, it is clear that it should not be allowed to obtain a lock until \texttt{A} finishes executing. However, even though \texttt{B} is locked by \texttt{A}, \texttt{B} should be allowed to execute, as it is dynamically independent with \texttt{A}.
-		\item Consider a graph $\ev{A} \irel \ev[100]{B}, \ev[100]{B} \crel \ev{C}$. When \texttt{A} is executing, it will lock \texttt{B} and \texttt{C} due to the constraint originating from \texttt{B} and targeting \texttt{C}. This is not needed, as the condition relation is invalidated by the fact that \texttt{B} is executed.
+		\item Consider a graph $\ev{A} \erel \ev{B}, \ev{C} \erel \ev{B}$. When \texttt{A} is executing, it ensures ordering on \texttt{B}. If \texttt{C} then attempts to execute it will need ensure ordering on \texttt{B} as well. As the execution of \texttt{A} and \texttt{C} have exactly the same effects on \texttt{B}, the ordering of these two executions is inconsequential, as they are dynamically independent.
+		\item Consider a graph $\ev{A} \irel \ev{B}, \ev{C} \erel \ev{B}$. When \texttt{A} is executing, it ensures ordering on \texttt{B}. If \texttt{C} attempts to execute, it is clear that it must ensure ordering on \texttt{B} as well, however, \texttt{B} should be allowed to execute at any time, as it is dynamically independent with \texttt{A}.
+		\item Consider a graph $\ev{A} \irel \ev[100]{B}, \ev[100]{B} \crel \ev{C}$. When \texttt{A} is executing, it will ensure ordering on both \texttt{B} and \texttt{C} due to the constraint originating from \texttt{B} and targeting \texttt{C}. This is not needed, as the condition relation is invalidated by the fact that \texttt{B} is executed.
 	\end{itemize}
 
+	Now that the need for ordering has been thoroughly uncovered, the actual method for ensuring ordering must be chosen.
+	Ordering can be assured in a number of ways, but following from the goals specified for this solution, there are some that are a better fit than others.
+	Consider an optimistic ordering system where events requiring ordering are notified of the execution and provided that no incompatible executions are performed simultaneously, that execution is considered committed.
+	If incompatible executions are performed concurrently, however, the execution is discarded.
+	This means that there is a period of uncertainty with regards to a certain execution, but as a goal of this solution is the ability of any peer to obtain a run of a graph, which will be compatible with any future run collected, this optimistic method of ordering executions seems less than ideal.
+	We therefore ideally need a way to be certain that an execution is possible before it is performed on any event.
+	One way to accomplish this in reasonable time, is by using \textit{locking}.
+	In a graph, $G(E,V)$, we define the set of locked events, $L$, on the execution of an event, $v$, as $L(v)$.
+	An event can only be locked by a single event at any time and is unlocked when a lock either leads to an execution or when an execution is aborted due to all locks not being attainable.
+
 	For the implementation described in this thesis, the simpler rules of locking is implemented, namely always locking on \textbf{Effects} and on \textbf{Effect-Conditions} as described earlier.
-
-	\subsection{Cluster Consensus}
-	\label{subsec:cluster-consensus}
-
-	\begin{table}[ht!]
-	\centering
-	\makebox[\textwidth][c]{\begin{tabular}{l p{1.7cm} p{1.5cm} l p{1.7cm}}
-    \toprule
-	\textbf{Algorithm} 								& \textbf{Fault tolerance (liveness)} & \textbf{Crash recovery} & \textbf{Messages/execution}  & \textbf{Fault type tolerance} \\
-    \midrule
-	PBFT~\cite{castro_practical_1999}               & $\lfloor \frac{n-1}{3} \rfloor = f$ & $(2f+1)^2$              & $(2f+1)+(2f+1)^2$            & Byzantine 				     \\
-	MinBFT~\cite{veronese_efficient_2013}           & $\lfloor \frac{n-1}{2} \rfloor = f$ & $(f+1)^2$               & $2(f+1)+(f+1)^2$             & Byzantine 				     \\
-	FastBFT~\cite{liu_scalable_2016}           		& $\lfloor \frac{n-1}{2} \rfloor = f$ & $(f+1)^2$               & $4(f+1)$                     & Byzantine 				     \\
-	Chandra-Toueg~\cite{chandra_unreliable_1996}    & $\lfloor \frac{n-1}{2} \rfloor = f$ & $0$                     & $4(f+1)+(f+1)^2$             & Crash                         \\
-	Paxos~\cite{lamport_part-time_1998}  			& $\lfloor \frac{n-1}{2} \rfloor = f$ & $0$                     & $4(f+1) + 2$                 & Crash                         \\
-	Raft~\cite{ongaro_search_2014}               	& $\lfloor \frac{n-1}{2} \rfloor = f$ & $2(f+1)$                & $2(f+1)$                     & Crash                         \\
-    \bottomrule
-	\end{tabular}}
-	\caption{Comparison of different consensus algorithms}
-	\label{tab:comparison-consensus-algorithms}
-	\end{table}
-	Each cluster requires a SMR/consensus algorithm to achieve consensus on the state of their shared event.
-	Table~\ref{tab:comparison-consensus-algorithms} shows a comparison between some classical SMR/consensus algorithms.
-	Notice that each of the crash tolerant algorithms can be made into byzantine resistant algorithms using the transformation from Section~\ref{sec:transforming-byzantine-faults}\footnote{MinBFT and FastBFT already uses TEE elements, which is why they can offer better fault tolerance than $3f+1$ under byzantine errors.}.
-	We have chosen to use the \textit{Raft} algorithm from~\cite{ongaro_search_2014}, due to its relative simple implementation, and low message requirements for execution and crash recovery\footnote{Raft gives the same guarantees as \textit{Multi Paxos}~\cite{lamport_part-time_1998}, but due to the separation of leader elections and request commits, it has worse crash recovery and better commit message complexity.}.
-	Basic Raft is vulnerable to DDoS attack if two peers cannot receive messages from each other.
-	We have therefore extended the basic algorithm slightly, to protect against this vulnerability.
-	We have done so, since we assume byzantine errors on the SGX-transformed algorithm, which means that the byzantine errors can effect the channel-wrappers on each peers, and cause coordinated message omission.
+	Furthermore, all locking is performed by the executing event, as we postulate that the costs of an additional round-trip is considerably more expensive in practice, than a redundant lock.
 
 	\subsection{Global history collection}
 	\label{subsec:global-history-collection}
 
 	Since changes in the workflow are not synchronized across every peer, the global history of the workflow at any given time is not readily available.
-	We define a global history to be a DCR run, i.e. it is a sequence of event executions.
+	We define a global history to be a DCR run, i.e. it is a sequence of event executions valid at the time of execution.
 	Both as documentation of the process upon completion of the workflow and during the life cycle of the workflow, the global history is relevant, in the latter case because the global state can be derived from the global history.
 	In this section we will refer to each cluster as the event itself, for simplicity.
 
 	For a global history to be collectible, each event must track more than just their own executions, as the only relationships between executions that can be established are those that are observed locally on a single execution.
-	Events must also track all executions that changes the state and enabledness of the former.
+	Events must also track all executions that affect its state and enabledness.
 	As locked events are implicitly notified of an execution upon unlocking, tracking these are trivial.
 	There are, however, cases where locking is not performed but where enabledness is affected, as locking is concerned with preventing race conditions and not necessarily changes in enabledness.
 	One such case is $\ev{A} \crel \ev{B}$, where \texttt{B} cannot execute before \texttt{A} is executed or excluded.
@@ -1065,7 +1041,7 @@ In order to attain a complete understanding of the problem at hand, there are th
 	\end{itemize}
 
 	One way to achieve a consistent cut, is to implement Chandra and Lamport's Snapshot algorithm~\cite{chandy_distributed_1985}.
-	This would require incorporation of the snapshot algorithm into the Raft algorithm, significantly bloating the log used by the algorithm.
+	This would require incorporation of the snapshot algorithm into the consensus algorithm applied it each individual cluster, possibly significantly increasing its complexity.
 	Additionally, the snapshot algorithm requires flooding of the entire network, which results in $O(r)$  messages, where $r$ is the number of relations in the DCR graph.
 	Instead, we present an alternative solution, where the client requiring the global history requests the execution log from each event cluster.
 	The algorithm we present for collecting the global history, does so without locking or pausing the network and in $O(e)$ messages, where $e$ is the number of events in the DCR graph.
@@ -1149,7 +1125,7 @@ In order to attain a complete understanding of the problem at hand, there are th
 	From the total list of relationships, a graph can now be constructed of possible executions, as seen in Figure~\ref{fig:execution-sequence-graph-example}.
 	Because the execution of dynamically dependent events is not required to be synchronized, a cycle is present in that relationship $F_1 \rightarrow E_2$ is present in the set as well as the, seemingly contradictory, $E_2 \rightarrow F_1$.
 	This is still valid, as cycles in the happened-before relationships of executions, entails that the executions happened concurrently.
-	And since the locking rules from Section~\ref{subsec:event-locking}, only allow concurrent executions when the events are dynamically independent, any linearisation of the concurrent executions must result in the same state of the graph.
+	And since the locking rules from Section~\ref{subsec:execution-ordering}, only allow concurrent executions when the events are dynamically independent, any linearisation of the concurrent executions must result in the same state of the graph.
 	Topological ordering behaviour with regards to cyclical graphs is, however, undefined and as cycles in the graphs created from execution relationships define concurrent executions, any ordering of executions in a cycle is valid.
 
 	A topological ordering of event executions is obtained by performing a Depth-First Search (DFS), and returning its reverse postorder graph traversal.
@@ -1183,27 +1159,56 @@ while there are unmarked nodes do
 	There are four different steps to the process of collecting the execution history of a graph.
 	\begin{enumerate}
 		\item Collecting the perceived execution sequences of each event cluster.
-		This requires $O(n)$ messages, where $n$ is the number of event clusters.
+		This requires $O(e)$ messages, where $e$ is the number of event clusters.
 		\item Carving a consistent cut.
 		This is accomplished by creating a look-up table which maps an execution to a set of all occurrences of that execution in returned sequences.
-		For each of $m$ executions in each of $n$ returned sequences, the event which that execution pertains' returned sequence is checked for the presence of that execution.
+		For each of $m$ executions in each of $e$ returned sequences, the event which that execution pertains' returned sequence is checked for the presence of that execution.
 		If an execution is deleted this way, it could have cascading effects.
 		But under the assumptions that look-ups in the aforementioned table, as well as checking whether or not a sequence contains a specific execution, is constant, we can at most do this operation once for each execution entry in all sequences.
-		For a graph with $n$ events and $m$ unique executions performed during the lifetime of the graph, this then has computational complexity of $O(n\cdot m)$.
-		\item Creating a graph from execution relationships. As each relationship is represented with an edge, this has computational complexity of $O(e)$ where $e$ is the number of execution relationships.
+		For a graph with $e$ events and $m$ unique executions performed during the lifetime of the graph, this then has computational complexity of $O(e\cdot m)$.
+		\item Creating a graph from execution relationships. As each relationship is represented with an edge, this has computational complexity of $O(n)$ where $n$ is the number of execution relationships.
 		\item Finding a topological ordering. 
-		Using the DFS traversal algorithm, means visiting each node twice via its edges and therefore this operation has a computational complexity of $O(|V|+|E|)$, where $V$ is the vertices in the graph and $E$ is the edges in the graph. %could be rewritten to something like $O(n \cdot m + |E|)$ or even reducing E as well?
+		Using the DFS traversal algorithm, means visiting each node twice via its edges and therefore this operation has a computational complexity of $O(|r|+|e|)$, where $r$ is the number of relations in the graph and $e$ is the number of events in the graph.
 	\end{enumerate}
 
-	In conclusion the global history can be collected in $O(n)$ messages and within $O(n\cdot m)$ computational complexity.
+	In conclusion the global history can be collected in $O(e)$ messages and within $O(e\cdot m)$ computational complexity, as finding a consistent cut forms the lower bound of the algorithm.
+
+	\subsection{Cluster Consensus}
+	\label{subsec:cluster-consensus}
+
+	\begin{table}[ht!]
+	\centering
+	\makebox[\textwidth][c]{\begin{tabular}{l p{1.7cm} p{1.5cm} l p{1.7cm}}
+    \toprule
+	\textbf{Algorithm} 								& \textbf{Fault tolerance (liveness)} & \textbf{Crash recovery} & \textbf{Messages/execution}  & \textbf{Fault type tolerance} \\
+    \midrule
+	PBFT~\cite{castro_practical_1999}               & $\lfloor \frac{n-1}{3} \rfloor = f$ & $(2f+1)^2$              & $(2f+1)+(2f+1)^2$            & Byzantine 				     \\
+	MinBFT~\cite{veronese_efficient_2013}           & $\lfloor \frac{n-1}{2} \rfloor = f$ & $(f+1)^2$               & $2(f+1)+(f+1)^2$             & Byzantine 				     \\
+	FastBFT~\cite{liu_scalable_2016}           		& $\lfloor \frac{n-1}{2} \rfloor = f$ & $(f+1)^2$               & $4(f+1)$                     & Byzantine 				     \\
+	Chandra-Toueg~\cite{chandra_unreliable_1996}    & $\lfloor \frac{n-1}{2} \rfloor = f$ & $0$                     & $4(f+1)+(f+1)^2$             & Crash                         \\
+	Paxos~\cite{lamport_part-time_1998}  			& $\lfloor \frac{n-1}{2} \rfloor = f$ & $0$                     & $4(f+1) + 2$                 & Crash                         \\
+	Raft~\cite{ongaro_search_2014}               	& $\lfloor \frac{n-1}{2} \rfloor = f$ & $2(f+1)$                & $2(f+1)$                     & Crash                         \\
+    \bottomrule
+	\end{tabular}}
+	\caption{Comparison of different consensus algorithms}
+	\label{tab:comparison-consensus-algorithms}
+	\end{table}
+	Each cluster requires a SMR/consensus algorithm to achieve consensus on the state of their shared event.
+	Table~\ref{tab:comparison-consensus-algorithms} shows a comparison between some classical SMR/consensus algorithms.
+	Notice that each of the crash tolerant algorithms can be made into byzantine resistant algorithms using the transformation from Section~\ref{sec:transforming-byzantine-faults}\footnote{MinBFT and FastBFT already uses TEE elements, which is why they can offer better fault tolerance than $3f+1$ under byzantine errors.}.
+	We have chosen to use the \textit{Raft} algorithm from~\cite{ongaro_search_2014}, due to its relative simple implementation, and low message requirements for execution and crash recovery\footnote{Raft gives the same guarantees as \textit{Multi Paxos}~\cite{lamport_part-time_1998}, but due to the separation of leader elections and request commits, it has worse crash recovery and better commit message complexity.}.
+	Basic Raft is vulnerable to DDoS attack if two peers cannot receive messages from each other.
+	We have therefore extended the basic algorithm slightly, to protect against this vulnerability.
+	We have done so, since we assume byzantine errors on the SGX-transformed algorithm, which means that the byzantine errors can effect the channel-wrappers on each peers, and cause coordinated message omission.
 
 	\subsection{Raft}
 	\label{sub:raft}
-	Raft~\cite{ongaro_search_2014} is a variation of multi-Paxos establishing consensus between processes over a continuous stream of commands.
+
+	Raft~\cite{ongaro_search_2014} is similar to multi-Paxos in that it establishes consensus between processes over a continuous stream of commands.
 	Like Paxos, Raft uses a leader to order commands and tolerates $f = \lfloor \frac{n - 1}{2} \rfloor$ (crash) faults.
 	The implementation of the Raft algorithm differs heavily from that of multi-Paxos, but the guarantees provided are identical.
 
-	In Raft, a processor is either a leader, follower, or (leader) candidate.
+	In Raft, a processor is either a leader, a follower, or a candidate.
 	To circumvent FLP, Raft operates under partial synchrony~\cite{dwork_consensus_1988} and only keeps a leader for a single term.
 	If a processor has not heard from the leader for some time period $\Delta$, the processor will start an election to move processors to the next term and elect a new leader.
 	As for any partially synchronous consensus algorithms, these elections can potentially go on forever if network latency permanently exceeds $\Delta$.
@@ -1215,7 +1220,8 @@ while there are unmarked nodes do
 	Log entries at or below the commit index are durable while log entries above the commit index may change following an election.
 
 	\subsubsection*{Election}
-	During an election, a follower experiencing a leader timeout will become a candidate. The candidate attempts to receive a majority vote from the remaining processors, endorsing it as leader in the following term.
+
+	During an election, a follower experiencing a leader time-out will become a candidate. The candidate attempts to receive a majority vote from the remaining processors, endorsing it as leader in the following term.
 	Followers will grant the vote if
 	\begin{enumerate*}[label=\textbf{(\alph*)}]
 	  \item the candidate's term is not below the follower's term,
@@ -1227,10 +1233,11 @@ while there are unmarked nodes do
 	When a candidate receives a majority vote (including its own vote), it becomes the leader.
 	Like followers timing out after time period $\Delta$ of not hearing from the leader, a candidate times out after time period $\Delta$ of not winning the election.
 	This can happen when split votes occur or when the network is in a period of asynchrony.
-	Candidate timeouts work exactly like follower timeouts; the candidate starts an election for the next term.
+	Candidate time-outs work exactly like follower time-outs; the candidate starts an election for the next term.
 	To reduce the chance of split votes following leader crashes, in practice $\Delta$ is set to a random value between some $\Delta_{min}$ and $\Delta_{max}$ at each processor.
 
 	\subsubsection*{Leading}
+
 	A leader receives commands from clients, directs followers to replicate the commands in their logs, and ensures that a majority of the network agree on the order of commands in their logs.
 	To accomplish this, the leader will broadcast $\MSG{\REQ\APPEND, t, prev_t, prev_i, commit_i, entries}$ messages either following client requests or as no-op heartbeats to prevent follower timeouts.
 	Here $t$ is the leader's term, $prev_t$ and $prev_i$ the term and index of the last entry in the leader's log, $commit_i$ the index of the last committed log entry, and $entries$ a series of log entries followers should append after the $(prev_t, prev_i)$ entry.
@@ -1245,6 +1252,7 @@ while there are unmarked nodes do
 	\end{itemize}
 
 	\subsubsection*{Following}
+
 	Finally a follower processor will receive $\MSG{\REQ\APPEND, t, prev_t, prev_i, commit_i, entries}$ requests from leaders.
 	A follower will deny such a request if
 	\begin{enumerate*}[label=\textbf{(\alph*)}]
@@ -1257,17 +1265,18 @@ while there are unmarked nodes do
 	Further, following an accepted append request, the follower can apply any log entry $l$ for which $l_{(index)} \le commit_i$. (Note that $log[commit_i]$ does not necessarily exist in the followers log yet, as commits require majority, not unanimity.)
 
 	\subsubsection*{Properties of Raft}
+
 	Raft guarantees the following properties when the amount of faults is $\le \lfloor \frac{n - 1}{2} \rfloor$ (the highest fault tolerance achievable for the consensus problem~\cite{lamport_lower_2006} with the failure model of this project).
 	\begin{figure}[ht!]
 	  \centering
 	  \begin{minipage}{0.8\textwidth}
 	    \begin{mdframed}
 	      \begin{description}
-	        \item[Election Safety:]  at most one leader can be elected in a given term.
-	        \item[Leader Append-Only:] a leader never overwrites or deletes entries in its log; it only appends new entries.
-	        \item[Log Matching:] if two logs contain an entry with the same index and term, then the logs are identical in all entries up through the given index.
-	        \item[Leader Completeness:] if a log entry is committed in a given term, then that entry will be present in the logs of the leaders for all higher-numbered  terms.
-	        \item[State Machine Safety:] if a server has applied a log entry at a given index to its state machine, no other server will ever apply a different log entry for the same index.
+	        \item[Election Safety] at most one leader can be elected in a term.
+	        \item[Leader Append-Only] a leader never overwrites or deletes entries in its log; it only appends new entries.
+	        \item[Log Matching] if two logs contain an entry with the same index and term, then the logs are identical in all entries up through the given index.
+	        \item[Leader Completeness] if a log entry is committed in a term, then that entry will be present in the logs of the leaders for all higher-numbered  terms.
+	        \item[State Machine Safety] if a server has applied a log entry at a given index to its state machine, no other server will ever apply a different log entry for the same index.
 	      \end{description}
 	    \end{mdframed}
 	  \end{minipage}
@@ -1275,7 +1284,8 @@ while there are unmarked nodes do
 	  \label{fig:raft-properties}
 	\end{figure}
 
-	\subsubsection*{Timeout liveness vulnerability}
+	\subsubsection*{Time-out liveness vulnerability}
+
 	\begin{figure}[t]
 	  \centering
 	  \includegraphics[width=\textwidth]{figures/raft-liveness-vuln.pdf}
@@ -1288,7 +1298,7 @@ while there are unmarked nodes do
 	  \item dropping all heartbeat (empty append) messages from leaders when follower and
 	  \item dropping all messages to and from any processor when leader.
 	\end{enumerate*}
-	As a result of \textbf{(a)}, the malicious processor will timeout and start an election whenever the leader has nothing to append for time period $\Delta_{min}$ (resulting in a heartbeat instead of regular append).
+	As a result of \textbf{(a)}, the malicious processor will time-out and start an election whenever the leader has nothing to append for time period $\Delta_{min}$ (resulting in a heartbeat instead of regular append).
 	The malicious processor is likely to win this election as, as the leader has not actually crashed.
 	The correct processors will only contest such an election if the leader actually crashes or the network is sufficiently delayed.
 	The malicious processor must not drop non-empty append messages, as a candidate must be up to date from the viewpoint of a majority of processors.
@@ -1307,15 +1317,16 @@ while there are unmarked nodes do
 	  \item they have not themselves received a message from the leader for time period $\Delta_{min}$.
 	\end{enumerate*}
 	Only after receiving a majority of pre-election endorsement, the timed out processor will increment its term and start a proper election.
-	Because of \textbf{(b)} a malicious processor can not convince an SGX-transformed Raft algorithm to start an election by dropping leader messages.
+	Because of \textbf{(b)} a malicious processor cannot convince an SGX-transformed Raft algorithm to start an election by dropping leader messages.
 
 	\subsubsection*{Leader liveness vulnerability}
 	\label{subsub:leader-liveness-vulnerability}
+
 	Another liveness vulnerability exists when a malicious processor drops selected messages.
 	A malicious processor can temporarily prevent liveness by
 	\begin{enumerate*}[label=\textbf{(\alph*)}]
-	  \item acting correctly when not leader and
-	  \item dropping all client messages when leader.
+	  \item acting correctly while not elected as leader and
+	  \item dropping all client messages when elected as leader.
 	\end{enumerate*}
 	The malicious processor will eventually become leader in an asynchronous setting following \textbf{(a)} and then prevent any commands to be committed following \textbf{(b)}.
 	The most intuitive solution is allowing the client to accuse the leader of being malicious, forcing the remaining processors to elect a new leader.
@@ -1326,7 +1337,8 @@ while there are unmarked nodes do
 	Given the argument that \textbf{(a)} causes the malicious processor to eventually become leader, it follows that another processor will eventually overthrow the malicious processor, restoring liveness.
 
 	\subsection{Protocol}
-	We use Raft to implement event locking (Section~\ref{subsec:event-locking}) and cluster consensus (Section~\ref{subsec:cluster-consensus}), by exploiting the guarantees given by Figure~\ref{fig:raft-properties}.
+
+	We use Raft to implement event locking (Section~\ref{subsec:execution-ordering}) and cluster consensus (Section~\ref{subsec:cluster-consensus}), by exploiting the guarantees given by Figure~\ref{fig:raft-properties}.
 	We define three command types for accomplishing this:
 	\begin{description}
 	  \item[\normalfont$\MSG{\REQ\COMMAND, tag, e, \ENUM{LOCK}}$:] request the exclusive lock to execute event $e$.
@@ -1334,8 +1346,7 @@ while there are unmarked nodes do
 	  \item[\normalfont$\MSG{\REQ\COMMAND, tag, e, \ENUM{EXEC}}$:] execute the event $e$ and modify state accordingly.
 	\end{description}
 	Recall the definition of a DCR graph $G(E, R)$ comprising of event set $E$ and relation set $R$.
-	Also recall the definition of the set of events to be locked when executing an event $e$ as $L(e)$ (semantically defined in Section~\ref{subsec:event-locking}).
-	% L(e) might have two definitions in locking section
+	Also recall the definition of the set of events to be locked when executing an event $e$ as $L(e)$ (semantically defined in Section~\ref{subsec:execution-ordering}).
 	We define the set of processors replicating event $e$ (cluster for $e$) as $C(e)$ and their leader as $C_{leader}(e)$.
 	With this we define the set of cluster leader processors that must be locked when executing en event $e$ as $L_{leaders}(e) = \bigcup_{e' \in L(e)} C_{leader}(e')$.
 	We say $committed(entry, leader)$ is true iff $entry$ has been added to the log of $leader$ at index $i$ and $commit_i \ge i$.
@@ -1343,6 +1354,7 @@ while there are unmarked nodes do
 	For processors in the leader state, we extend Raft with a state machine that can intercept incoming Raft messages, send new \ENUM{COMMAND} messages, and gets notified when a log entry is committed.
 
 	\subsubsection*{Normal Operation}
+
 	A cluster leader $p_l$ receives $\MSG{\REQ\COMMAND, tag_{lock}, e, \ENUM{LOCK}}$ requests from clients or other cluster leaders.
 	During intercept the extension checks whether the leader's log is in a lockable state: is the last log entry not a $\ENUM{LOCK}$ and, based on the log, is $e$ enabled?
 	If no, respond with $\MSG{\RSP\COMMAND, tag_{lock}, false}$.
@@ -1365,21 +1377,20 @@ while there are unmarked nodes do
 	When $(tag_{exec}, e, \ENUM{EXEC})$ is committed, $p_l$ sends $m_{exec}$ to $L_{leaders}(e)$.
 
 	\subsubsection*{Leader Recovery}
+
 	As cluster leaders may crash at arbitrary times, we must be able to safely continue from any step of an execution attempt as a newly elected leader.
 	We accomplish this mainly by exploiting the Leader Completeness property (Figure~\ref{fig:raft-properties}).
-	After being elected, a new leader $p_l'$ will look at last log entry to determine if it needs to restart a step to finish an execution attempt of a previous leader.
+	After being elected, a new leader $p_l'$ will look at the most recent log entry to determine if it needs to restart a step to finish an execution attempt of a previous leader.
 	Recall that an entry, which has been committed by a leader, will not necessarily be in the committed state for the successor.
-	The Leader Completeness property only ensures that it eventually will be committed at the successor.
+	The Leader Completeness property only ensures that it will eventually be committed at the successor.
 	If the last entry is not committed at $p_l'$, no action is needed as normal operation will handle when it eventually commits.
 	Similarly, if the last entry is $(tag, e, type)$ where $p_l' \ne C_{leader}(e)$, no extra action is needed from $p_l'$.
 	Otherwise if $p_l' = C_{leader}(e)$, branch on the last entry as follows:
 	\begin{itemize}
 	  \item $(tag_{lock}, e, \ENUM{LOCK})$\\
 	  Send $\MSG{\REQ\COMMAND, tag_{lock}, e, \ENUM{LOCK}}$ to $L_{leaders}(e)$. Recall that $\REQ\COMMAND$ requests with the same tag will not result in duplicate entries. If the old leader already sent some or all of these requests, $p_l'$ will simply be notified of their result.
-
 	  \item $(tag_{abort}, e, \ENUM{ABORT})$\\
 	  Send $\MSG{\REQ\COMMAND, tag_{abort}, e, \ENUM{ABORT}}$ to $L_{leaders}(e)$.
-
 	  \item $(tag_{exec}, e, \ENUM{EXEC})$\\
 	  Send $\MSG{\REQ\COMMAND, tag_{exec}, e, \ENUM{EXEC}}$ to $L_{leaders}(e)$.
 	\end{itemize}
@@ -1387,6 +1398,7 @@ while there are unmarked nodes do
 	This requires $p_l$ to resend any $\REQ\COMMAND$ requests it does not receive a $\RSP\COMMAND$ response from for some set time period.
 
 	\subsubsection*{Termination Argument}
+
 	\begin{figure}[t]
   	\includegraphics[width=\textwidth]{figures/raft-2pc.pdf}
 	  \caption{State machine for $C_{leader}(e)$ during execution of $e$ with states start ($\bm{S}$), intermediate locked ($\bm{L}'$), locked ($\bm{L}$), abort ($\bm{A}$), and execute ($\bm{E}$). Similar to~\cite{skeen_nonblocking_1981} we show received and sent messages above and below the line subscripted with the origin or destination process. We also show appending and committing entries in $C(e)$ as messages.}
@@ -1417,9 +1429,11 @@ while there are unmarked nodes do
 	This is guaranteed to result in the same state as the predecessor, as two different command responses for the same tag are impossible by the properties of Raft.
 
 	\section{Security analysis}
+
 	The following is a security analysis of the algorithm described in Section~\ref{sec:analysis}.
 
 		\subsection{Adversary model}
+
 		We allow for a strong adversary known as a Dolev-Yao adversary~\cite{dolev_security_1983}, which is an adversary that can coordinate faulty nodes, delay communication and delay correct nodes, but is unable to subvert the cryptographic techniques applied in this solution, and does not have access to our cryptographic secrets.
 		Essentially, it is assumed that an adversary has the same limitations in attacking the system, as a byzantine fault has in breaking it.
 		This is a quite strong assumption, in that Intel could theoretically be an adversary and would in that case know the processor specific PID key.
@@ -1490,6 +1504,7 @@ while there are unmarked nodes do
 	\section{Discussion}
 
 		\subsection{SGX security}
+		
 		All aforementioned hardware guarantees are given by Intel, but since very little of the proprietary technology is documented, all security properties of SGX rely on the correctness of Intel's hardware implementation.
 		Historically Intel has had vulnerabilities in similar hardware components, like the CVE-2017-5689 security incident exposed in~\cite{silent_bob}, allowed unprivileged access to the Intel Active Management Technology.
 
