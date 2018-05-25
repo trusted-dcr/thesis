@@ -917,12 +917,12 @@ In order to attain a complete understanding of the problem at hand, there are th
 		\item[In-neighbourhood] denoted $N_{in}(v)$, defined as the set of events where event $v'$ is in $N_{in}(v)$ iff there is a relation in $G$ that originates from $v'$ and targets $v$.
 	\end{description}
 	Additionally, neighbourhoods can be defined as closed, specifying that the input is included in the output.
-	This is denoted with an $C$ prefix: $CN_{in}$ or $CN_{out}$.
+	This is denoted with a $C$ prefix: $CN_{in}$ or $CN_{out}$.
 
 	As discussed in Section~\ref{sec:analysis}, the execution of non-independent events must be synchronised.
 	The need for ordering executions is applicable in cases where two or more executions would have incompatible effects on at least one event.
-	As ordering must necessarily be detrimental to the concurrency of a DCR graph and must also require some amount of communication between events, minimizing the ordering required is a priority.
-	Recall the definitions from Section~\ref{subsubsec:concurrency}, where the dependencies in DCR graphs are explained, and realize that dynamic independence describes exactly the cases where ordering is not needed.
+	As ordering must necessarily be detrimental to the concurrency of a DCR graph and must also require some amount of communication between events, minimizing the situations where ordering is required is a priority.
+	Recall the definitions from Section~\ref{subsubsec:concurrency}, where the dependencies in DCR graphs are explained, and realize that dynamic independence goes a long way towards describing the cases where ordering is not needed.
 	This means that the cases where ordering is needed would seem to be defined by \textit{dynamic dependence}, meaning cases where for two events, $e_1$ and $e_2$, it holds that $E(E(G, e_1),e_2) \neq E(E(G, e_2),e_1)$.
 	There is however a small caveat to this, as what is possible due to the semantics of DCR graphs grants an advantage which can be leveraged with regards to minimizing ordering.
 
@@ -942,7 +942,7 @@ In order to attain a complete understanding of the problem at hand, there are th
 	If \texttt{A} has effects originating from it, the need for synchronization arises as shown in Figure~\ref{fig:race-condition}.
 	In the graph events \texttt{A} and \texttt{B} both modify the same event state attributes and a race condition is present as a result.
 	In order to prevent the race condition from having adverse effect, synchronization is needed between the two executing events, \texttt{A} and \texttt{B}.
-	This means that events with effects targeting events within $N_{out}(v)$, where $v$ is the event being executed, need to ensure ordering on the targeted events, of $v$'s execution.
+	This means that events with effects targeting events within $N_{out}(v)$, where $v$ is the event being executed, need to ensure ordering on the targeted events of $v$'s execution.
 
 	Since effects can modify events which in turn have constraints originating from it, there are situations where locking in the neighbourhood of the executed event is no longer sufficient.
 
@@ -1504,7 +1504,7 @@ while there are unmarked nodes do
 	\section{Discussion}
 
 		\subsection{SGX security}
-		
+
 		All aforementioned hardware guarantees are given by Intel, but since very little of the proprietary technology is documented, all security properties of SGX rely on the correctness of Intel's hardware implementation.
 		Historically Intel has had vulnerabilities in similar hardware components, like the CVE-2017-5689 security incident exposed in~\cite{silent_bob}, allowed unprivileged access to the Intel Active Management Technology.
 
