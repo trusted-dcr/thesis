@@ -571,16 +571,16 @@ In order to attain a complete understanding of the problem at hand, there are th
 
 	\begin{table}[ht!]
 	\centering
-	\makebox[\textwidth][c]{\begin{tabular}{l|l}
-	\textbf{Number of messages}     & \textbf{Origin} \\ \hline
-	$m$                             &  MAC-request outputs to $SM_s$                                        \\ \hline
-	$m$                             &  MAC-response inputs from $SM_s$                                      \\ \hline
-	$m$                             &  messages sent to the wrapper state machine on the sending process    \\ \hline
-	$m$                             &  messages sent between processes                                      \\ \hline
-	$m$                             &  messages sent from the wrapper state machine on the receiving process                                                                                                 \\ \hline
-	$m$                             &  input MAC verification requests to $SM_s$                            \\ \hline
-	$m$                             &  verification responses from $SM_s$                                   \\ \hline\hline
-	$7m$                            &  total messages
+	\makebox[\textwidth][c]{\begin{tabular}{r|l}
+	\textbf{Msgs.}     & \textbf{Origin} \\ \hline
+	$m$                             &  MAC-request outputs to $SM_s$.                                   \\ \hline
+	$m$                             &  MAC-response inputs from $SM_s$.                                 \\ \hline
+	$m$                             &  sending to the wrapper state machine on the sending process.     \\ \hline
+	$m$                             &  sending between processes.                                       \\ \hline
+	$m$                             &  sending from the wrapper state machine on the receiving process 	\\ \hline
+	$m$                             &  input MAC verification requests to $SM_s$.                       \\ \hline
+	$m$                             &  verification responses from $SM_s$.                              \\ \hline\hline
+	$7\cdot m$                      &  total messages
 	\end{tabular}}
 	\caption{Number of messages after the transformation}
 	\label{tab:number-of-messages-transformed}
