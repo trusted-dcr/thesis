@@ -114,8 +114,8 @@
 		\item A thorough design of a DCR engine, with a potentially totally distributed graph state\footnote{By event.} and supporting concurrent executions only limited by the semantics of DCR.
 		Furthermore, this design accomplishes this in less than $O(n)$ messages, where $n$ is the number of peers in the network.
 		\item A proof-of-concept implementation of the former.
-		\item A transformation of any crash-stop tolerant consensus algorithm to a byzantine fault tolerant one, using Intel SGX.
-		\item An algorithm for achieving consensus in a decentralized and distributed state replication system, part of which is an SGX version of Raft~\cite{ongaro_search_2014}.
+		\item A transformation of any crash-stop tolerant distributed protocol to a byzantine fault tolerant one, using Intel SGX.
+		% \item An algorithm for achieving consensus in a decentralized and distributed state replication system, part of which is an SGX version of Raft~\cite{ongaro_search_2014}.
 		\item A description of a generalized version of the DCR engine design supporting smart contracts.
 	\end{itemize}
 
@@ -1448,27 +1448,39 @@ while there are unmarked nodes do
 
 		\subsection{Adversary model}
 
-		We allow for a strong adversary known as a Dolev-Yao adversary~\cite{dolev_security_1983}, which is an adversary that can coordinate faulty nodes, delay communication and delay correct nodes, but is unable to subvert the cryptographic techniques applied in this solution, and does not have access to our cryptographic secrets.
-		Essentially, it is assumed that an adversary has the same limitations in attacking the system, as a byzantine fault has in breaking it.
-		This is a quite strong assumption, in that Intel could theoretically be an adversary and would in that case know the processor specific PID key.
+		We allow for a strong adversary model known as the Dolev-Yao adversary~\cite{dolev_security_1983}.
+		The Dolev-Yao adversary can intercept, tamper with, delay and duplicate all messages in the system, as well as create new messages.
+		However, the Dolev-Yao adversary cannot guess the cryptographic secrets in the system.
+		
+		In a system with no cryptographic security, such an adversary can, by utilizing these techniques completely impersonate any and all processes by intercepting all messages for a process, and creating new messages seemingly originating from that process. 
+		From the perspective of a correct process in such a system, a Dolev-Yao adversary can make any other process exhibit arbitrary behaviour and even coordinate the behaviour of all other processes by utilizing this impersonation attack.
+		Notice that such an attack would present as byzantine faults for any correct process, as that process would interpret all impersonated messages as correct, and thus experience other processes as behaving arbitrarily. 
+		In a system with cryptographically signed or MAC'ed messages, however, the Dolev-Yao adversary cannot impersonate any such message, since they cannot guess the cryptographic secrets.
+		Notice that it is a quite strong assumption that the adversary cannot guess this system's cryptographic secrets, in that Intel could theoretically be an adversary and would in that case know the processor specific PID key, which is essential for the Remote Attestation secret provisioning in the SGX transformation in Section~\ref{sec:transforming-byzantine-faults}.
 
 		\subsection{Analysis}
-		
-		That is, if the adversary takes over a process, they cannot change the SGX component without correct processes rejecting any messages the process will send them.
-		Thereby they only have the possibility of tampering with the wrapper-components, and the channels, as seen in Section~\ref{sec:transforming-byzantine-faults}.
-		But as the wrapper-components only serve to pass messages, this is the same as tampering with the channels.
-		As such, an adversary can at most attack by crashing processes, message omissions, delaying messages and tampering with messages, where tampering will be noticed by the correct peers, as the adversary does not have the MAC secret.
-		With these restraints, an adversary can induce several attacks on liveness.
+        We will now show that the worst attack an adversary can mount on our system is a liveness attack, under our system model an adversary assumptions.
+        This will be followed by examples of liveness vulnerabilities, including an argument for the impossibility of protecting against these attacks. 
 
-		With message omissions and message delays, the adversary is able to give any process a cluster leadership.
-		They can do this by intercepting and removing all messages from the current leader, and intercept and remove all messages from candidates timing out before their desired candidate process.
+		Since the SGX transformation in Section~\ref{sec:transforming-byzantine-faults} results in all messages being MACed by a common secret key, any messages created by the adversary will dropped by all integrity protected subprocesses, due to the messages having incorrect MACs.
+        Thereby the adversary only have the possibility of creating messages that are accepted by the wrapper-components, but not the underlying integrity protected components.
+        But as the wrapper-components only serve to pass messages, this is the same as tampering with the channels as shown in Section~\ref{sec:transforming-byzantine-faults}.
+        Similarly, tampering with any message originating from an integrity protected subprocess, will be discarded when received by any other integrity protected subprocess. 
+        As such, an adversary can at most mount attacks using by message omissions, duplications and  delays. 
+        Using these abilities, the adversary can simulate crashes by omitting all messages to and from a process.
+        With these restraints, an adversary can induce several attacks on liveness:
 
-		By chaining these leader elections without resolving any of them, they can mount an attack on the liveness of a cluster.
-		One such chain looks like this: omit messages from the leader to $f+1$ processes until one of them, $p_1$, becomes a candidate.
-		Then omit messages from $p_1$ to $f+1$ other processes, until another process, $p_2$, becomes a candidate and repeat.
+		With message omissions and message delays, the adversary is able to give any correct process a cluster leadership.
+		They can do this by omitting all messages from the current leader, and omitting all messages from candidates timing out before candidate process desired to be leader by the adversary.
+        This is in and of itself not problematic, since the adversary can only cause correct processes to become leader, as faulty processes does not produce correctly MACed messages.
+        However, from this technique arises two liveness attacks.
+
+		By chaining these leader election attacks without resolving any of them, they can mount an attack on the liveness of a cluster.
+		One such chain could looks like this: omit messages from the leader to $f+1$ processes until one of them, $p_1$, becomes a candidate.
+		Then omit messages from $p_1$ to $f+1$ other processes, until another process, $p_2$, becomes a candidate and repeat forever.
 		Thereby the cluster will stay in a continuous election process, and cannot commit any client requests.
-		Assuming that the adversary cannot continue omitting messages indefinitely, however, the cluster will eventually successfully complete an election, and resume operation.
-		And due to the election pre-election phase, the original leader will still be the leader after the attack has been terminated.
+        Under more weak adversary assumptions, where the adversary cannot continue omitting messages indefinitely, the cluster will eventually successfully complete an election, and resume correct operation, however.
+		And due to the pre-election phase, the original leader will still be the leader after the attack has been terminated.
 		As such, any valid requests received by the leader will eventually be agreed upon after the attack has been terminated, if the leader does not crash during or immediately after the attack.
 
 		The proof of FLP-impossibility~\cite{fischer_impossibility_1985} shows that there will always exist a sequence of message omissions that violates availability (i.e. liveness in SMR), if the system is an asynchronous setting and handles crashing processes.
@@ -1487,24 +1499,14 @@ while there are unmarked nodes do
 		We have not identified any single attacks that spans the entire system.
 		If the adversary wants to mount an attack on the entire system that prevents liveness in any state of the graph, they must mount a liveness attack on a subset of clusters $A$ for which $\forall e \in A.\ \nexists e'.\ e' \in I_{stat}(e) \land e' \not \in A$.
 		In other words, the subset of clusters must contain all events that are statically independent.
-		Calculating $I_{stat}(e)$ of a all $e's$ is infeasible for large enough graphs (see Section~\ref{subsubsec:concurrency}), so the adversary must either attack an approximation, or all clusters, both of which is inefficient solutions.
-		An alternative is to attack the clusters of all dynamically independent event for the current $G$ state, but the adversary is not guaranteed that the global history reported by the log-augmented snapshot described in~\ref{subsec:global-history-collection}, and is therefore guaranteed that their attack will completely prevent any further execution of graph.
+		Calculating $I_{stat}(e)$ of a all $e's$ is infeasible for large enough graphs (see Section~\ref{subsubsec:concurrency}), so the adversary must either attack an approximation, or all clusters, both of which are inefficient solutions.
+		An alternative is to attack the clusters of all dynamically independent event for the current $G$ state, but the adversary is not guaranteed that the global history reported by the log-augmented snapshot described in~\ref{subsec:global-history-collection} is current, and is therefore not guaranteed that their attack will completely prevent any further execution of graph.
 		So an adversary must mount a suboptimal attack to prevent liveness in the entire system.
 
-		Safety cannot be attacked under the limitations of our adversary by the safety guarantees provided by Raft~\cite{ongaro_search_2014}.
+		Safety cannot be attacked under the limitations of our adversary.
+        This is due to the fact that our adversary can only utilize message omissions, duplications and process crashes in our system, under all of which Raft guarantees safety~\cite{ongaro_search_2014}. 
 
-		%if adv. takes over 1 process
-		%	- At most channel failures
-		%If adv. takes over $\leq$ f processes => f crashes/channel failures
-		%	- Raft still works
-		%If adv. takes over $>$ f processes => $>$ f crashes/channel failures
-		%	- Safety still guaranteed, and some availability
-
-		%Special cases:
-		%If adv. takes over 2 processes in same cluser => liveness
-		%	- fixed
-		%If adv. takes over leader and stops client requests
-		%	- eventual leader change / can be fixed by broadcast
+        % concl.
 		
 	\section{DCR-TEE Implementation}
 
