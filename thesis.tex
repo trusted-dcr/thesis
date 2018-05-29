@@ -1506,7 +1506,9 @@ while there are unmarked nodes do
 		Safety cannot be attacked under the limitations of our adversary.
         This is due to the fact that our adversary can only utilize message omissions, duplications and process crashes in our system, under all of which Raft guarantees safety~\cite{ongaro_search_2014}. 
 
-        % concl.
+        Summarized, the system is vulnerable to liveness attacks.
+        This due to the underlying SMR protocol (Raft), which solves the consensus problem in an asynchronous system with crashes, and thus must have a sequence of message omissions that violate liveness. 
+        However, by the guarantees of the Raft algorithm, the system is not vulnerable to any safety attacks.
 		
 	\section{DCR-TEE Implementation}
 
