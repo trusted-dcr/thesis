@@ -1353,7 +1353,7 @@ while there are unmarked nodes do
 
 	\subsubsection*{Properties of Raft}
 
-	Raft guarantees the following properties when the amount of faults is $\le \lfloor \frac{n - 1}{2} \rfloor$ (the highest fault tolerance achievable for the consensus problem~\cite{lamport_lower_2006} with the failure model of this project).
+	Raft guarantees the following properties when the number of faults is $\le \lfloor \frac{n - 1}{2} \rfloor$ (the highest fault tolerance achievable for the consensus problem~\cite{lamport_lower_2006} with the failure model of this project).
 	\begin{figure}[ht!]
 	  \centering
 	  \begin{minipage}{0.8\textwidth}
@@ -1443,7 +1443,7 @@ while there are unmarked nodes do
 	\subsubsection*{Normal Operation}
 
 	A cluster leader $p_l$ receives $\MSG{\REQ\COMMAND, tag_{lock}, e, \ENUM{LOCK}}$ requests from clients or other cluster leaders.
-	During intercept the extension checks whether the leader's log is in a lockable state: is the last log entry not a $\ENUM{LOCK}$ and, based on the log, is $e$ enabled?
+	During intercept the extension checks whether the leader's log is in a lockable state, which it does by checking if the last log entry is not a $\ENUM{LOCK}$ and, based on the log, is $e$ enabled.
 	If no, respond with $\MSG{\RSP\COMMAND, tag_{lock}, false}$.
 	If yes, pass the $\REQ\COMMAND$ request onto Raft.
 
@@ -1513,7 +1513,7 @@ while there are unmarked nodes do
 	It is possible to prevent this by introducing intermediate states $\bm{A}'$ and $\bm{E}'$, but it is not necessary to guarantee termination.
 	Commands can be resent without resulting in duplicate entries as long as the tag remains the same.
 	Thus, if a successor of a leader in state $\bm{A}$ or $\bm{E}$ is in state $\bm{L}'$, it will simply redo the commands for $\bm{L'} \rightarrow \bm{L}$ followed by $\bm{L} \rightarrow \bm{A}$ or $\bm{L} \rightarrow \bm{E}$.
-	This is guaranteed to result in the same state as the predecessor, as two different command responses for the same tag are impossible by the properties of Raft.
+	This is guaranteed to result in the same state as the predecessor, as two different command responses for the same tag are impossible by the properties of Raft~\ref{fig:raft-properties}.
 
 	\section{Security analysis}
 
