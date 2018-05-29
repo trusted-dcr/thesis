@@ -71,7 +71,7 @@
 	\vspace{\fill}
 	\begin{abstract}
 		In this thesis the security and optimization options provided by recent advances in trusted execution environments (TEE), specifically Intel Secure Guard Extensions (SGX), are explored in relation to the problem of decentralized partial state replication of dynamic condition response (DCR) graphs.
-		The design and implementation of this system contains several new contributions | a general proof for the transformation of byzantine faults to crashes using SGX for any distributed system, an SGX'ified version of the Raft consensus algorithm, an efficient method of collecting the state of a DCR graph called \textit{CheapShot} and an analysis of achieving ordering of executions in DCR graphs using minimal locking.
+		The design and implementation of this system contains several new contributions | a general proof for the transformation of byzantine faults to crashes using SGX for any distributed system, an SGX'ified version of the Raft consensus algorithm, an efficient method of collecting the state of a DCR graph called \textit{CheapShot} and an analysis of ordering executions in DCR graphs using minimal locking.
 		Lastly we describe a conversion of the implemented DCR graph system to a structure supporting arbitrary smart contracts rather than DCR graphs.
 	\end{abstract}
 \end{titlepage}
@@ -131,8 +131,8 @@
 
 	In summary, the system is described as:
 	\begin{description}
-		\item[Distributed state] Supporting the distribution of the state of the DCR graph among the participants.
-		\item[Concurrent] Allowing for a high degree of concurrency as permitted by the specific DCR graph, as shown in~\cite{debois_concurrency_2015}, while achieving consensus in a number of messages less than the number of nodes in the graph.
+		\item[Concurrent] Allowing for a high degree of concurrency as permitted by the specific DCR graph, as shown in~\cite{debois_concurrency_2015}.
+        \item[Scalable] Achieving consensus in less than $O(n)$ messages, where $n$ is the number of peers in the graph, while supporting the distribution of the state of the DCR graph among the participants.
 		\item[Byzantine fault tolerant] Functioning in the presence of malicious workflow participants and network nodes, where the only guarantees are those based on strong cryptographic security.
 	\end{description}
 
@@ -224,6 +224,8 @@ In order to attain a complete understanding of the problem at hand, there are th
 			If, in a given state of $G$, an event $e$ changes state or enabledness if event $e'$ is executed, we say that $e$ is in $e'$s \textit{effecting event set}, denoted $E_{eff}(G,e')$.
 			Additionally, we define a \textit{run} as a series of executions.
 			For a run to be valid, each execution must be enabled at the point of execution in the sequence.
+            We say that two runs, $R_1$ and $R_2$, on a graph, $G$, are equivalent when the results of performing $R_1$ on $G$ leads to $G'$ and performing $R_2$ on $G$ also leads to $G'$.
+            This is trivially the case for $R_1 = R_2$, but as there is a notion of concurrent executions this definition is needed, as sequences of concurrent executions can be swapped internally in a run, without the resulting graph state differing.
 
 			\subsubsection{Concurrency}
 			\label{subsubsec:concurrency}
@@ -240,7 +242,7 @@ In order to attain a complete understanding of the problem at hand, there are th
 				Likewise an event, $e$, has a \textit{dynamic dependence set}, $D_{dyn}(G,e) = E \setminus I_{dyn}(G,e)$.
 
 				\item[Static independence] means that two events, are dynamically independent in every \textit{reachable} state of the graph, where they are both enabled.
-				That is, $e_1$ and $e_2$ are statically independent in $G$, if they are dynamically independent in all states of $G$ that can be reached by a run. %explain run
+				That is, $e_1$ and $e_2$ are statically independent in $G$, if they are dynamically independent in all states of $G$ that can be reached by a run.
 
 				We say that an event, $e$, has a \textit{static independence set}, $I_{stat}(e)$, such that $e' \in I_{stat}(e)$ iff. $e$ and $e'$ are statically independent.
 				Likewise an event, $e$, has a \textit{static dependence set}, $D_{stat}(e) = E \setminus I_{stat}(e)$.
@@ -798,11 +800,10 @@ In order to attain a complete understanding of the problem at hand, there are th
 	\section{Analysis}
 	\label{sec:analysis}
 
-	With a better understanding of the prerequisite information, a more thorough definition of the problem can now be presented.
+	With a better understanding of the prerequisite information, we now present a more thorough definition of the problem.
+
 	We define our system as having $n$ peers $\{p_1, p_2 \dots p_n\}$, and a DCR graph $G$, which consists of $v$ events $E = \{e_1, e_2, \dots, e_v\}$.
-	Each peer is responsible for one or more events, where the peers responsible for $e$ stores the current and previous states of $e$.
-	Responsibility for $e$ entails involvement in executions of $e$ and executions of other events $e'$ s.t. $e \in E_{eff}(G,e')$, as the state of $e$ must be agreed upon by all responsible peers.
-	A client can contact any peer responsible for $e$, requesting an execution of $e$, provided that the client has the correct credentials with regards to access control.
+	Each peer is said to be responsible for one or more events, where responsibility for an event, $e$, means that requests for executions of $e$ and requests for the state of $e$ can be handled by that peer.
 	Furthermore the system must have the following properties:
 	\begin{description}
 		\item[Safety] all peers responsible for $e$ execute the requests on $e$ in the same order.
@@ -810,15 +811,16 @@ In order to attain a complete understanding of the problem at hand, there are th
 		\item[DCR linearisability] At any time before and after event executions, the states of $e_1, e_2, \dots, e_v$ must be the result of at least one run $R_G$ of $G$. Recall that $R_G$ only contains all successful executions.
 	\end{description}
 
-	We wish to create a system in which:
-	\begin{itemize}
-	 	\item The state of an event is agreed upon in less that $O(n)$ messages,
-	 	\item while maintaining fault tolerance
-	 	\item and enabling dynamic independence concurrency of event executions.
-	 \end{itemize}
+    Recall that we wish to create a system in which:
+    \begin{description}
+        \item[Concurrent] Simultaneous execution of concurrent events, as defined in Section~\ref{subsubsec:concurrency}, is performed without requiring that those executions are synchronised in the system.
+        \item[Scalable] Achieving consensus is done in less than $O(n)$ messages, where $n$ is the number of peers in the graph, while supporting the distribution of the state of the DCR graph among the participants.
+        \item[Byzantine fault tolerant] Byzantine behaviour is detectable, through the guarantees provided by Intel SGX, and treated as crashes.
+    \end{description}
 
-	 Additionally, any peer should be able to collect the run, $R_G$, which is compatible with all prior collected runs, meaning that a run collected at logical time, $t$, must be prefixed by the run collected at time $t-1$, or an equivalent run if concurrent executions are present.
-	 We assume that collecting a run will always be possible, as long as maintaining the state of the graph is and therefore disregard it at this point in the analysis.
+	 Additionally, any peer should be able to collect the run, $R$, which is compatible with all prior collected runs, meaning that a run collected at logical time $t$, must be prefixed by the run collected at time $t-1$\footnote{Up to concurrency, as defined in~\ref{subsubsec:concurrency}.}.
+     Note that from this, it follows that two runs collected at time $t$, are not required to be identical, but are required to be \textit{equivalent}.
+     Since the peers responsible for each event can always be required to store executions which it has \textit{observed} and include it alongside the state of the event, we assume that collecting a run will always be possible, as long as maintaining the state of the graph is and therefore disregard it at this point in the analysis.
 
 	\begin{landscape}
 		\begin{table}
@@ -841,10 +843,24 @@ In order to attain a complete understanding of the problem at hand, there are th
 	\end{landscape}
 
 	We consider several possible approaches to solving this problem, the performance of which can be seen in Table~\ref{tab:approach-comparison}.
-	The following is a short summary of each approach:
+	The following is a short summary of each approach starting at the most intuitive and followed by improvements on it, in iterations:
+
+    \FloatBarrier
+    \begin{figure}[ht!]
+        \center
+        \includegraphics[scale=0.7]{figures/dcr-graphs/central-server-approach}
+        \caption{The central server approach. 
+        The messages are ordered by the leader, $L$, such that the execution of $A$ is applied before the execution of $B$. 
+        Note that the executions are numbered in the order which they are sent and received. 
+        Peer $p_1$ is responsible for event $A$ along with $p_2$. 
+        Peer $p_3$ is responsible for event $B$ along with $p_3$.}
+        \label{fig:central-server-approach}
+    \end{figure}
+    \FloatBarrier
 
 	\paragraph{Central server approach}
 	The first approach is a simple central server.
+    An example of the simultaneous execution of two events, $A$ and $B$, are shown in Figure~\ref{fig:central-server-approach}.
 	There is a single leader, $L$, each of the other peers replicate some subset of $E$ and can redirect requests to the leader.
 	When the leader receives a request, it is queued in the order they are received in, and applied to $G$ in that order.
 	After an execution of an event $e$, each of the peers replicating $e$ or an event in $E_{eff}(G,e)$ is informed by $L$ of that execution, with a monotonic counter value that enables ordering of the events' execution.
@@ -855,44 +871,90 @@ In order to attain a complete understanding of the problem at hand, there are th
 	When an execution request is received of an event that is dynamically dependent on one of the currently executing events, it is queued, and so is all other requests that are not in the approximate static independence set of all the currently executing and queued events.
 	Furthermore, there is no fault tolerance because under a leader crash, there is no guarantee that the remaining peers can recreate the last state.
 
+    \FloatBarrier
+    \begin{figure}[ht!]
+        \center
+        \includegraphics[scale=0.7]{figures/dcr-graphs/smr-approach.pdf}
+        \caption{The SMR approach.
+        Following the same semantics as in Figure~\ref{fig:central-server-approach}, with the exception that each peer is responsible for the entire graph.}
+        \label{fig:smr-approach}
+    \end{figure}
+    \FloatBarrier
+
 	\paragraph{SMR approach}
 	The next approach tries to improve on the fault tolerance of the central server approach.
+    An example of the simultaneous execution of two events, $A$ and $B$, are shown in Figure~\ref{fig:smr-approach}.
 	This is a classic SMR/consensus solution with crash fault tolerance.
-	There are several protocols that fits this description, for instance in~\cite{bracha_asynchronous_1985,lamport_part-time_1998,lamport_lower_2006,ongaro_search_2014}, but for the purposes of this comparison, an abstract solution that utilizes a leader, $L$, to achieve an optimal crash fault tolerance of $f = \lfloor \frac{(n-1)}{2} \rfloor$ is enough.
+	There are several protocols that solve the issue of SMR, for instance in~\cite{bracha_asynchronous_1985,lamport_part-time_1998,lamport_lower_2006,ongaro_search_2014}, but as they are largely interchangeable with regards to performance\footnote{With regards to the categories specified in the Table~\ref{tab:approach-comparison}.}, we assume the existence of a solution that utilizes a leader, $L$, to achieve an optimal crash fault tolerance of $f = \lfloor \frac{(n-1)}{2} \rfloor$ is enough.
 
 	In this approach, every peer must replicate all events, as all executions must be committed to at least $f+1$ replicas.
 	This ensures that if a leader dies, a new leader can be chosen (using $O(n)$ messages), which gives us the aforementioned fault tolerance.
 	However, now $L$ must synchronise all requests, to ensure that they are applied in the same order by all replicas, which translates to no DCR concurrency.
 	Some SMR protocols (e.g.~\cite{castro_practical_1999}) allow for concurrent request commits, under the constraint that requests that are committed must not be applied to the underlying state machine before any uncommitted request that happened-before~\cite{lamport_time_1978} on $L$.
-	This constraint could be relaxed to allow for applying the execution of $e$ when the request has committed, if the peer is aware of which events is in the previous uncommitted execution requests, and none of these events are in $D_{dyn}(e)$.
+	In order to allow for the concurrent execution of dynamically independent events, this constraint could be relaxed to allow for applying the execution of $e$ when the request has committed, if the peer is aware of which events is in the previous uncommitted execution requests, and none of these events are in $D_{dyn}(e)$.
 	Because the peer needs to know the previous uncommitted requests, this results in worse concurrency than dynamic independence.
 	Furthermore, the solution still needs $O(n)$ messages to execute a single event, no matter how the graph is constructed.
 
+    \FloatBarrier
+    \begin{figure}[ht!]
+        \center
+        \includegraphics[scale=0.7]{figures/dcr-graphs/partial-state-single-leader-approach.pdf}
+        \caption{The partial state, single leader approach.
+        There are two clusters, one for event $A$ containing $p_1$ and $p_2$, and one for event $B$ containing $p_3$ and $p_4$. 
+        The leader is currently $p_2$.}
+        \label{fig:partial-state-single-leader-approach}
+    \end{figure}
+    \FloatBarrier
+
 	\paragraph{Partial state, single leader approach}
 	The next approach is an attempt to reduce the amount of messages needed for executing an event.
+    An example of the simultaneous execution of two events, $A$ and $B$, are shown in Figure~\ref{fig:partial-state-single-leader-approach}.
 	The basic idea is to distribute the event responsibility out to a subset of peers, which will then only be responsible for that event.
 	We name these subsets \textit{clusters} and denote the size of these clusters $m$.
 	The system still utilizes a single leader, which synchronises the requests.
-	When event $e$ is requested executed, the leader runs an SMR algorithm similar to the one described in the SMR approach, but only with the cluster for $e$, and the clusters of $E_{eff}(G,e)$ -- to ensure that the clusters of $E_{eff}(G,e)$ has updated the state/enabledness of the events they are responsible for.
-	This ensures a lesser message complexity than SMR approach, given $n > m \cdot (|E_{eff}(G,e)|+1)$.
-	Notice that $\forall e. n = m \cdot v \geq m \cdot (|E_{eff}(G,e)|+1)$).
+	When event $e$ is requested executed, the leader runs an SMR algorithm similar to the one described in the SMR approach, but only with the cluster for $e$, and the clusters of $E_{eff}(G,e)$ | to ensure that the clusters of $E_{eff}(G,e)$ has updated the state/enabledness of the events they are responsible for.
+	This ensures a lesser message complexity than SMR approach, given $n > m \cdot (|E_{eff}(G,e)|+1)$ where $n$ is the number of peers in the system.
+	Notice that $\forall e. n = m \cdot v \geq m \cdot (|E_{eff}(G,e)|+1))$ where $v$ is the number of events in the graph.
 	Another improvement is the fact that if more than half of a cluster crashes, only part of the availability is affected, since the statically independent clusters can continue operating normally.
 	However, $L$ must still synchronise all requests, and worse, cannot allow for concurrent request commits, since the peers would not necessarily be able to recreate the synchronisation between these.
 	The one exception is dynamically independent events, since the ordering of the execution of these does not matter.
 	Under leader crashes, all clusters need to synchronise their logs, which requires $O(n^2)$ messages.
-	There is an argument that one could simply reduce $n$ in the SMR approach to achieve the exact same message complexity.
+	An argument could be made that reducing $n$ in the SMR approach can achieve the exact same message complexity.
 	While this is true for a system where we control the number of peers, it does not hold in system where the number of initial peers are constant (e.g. a system where all participants in a large DCR graph requires to be in control of some constant amount of peers), or systems where the peers independently join the network (in which case we do not control the number of peers).
+
+    \FloatBarrier
+    \begin{figure}[ht!]
+        \center
+        \includegraphics[scale=0.7]{figures/dcr-graphs/complete-distribution-approach.pdf}
+        \caption{The complete distribution approach.
+        Note that the executions are no longer numbered, as synchronisation is done using locks.}
+        \label{fig:complete-distribution-approach}
+    \end{figure}
+    \FloatBarrier
 
 	\paragraph{Complete distribution approach}
 	The next approach is heavily inspired by~\cite{hildebrandt_safe_2011}.
+    An example showing the execution of an event is shown in Figure~\ref{fig:complete-distribution-approach}.
 	In it $n = v$, and each peer has responsibility for only a single event.
 	There is no leader, and an execution is done through synchronisation between peers.
 	I.e. if event $e$ is to be executed, the responsible peer will use a synchronisation technique (e.g. 2 phase locking) with all the peers responsible for the events in $E_{eff}(G,e)$, who will update their state accordingly.
 	This guarantees DCR linearisability.
 	The fault tolerance of this approach is quite bad, as any peer crashing will result in a data loss, and effect availability, even though it has the same property as the partial state, single leader approach of not effecting the events in $I_{stat}\{e\}$
 
+    \FloatBarrier
+    \begin{figure}[ht!]
+        \center
+        \includegraphics[scale=0.6]{figures/dcr-graphs/partial-state-multi-leader-approach.pdf}
+        \caption{The partial state, multi leader approach.
+        Note that this example is in a graph where events $A$ and $B$ are not dynamically independent, meaning that synchronisation is required.
+        Furthermore, locking is not the only way to achieve synchronisation and it is only used as an example here. }
+        \label{fig:partial-state-multi-leader-approach}
+    \end{figure}
+    \FloatBarrier
+
 	\paragraph{Partial state, multi-leader approach}
 	The last is our chosen approach, and we will go into detail with it from Section~\ref{subsec:algorithm}.
+    An example showing the execution of an event is shown in Figure~\ref{fig:partial-state-multi-leader-approach}.
 	It is built upon the partial state, single leader approach, except that the common leader is replaced with inter-cluster synchronisation using locks.
 	This has the benefit that even if a leader dies, the recovery has message complexity $O(m)$ (instead of $O(n^2)$ in the partial state, single leader approach and $O(n)$ in the SMR approach), and the number of concurrent client requests are not bounded by the processing speed of a single process.
 	From here on in, we will primarily concern ourselves with the details of the partial state, multi-leader approach.
@@ -909,16 +971,17 @@ In order to attain a complete understanding of the problem at hand, there are th
 	Clusters being responsible for events rather than single peers means that executions and locks need to be synchronized for each individual cluster.
 	Due to the fact that these clusters can be seen as completely individual networks of peers, any consensus algorithm can be used to solve the problem of synchronizing executions and locks as it is completely detached from the locking mechanism and reduces to the problem of consensus.
 	Choosing a consensus algorithm to manage the clusters is however still an important decision, as the wrong choice could form significant bottlenecks in the system.
-	For this implementation we have chosen Raft~\cite{ongaro_search_2014}, as the basis for the cluster consensus algorithm, with the addition of Intel SGX to reduce byzantine faults to crash-stop failures and an additional requirement with regards to leader election, to avoid deliberate crashes live-locking the network.
+	For this implementation we have chosen Raft~\cite{ongaro_search_2014}, as the basis for the cluster consensus algorithm, modified by the transformation we described earlier in Section~\ref{sec:transforming-byzantine-faults} to reduce byzantine faults to crash-stop failures.
+    Additionally a small modification has been added with regards to leader election, to avoid deliberate crashes live-locking the network.
 	The reason for choosing Raft is that it is widely used commercially, relatively simple and able to achieve consensus in very few messages.
-	Additionally Raft only handles crash faults and is therefore an ideal candidate for the transformation of byzantine faults to crashes, as described earlier in Section~\ref{sec:transforming-byzantine-faults}.
+	Additionally Raft only handles crash faults and is therefore an ideal candidate for the transformation of byzantine faults to crashes.
 	The consensus algorithm applied in the clusters is described in Section~\ref{subsec:cluster-consensus}.
 
-	With the two parts described above, the graph can now progress, in the sense that events can be executed safely, but since each peer only knows the state of events which clusters it belongs to, what has transpired in the graph is implicitly distributed.
+	With the two parts described above, peers can now progress the graph, in the sense that events can be executed safely, but since each peer only knows the state of events which clusters it belongs to, what has transpired in the graph is implicitly distributed.
 	Since the algorithm does at this point guarantees that any event can only execute, when the semantics and the state of the graph permits it, collecting the global history is only interesting from a documentation perspective.
 	Suppose that a node which is only a member of clusters of events which are never executed, that node will have no way of knowing if anything in the graph is being executed at all.
 	Additionally, it is useful to know the entire history of the graph, when evaluating whether or not the graph has served its purpose.
-	For these reasons, we present a simple method of collecting the global history of a DCR graph in Section~\ref{subsec:global-history-collection}.
+	For these reasons, we present the \textit{CheapShot} algorithm for collecting the global history of a DCR graph in Section~\ref{subsec:global-history-collection}.
 
 	\subsection{Execution Ordering}
 	\label{subsec:execution-ordering}
@@ -928,15 +991,13 @@ In order to attain a complete understanding of the problem at hand, there are th
 		\item[Out-neighbourhood] denoted $N_{out}(v)$, defined as the set of events where event $v'$ is in $N_{out}(v)$ iff there is a relation in $G$ that originates from $v$ and targets $v'$.
 		\item[In-neighbourhood] denoted $N_{in}(v)$, defined as the set of events where event $v'$ is in $N_{in}(v)$ iff there is a relation in $G$ that originates from $v'$ and targets $v$.
 	\end{description}
-	Additionally, neighbourhoods can be defined as closed, specifying that the input is included in the output.
-	This is denoted with a $C$ prefix: $CN_{in}$ or $CN_{out}$.
 
 	As discussed in Section~\ref{sec:analysis}, the execution of non-independent events must be synchronised.
 	The need for ordering executions is applicable in cases where two or more executions would have incompatible effects on at least one event.
 	As ordering must necessarily be detrimental to the concurrency of a DCR graph and must also require some amount of communication between events, minimizing the situations where ordering is required is a priority.
-	Recall the definitions from Section~\ref{subsubsec:concurrency}, where the dependencies in DCR graphs are explained, and realize that dynamic independence goes a long way towards describing the cases where ordering is not needed.
+	Recall the definitions from Section~\ref{subsubsec:concurrency}, where the dependencies in DCR graphs are explained, and realize that dynamic independence so far describes the cases where ordering is not needed.
 	This means that the cases where ordering is needed would seem to be defined by \textit{dynamic dependence}, meaning cases where for two events, $e_1$ and $e_2$, it holds that $E(E(G, e_1),e_2) \neq E(E(G, e_2),e_1)$.
-	There is however a small caveat to this, as what is possible due to the semantics of DCR graphs grants an advantage which can be leveraged with regards to minimizing ordering.
+	There is however a small caveat to this, illustrated by the following example:
 
 	Consider a graph consisting of two events with a condition between them: $\ev{A} \crel \ev{B}$
 	Events \texttt{A} and \texttt{B} are dynamically dependent, as executing first \texttt{A} and then \texttt{B} results in a different graph than executing first \texttt{B} and then \texttt{A}, since \texttt{B} cannot be executed in the latter case.
@@ -954,14 +1015,14 @@ In order to attain a complete understanding of the problem at hand, there are th
 	If \texttt{A} has effects originating from it, the need for synchronization arises as shown in Figure~\ref{fig:race-condition}.
 	In the graph events \texttt{A} and \texttt{B} both modify the same event state attributes and a race condition is present as a result.
 	In order to prevent the race condition from having adverse effect, synchronization is needed between the two executing events, \texttt{A} and \texttt{B}.
-	This means that events with effects targeting events within $N_{out}(v)$, where $v$ is the event being executed, need to ensure ordering on the targeted events of $v$'s execution.
+	This means that events with effects which target events within $N_{out}(v)$ need to ensure synchronisation on the targeted events of $v$'s execution.
 
 	Since effects can modify events which in turn have constraints originating from it, there are situations where locking in the neighbourhood of the executed event is no longer sufficient.
 
 	\begin{figure}[ht!]
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/second-degree-effect.pdf}
-		\caption{Graph illustrating that ordering only within $CN_{out}(v)$ is insufficient.}
+		\caption{Graph illustrating that ordering only within $N_{out}(v) \cup v$ is insufficient.}
 		\label{fig:second-degree-effect}
 	\end{figure}
 
@@ -970,9 +1031,9 @@ In order to attain a complete understanding of the problem at hand, there are th
 	As ordering within the set of $N_{in}(N_{in}(v))$ is not enough on its own, due to the case shown in Figure~\ref{fig:race-condition}, we regard this option as worse than any of the other two.
 
 	We now show that the cases shown in Figure~\ref{fig:race-condition} and in Figure~\ref{fig:second-degree-effect} cover all situations where ordering is needed.
-	According to the semantics of DCR relations (see Section~\ref{subsec:dcr}), the enabledness of an event, $v$, can only be changed by state changes in $CN_{in}(v)$, and the state of the event can only be affected by an execution in $CN_{in}(v)$.
+	According to the semantics of DCR relations (see Section~\ref{subsec:dcr}), the enabledness of an event, $v$, can only be changed by state changes in $N_{in}(v) \cup v$, and the state of the event can only be affected by an execution in $N_{in}(v) \cup v$.
 	Consider an event $v$.
-	Executing $v$ can then change the state and enabledness of any event in $CN_{out}(v)$.
+	Executing $v$ can then change the state and enabledness of any event in $N_{out}(v) \cup v$.
 	Changes of the enabledness of an event in $N_{out}(v)$ cannot propagate\footnote{Unless the enabledness change of the event is a result of a state change of the event, e.g. if the event is excluded}, since no relation relies on the enabledness of the originating event.
 	Changes of the state of an event in $N_{out}(v)$, \textit{can} propagate, since the constraining relations relies on the state of the originating event.
 	But since only the constraining relations rely on the state of the originating event, the state change can only propagate enabledness changes, which in turn cannot propagate.
@@ -984,17 +1045,17 @@ In order to attain a complete understanding of the problem at hand, there are th
 		\item[Effect-Condition] Consider a graph of three events: \ev{A}, \ev{B} and \ev{C}, with an effect originating from \texttt{A}, targeting \texttt{B} and a constraint originating from \texttt{B}, targeting \texttt{C}.
 		If \texttt{A} is executed, ordering of that execution must be ensured on \texttt{B} and \texttt{C}.
 	\end{description}
-	Both of these cases can be covered by ordering in $CN_{out}(N_{out}(v))$ or $CN_{in}(v) \cup N_{out}(v)$.
+	Both of these cases can be covered by ordering in $N_{out}(N_{out}(v)) \cup N_{out}(v) \cup v$ or $N_{in}(v) \cup N_{out}(v) \cup v$.
 
 	\begin{figure}[ht!]
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/second-degree-no-effect.pdf}
-		\caption{Graph illustrating the advantage of locking in $CN_{out}(CN_{out}(v))$ rather than $CN_{in}(v) \cup N_{out}(v)$.}
+		\caption{Graph illustrating the advantage of locking in $N_{out}(N_{out}(v)) \cup N_{out}(v) \cup v$ rather than $N_{in}(v) \cup N_{out}(v) \cup v$.}
 		\label{fig:second-degree-no-effect}
 	\end{figure}
 
-	In the graph shown in Figure~\ref{fig:second-degree-no-effect} an execution of \texttt{A} no longer has an effect on the enabledness of \texttt{B}, as \texttt{C} has the same state before and after the execution of \texttt{A}.
-	An argument can be made here for the $CN_{out}(CN_{out}(v))$ ordering scheme over $CN_{in}(v) \cup N_{out}(v)$, as it allows for optimizations in that ordering is not needed on \texttt{B}, meaning that the former ordering scheme would be more efficient than the latter.
+	In the graph shown in Figure~\ref{fig:second-degree-no-effect} an execution of \texttt{A} no longer has an effect on the enabledness of \texttt{B}, as \texttt{C} is included and therefore has the same state before and after the execution of \texttt{A}.
+	An argument can be made here for the $N_{out}(N_{out}(v)) \cup N_{out}(v) \cup v$ ordering scheme over $N_{in}(v) \cup N_{out}(v) \cup v$, as it allows for optimizations in that ordering is not needed on \texttt{B}, meaning that the former ordering scheme would be more efficient than the latter.
 	This optimization is, however, only possible when the state of \texttt{C} is known and this is not a trivial problem.
 	The solution of simply notifying \texttt{A} of \texttt{C}'s state when changed, is insufficient as the notification might not arrive before \texttt{A} performs ordering based on a previous state.
 	A different solution could be to evaluate the need for ordering in steps, meaning that in the described example, \texttt{A} would inform \texttt{B} that it is executing an that ordering is required and \texttt{B} then evaluates whether or not ordering on \texttt{C} is needed, based on the state of \texttt{B}.
@@ -1002,31 +1063,39 @@ In order to attain a complete understanding of the problem at hand, there are th
 
 	There are additionally three cases where the ordering scheme described so far is not maximally concurrent:
 	\begin{itemize}
-		\item Consider a graph $\ev{A} \erel \ev{B}, \ev{C} \erel \ev{B}$. When \texttt{A} is executing, it ensures ordering on \texttt{B}. If \texttt{C} then attempts to execute it will need ensure ordering on \texttt{B} as well. As the execution of \texttt{A} and \texttt{C} have exactly the same effects on \texttt{B}, the ordering of these two executions is inconsequential, as they are dynamically independent.
-		\item Consider a graph $\ev{A} \irel \ev{B}, \ev{C} \erel \ev{B}$. When \texttt{A} is executing, it ensures ordering on \texttt{B}. If \texttt{C} attempts to execute, it is clear that it must ensure ordering on \texttt{B} as well, however, \texttt{B} should be allowed to execute at any time, as it is dynamically independent with \texttt{A}.
-		\item Consider a graph $\ev{A} \irel \ev[100]{B}, \ev[100]{B} \crel \ev{C}$. When \texttt{A} is executing, it will ensure ordering on both \texttt{B} and \texttt{C} due to the constraint originating from \texttt{B} and targeting \texttt{C}. This is not needed, as the condition relation is invalidated by the fact that \texttt{B} is executed.
+		\item $\ev{A} \erel \ev{B}, \ev{C} \erel \ev{B}$ When \texttt{A} is executing, it ensures ordering on \texttt{B}. 
+        If \texttt{C} then attempts to execute it will need ensure synchronisation on \texttt{B} as well. 
+        As the execution of \texttt{A} and \texttt{C} have exactly the same effects on \texttt{B}, the synchronisation of these two executions is inconsequential, as they are dynamically independent.
+		\item $\ev{A} \irel \ev{B}, \ev{C} \erel \ev{B}$ When \texttt{A} is executing, it needs to ensure synchronisation on \texttt{B}. 
+        If \texttt{C} attempts to execute, it is clear that it must ensure synchronisation on \texttt{B} as well, however, \texttt{B} should be allowed to execute at any time, as it is dynamically independent with \texttt{A}. 
+        This is because the effect which the execution \texttt{A} has on \texttt{B} is not incompatible with the effects of an execution of \texttt{B} and the execution of \texttt{A} does not change the enabledness of \texttt{B}.
+		\item $\ev{A} \irel \ev[100]{B}, \ev[100]{B} \crel \ev{C}$ When \texttt{A} is executing, it will need to ensure synchronisation on both \texttt{B} and \texttt{C} due to the constraint originating from \texttt{B} and targeting \texttt{C}. 
+        This is not needed, as the condition relation is invalidated by the fact that \texttt{B} is executed.
 	\end{itemize}
 
-	Now that the need for ordering has been thoroughly uncovered, the actual method for ensuring ordering must be chosen.
-	Ordering can be assured in a number of ways, but following from the goals specified for this solution, there are some that are a better fit than others.
-	Consider an optimistic ordering system where events requiring ordering are notified of the execution and provided that no incompatible executions are performed simultaneously, that execution is considered committed.
+    \subsubsection{Synchronisation Method}
+    \label{subsubsec:synchronisation-method}
+
+	Now that the cases where ordering is needed have been exhaustively described, as shown in~\cite{debois_concurrency_2015}, the actual method for synchronisation executions must be chosen.
+	Synchronisation can be assured in a number of ways, but following from the goals specified for this solution, there are some that are a better fit than others.
+	Consider an optimistic ordering system where events requiring synchronisation are notified of the execution and provided that no incompatible executions are performed simultaneously, that execution is considered committed.
 	If incompatible executions are performed concurrently, however, the execution is discarded.
-	This means that there is a period of uncertainty with regards to a certain execution, but as a goal of this solution is the ability of any peer to obtain a run of a graph, which will be compatible with any future run collected, this optimistic method of ordering executions seems less than ideal.
+	This means that there is a period of uncertainty with regards to a execution, but as any peer needs to be able to obtain a run of a graph, which will be compatible with any future run collected, this optimistic method of ordering executions seems less than ideal.
 	We therefore ideally need a way to be certain that an execution is possible before it is performed on any event.
 	One way to accomplish this in reasonable time, is by using \textit{locking}.
+
 	In a graph, $G(E,V)$, we define the set of locked events, $L$, on the execution of an event, $v$, as $L(v)$.
 	An event can only be locked by a single event at any time and is unlocked when a lock either leads to an execution or when an execution is aborted due to all locks not being attainable.
 
-	For the implementation described in this thesis, the simpler rules of locking is implemented, namely always locking on \textbf{Effects} and on \textbf{Effect-Conditions} as described earlier.
+	For the implementation described in this thesis, the simpler rules of ordering is implemented, namely always locking on \textbf{Effects} and on \textbf{Effect-Conditions} as described earlier, which should be sufficient as it covers all situations where synchronisation is needed.
 	Furthermore, all locking is performed by the executing event, as we postulate that the costs of an additional round-trip is considerably more expensive in practice, than a redundant lock.
 
 	\subsection{Global history collection}
 	\label{subsec:global-history-collection}
 
-	Since changes in the workflow are not synchronized across every peer, the global history of the workflow at any given time is not readily available.
-	We define a global history to be a DCR run, i.e. it is a sequence of event executions valid at the time of execution.
+	We define a global history to be a DCR run.
 	Both as documentation of the process upon completion of the workflow and during the life cycle of the workflow, the global history is relevant, in the latter case because the global state can be derived from the global history.
-	In this section we will refer to each cluster as the event itself, for simplicity.
+	In this section we conflate a cluster with the event which the cluster is responsible for, for simplicity.
 
 	For a global history to be collectible, each event must track more than just their own executions, as the only relationships between executions that can be established are those that are observed locally on a single execution.
 	Events must also track all executions that affect its state and enabledness.
@@ -1038,7 +1107,7 @@ In order to attain a complete understanding of the problem at hand, there are th
 	It is assumed that informing events is attempted until the informed event responds.
 	Under this assumption, an arbitrary amount of time can pass before an event is actually notified, but as this does not allow executions to happen which violate the semantics of DCR; it is reduced to a question of fairness, which will not be discussed in this thesis\footnote{Fairness in the sense that two events which enabledness is affected by an execution will not necessarily be notified of that execution at the same time, thereby allowing one event to execute before the other.}.
 
-	The standard for representing the state of a continuous system in an asynchronous setting is by finding a consistent cut~\cite{lamport_time_1978}, which is defined by the happened-before relations:
+	A way to represent the state of a continuous system in an asynchronous setting is by finding a consistent cut~\cite{lamport_time_1978}, which is defined by the happened-before relations:
 
 	\begin{description}
 		\item[Happened-before 1 (HB1)] Process events occurring on the same process can be ordered in happened-before relations.
@@ -1053,11 +1122,11 @@ In order to attain a complete understanding of the problem at hand, there are th
 	\end{itemize}
 
 	One way to achieve a consistent cut, is to implement Chandra and Lamport's Snapshot algorithm~\cite{chandy_distributed_1985}.
-	This would require incorporation of the snapshot algorithm into the consensus algorithm applied it each individual cluster, possibly significantly increasing its complexity.
+	This would require incorporation of the snapshot algorithm into the consensus algorithm applied it each individual cluster, significantly increasing its complexity.
 	Additionally, the snapshot algorithm requires flooding of the entire network, which results in $O(r)$  messages, where $r$ is the number of relations in the DCR graph.
 	Instead, we present an alternative solution, where the client requiring the global history requests the execution log from each event cluster.
 	The algorithm we present for collecting the global history, does so without locking or pausing the network and in $O(e)$ messages, where $e$ is the number of events in the DCR graph.
-	As both algorithms requires graphs to be connected, it holds that $v = e-1$ in the case where v is minimal, but as each event can have one of each relation type to each event in the graph, $v$ can maximally be $v = 5\cdot e^2$, meaning that the message complexity of the proposed solution is significantly better than that of Chandra and Lamport's Snapshot algorithm.
+	As a consistent cut only makes sense in connected graphs, it holds that $v = e-1$ in the case where $v$ is minimal, but as each event can have one of each relation type to each event in the graph, $v$ can maximally be $v = 5\cdot e^2$, meaning that the message complexity of the proposed solution is significantly better than that of Chandra and Lamport's Snapshot algorithm, since the proposed solution would always require $O(e)$ messages.
 	There is, however, considerations in that each event will then have their individual perceived sequence of executions, which might be dissimilar due to arbitrary message delays.
 	After receiving an answer from each cluster, the client is able to merge the local executions sequences into a consistent cut, using the following algorithm.
 
@@ -1084,15 +1153,16 @@ In order to attain a complete understanding of the problem at hand, there are th
 		\caption{Global history collection consistent cut. Note that execution process of locking and then committing is illustrated as a single message, for brevity. The green and blue executions illustrate two possibilities which could have preceded \texttt{D}'s perceived execution sequence of $\{\texttt{C}, \texttt{D}\}$. The red, dotted line shows an inconsistent cut and the black, dotted line shows the consistent cut.}
 		\label{fig:global-history-collection-consistent-cut}
 	\end{figure}
+    \FloatBarrier
 
 	In Figure~\ref{fig:global-history-collection-consistent-cut} the example from above is shown.
 	As a consistent cut requires that any message received within the cut must also be sent within the cut (HB2), it is clear that the cut described in the figure is inconsistent.
 	The method of carving an inconsistent cut described earlier, is the equivalent of ignoring that \texttt{D}'s cluster has received an execution message from \texttt{C}, which also renders the execution of \texttt{D} invalid.
 	Cuts made in a DCR graph adhering to the tracking rules outlined here, and the implicit tracking of locks, will always be locally consistent, meaning that they are guaranteed to uphold the first premise of happened-before relations (HB1), namely ordering of local process events.
 
-	Given that these events will always present a local sequence adhering to HB1, there must be some point for each process which is consistent with a point in each other process.
-	Each event will always be able to present an empty sequence, as an example of a consistent cut.
-	Additionally, there will always be a guaranteed consistent cut, defined by the first\footnote{In the logical, happened-before, sense of first.} event cluster to reply with its observed execution sequence, as it will decide the lowest common denominator.
+	Given that these events will always present a sequence adhering to HB1, it will always be possible to find a consistent cut.
+	This is trivially true, in that each event will always be able to present an empty sequence, as an example of a consistent cut.
+	Additionally, there will always be a guaranteed consistent cut, defined by the first\footnote{In the logical, happened-before, sense of first.} event cluster to reply with its observed execution sequence, as it will always be the sequence ending at the earliest, according to either definition of earliest.
 
 	For locked events, the executing events record the execution after having received all locks, and before informing the locked events that execution has been achieved.
 	For non-locking constraints, there can only exist the cases where the executing event has recorded an execution, but the constrained event has not, or when both has recoded the execution. 
@@ -1112,17 +1182,17 @@ In order to attain a complete understanding of the problem at hand, there are th
 	\begin{figure}[ht!]
 		\center
 		\includegraphics[scale=0.6]{figures/dcr-graphs/global-history-collection-example.pdf}
-		\caption{Example graph illustrating global history collection. The sets within a DCR event represent that event's execution sequence.}
+		\caption{Example graph illustrating global history collection. The sequences within a DCR event represent the execution sequence of that event.}
 		\label{fig:global-history-collection-example}
 	\end{figure}
 
-	From the graph shown in Figure~\ref{fig:global-history-collection-example}, the shown sequences are collected for each event and form a consistent cut.
+	From the graph shown in Figure~\ref{fig:global-history-collection-example}, the shown sequences are returned by each respective event and form a consistent cut.
 	Note that each execution of an event is uniquely identifiable by a tag, which is also the case in the algorithm described in this thesis, as it is needed by the cluster consensus part described in Section~\ref{subsec:cluster-consensus}.
 
 	From each sequence, an implicit valid ordering is present, in the sense that from event \texttt{B} it is shown that execution $B_1$ can happen before $A_1$ happens.
 	An linearisation of these sequences needs to be found, which can be accomplished through the construction of a directed graph and topologically ordering the vertices of that graph.
 	Before a linearisation can be performed, we define each sequence as a set of execution relationships.
-	For example the execution sequence recorded by \texttt{B} could also be formulated as: $\{A_1 \rightarrow B_1, B_1 \rightarrow E_1, E_1 \rightarrow F_1, F_1 \rightarrow E_2, E_2 \rightarrow F_2\}$.
+	For example the execution sequence recorded by \texttt{B} could also be formulated as: $\{A_1 \rightarrow B_1, B_1 \rightarrow E_1, E_1 \rightarrow F_1, F_1 \rightarrow E_2, E_2 \rightarrow F_2\}$ where the arrow denotes that the right hand side can occur after the left hand side, given that is has been observed.
 
 	If each sequence is formulated as a series of execution relationships they can easily be aggregated in order to define the rules which a valid execution sequence must adhere to for this specific DCR graph and its state.
 	For the example in Figure~\ref{fig:global-history-collection-example} where a union of the execution relationships result in the following set of relationships: $\{A_1 \rightarrow D_1, A_1 \rightarrow B_1, B_1 \rightarrow E_1, E_1 \rightarrow E_2, E_1 \rightarrow F_1, F_1 \rightarrow F_2, F_1 \rightarrow E_2, E_2 \rightarrow F_2, F_2 \rightarrow C_1\}$
@@ -1133,10 +1203,11 @@ In order to attain a complete understanding of the problem at hand, there are th
 		\caption{Initial graph made from sequence rule aggregation.}
 		\label{fig:execution-sequence-graph-example}
 	\end{figure}
+    \FloatBarrier
 
 	From the total list of relationships, a graph can now be constructed of possible executions, as seen in Figure~\ref{fig:execution-sequence-graph-example}.
 	Because the execution of dynamically dependent events is not required to be synchronized, a cycle is present in that relationship $F_1 \rightarrow E_2$ is present in the set as well as the, seemingly contradictory, $E_2 \rightarrow F_1$.
-	This is still valid, as cycles in the happened-before relationships of executions, entails that the executions happened concurrently.
+	This is still valid, as cycles in the happened-before relationships of executions, entails that the executions happened concurrently, because the locking rules would ensure an ordering if they were not independent.
 	And since the locking rules from Section~\ref{subsec:execution-ordering}, only allow concurrent executions when the events are dynamically independent, any linearisation of the concurrent executions must result in the same state of the graph.
 	Topological ordering behaviour with regards to cyclical graphs is, however, undefined and as cycles in the graphs created from execution relationships define concurrent executions, any ordering of executions in a cycle is valid.
 
@@ -1191,23 +1262,25 @@ while there are unmarked nodes do
 	\label{subsec:cluster-consensus}
 
 	\begin{table}[ht!]
-	\centering
-	\makebox[\textwidth][c]{\begin{tabular}{l p{1.7cm} p{1.5cm} l p{1.7cm}}
-    \toprule
-	\textbf{Algorithm} 								& \textbf{Fault tolerance (liveness)} & \textbf{Crash recovery} & \textbf{Messages/execution}  & \textbf{Fault type tolerance} \\
-    \midrule
-	PBFT~\cite{castro_practical_1999}               & $\lfloor \frac{n-1}{3} \rfloor = f$ & $(2f+1)^2$              & $(2f+1)+(2f+1)^2$            & Byzantine 				     \\
-	MinBFT~\cite{veronese_efficient_2013}           & $\lfloor \frac{n-1}{2} \rfloor = f$ & $(f+1)^2$               & $2(f+1)+(f+1)^2$             & Byzantine 				     \\
-	FastBFT~\cite{liu_scalable_2016}           		& $\lfloor \frac{n-1}{2} \rfloor = f$ & $(f+1)^2$               & $4(f+1)$                     & Byzantine 				     \\
-	Chandra-Toueg~\cite{chandra_unreliable_1996}    & $\lfloor \frac{n-1}{2} \rfloor = f$ & $0$                     & $4(f+1)+(f+1)^2$             & Crash                         \\
-	Paxos~\cite{lamport_part-time_1998}  			& $\lfloor \frac{n-1}{2} \rfloor = f$ & $0$                     & $4(f+1) + 2$                 & Crash                         \\
-	Raft~\cite{ongaro_search_2014}               	& $\lfloor \frac{n-1}{2} \rfloor = f$ & $2(f+1)$                & $2(f+1)$                     & Crash                         \\
-    \bottomrule
-	\end{tabular}}
-	\caption{Comparison of different consensus algorithms}
-	\label{tab:comparison-consensus-algorithms}
+    	\centering
+        	\makebox[\textwidth][c]{\begin{tabular}{l p{1.7cm} p{1.5cm} l p{1.7cm}}
+            \toprule
+        	\textbf{Algorithm} 								& \textbf{Fault tolerance (liveness)} & \textbf{Crash recovery} & \textbf{Messages/execution}  & \textbf{Fault type tolerance} \\
+            \midrule
+        	PBFT~\cite{castro_practical_1999}               & $\lfloor \frac{n-1}{3} \rfloor = f$ & $(2f+1)^2$              & $(2f+1)+(2f+1)^2$            & Byzantine 				     \\
+        	MinBFT~\cite{veronese_efficient_2013}           & $\lfloor \frac{n-1}{2} \rfloor = f$ & $(f+1)^2$               & $2(f+1)+(f+1)^2$             & Byzantine 				     \\
+        	FastBFT~\cite{liu_scalable_2016}           		& $\lfloor \frac{n-1}{2} \rfloor = f$ & $(f+1)^2$               & $4(f+1)$                     & Byzantine 				     \\
+        	Chandra-Toueg~\cite{chandra_unreliable_1996}    & $\lfloor \frac{n-1}{2} \rfloor = f$ & $0$                     & $4(f+1)+(f+1)^2$             & Crash                         \\
+        	Paxos~\cite{lamport_part-time_1998}  			& $\lfloor \frac{n-1}{2} \rfloor = f$ & $0$                     & $4(f+1) + 2$                 & Crash                         \\
+        	Raft~\cite{ongaro_search_2014}               	& $\lfloor \frac{n-1}{2} \rfloor = f$ & $2(f+1)$                & $2(f+1)$                     & Crash                         \\
+            \bottomrule
+        	\end{tabular}}
+    	\caption{Comparison of different consensus algorithms}
+    	\label{tab:comparison-consensus-algorithms}
 	\end{table}
-	Each cluster requires a SMR/consensus algorithm to achieve consensus on the state of their shared event.
+
+    Recall that the consensus algorithm applied in each cluster can be regarded separately from the rest of the algorithm, as locking a cluster or executing an event reduces to the problem of consensus.
+	Each cluster therefore requires a SMR/consensus algorithm to achieve consensus on the state of their shared event.
 	Table~\ref{tab:comparison-consensus-algorithms} shows a comparison between some classical SMR/consensus algorithms.
 	Notice that each of the crash tolerant algorithms can be made into byzantine resistant algorithms using the transformation from Section~\ref{sec:transforming-byzantine-faults}\footnote{MinBFT and FastBFT already uses TEE elements, which is why they can offer better fault tolerance than $3f+1$ under byzantine errors.}.
 	We have chosen to use the \textit{Raft} algorithm from~\cite{ongaro_search_2014}, due to its relative simple implementation, and low message requirements for execution and crash recovery\footnote{Raft gives the same guarantees as \textit{Multi Paxos}~\cite{lamport_part-time_1998}, but due to the separation of leader elections and request commits, it has worse crash recovery and better commit message complexity.}.
