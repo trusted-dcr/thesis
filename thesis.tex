@@ -22,6 +22,7 @@
 \usepackage{mdframed}
 \usepackage{mathtools}
 \usepackage{bm}
+\usepackage{newfloat}
 
 \include{dcr-preamble}
 \include{msg-preamble}
@@ -32,6 +33,14 @@
 
 \newcommand\cpp{C\nolinebreak[4]\hspace{-.05em}\raisebox{.4ex}{\relsize{-1}{\textbf{++}}}}
 
+\DeclareFloatingEnvironment[
+    fileext=los,
+    listname=List of code snippets,
+    name=Listing,
+    placement=tbhp,
+    within=none,
+]{snippet}
+
 \lstset{
   captionpos=b
  }
@@ -41,7 +50,7 @@
 \lstdefinestyle{pseudo}{
   mathescape=true,
   escapeinside={<|}{|>},
-  morekeywords={function, send, to, receive, from, broadcast, timeout, match, with, when, and, or, if, else, while, do},
+  morekeywords={function, send, to, receive, from, broadcast, timeout, match, with, when, and, or, if, else},
   morecomment=[l]{//},
   keepspaces=true,
   basicstyle=\small\ttfamily,
@@ -1139,9 +1148,9 @@ In order to attain a complete understanding of the problem at hand, there are th
 		\item The marked neighbour has been visited in the \textit{same} DFS traversal, implying that the two vertices are part of a cycle. But in this case, any ordering of the two vertices are acceptable, as it implies that the event executions, that the two vertices represent, happened concurrently.
 	\end{itemize}
 	Pseudo code of the DFS traversal algorithm can be seen in Listing~\ref{lst:dfs-traversal}.
-
-\begin{minipage}{\linewidth}
-	\begin{lstlisting}[style=pseudo, caption={Reversed postorder DFS traversal algorithm. Adapted from~\cite{_topological_2018}}, label={lst:dfs-traversal}]
+\begin{snippet}
+\begin{mdframed}[backgroundcolor=Papyrus]
+	\begin{lstlisting}[style=pseudo, keywords={}]
 L <- Empty list that will contain the sorted vertices
 while there are unmarked nodes do
     select an unmarked node n
@@ -1152,9 +1161,11 @@ while there are unmarked nodes do
     mark n
     for each node m with an edge from n to m do
         visit(m)
-    add n to head of L
+    add n to head of L 
 	\end{lstlisting}
-\end{minipage}
+\end{mdframed}
+\caption{Reversed postorder DFS traversal algorithm. Adapted from~\cite{_topological_2018} \label{lst:dfs-traversal}.}
+\end{snippet}
 
 	There are four different steps to the process of collecting the execution history of a graph.
 	\begin{enumerate}
@@ -1569,7 +1580,7 @@ $\MSG{\REQ\APPEND, term, prev_t, prev_i, commit_i, entries}$
 $\MSG{\RSP\APPEND, term, prev_t, prev_i, success, last_i}$
 
 $\MSG{\REQ\POLL, term, last_t, last_i}$
-$\MSG{\REQ\POLL, term, success}$
+$\MSG{\RSP\POLL, term, success}$
 
 $\MSG{\REQ\ELECTION, term, last_t, last_i}$
 $\MSG{\RSP\ELECTION, term, success}$
@@ -1610,7 +1621,7 @@ function verify_term($m, p_s$)
   | $\MSG{\REQ\APPEND, t, \_, \_, \_, \_}$ when $t > term$
   | $\MSG{\RSP\APPEND, t, \_, \_, \_, \_}$ when $t > term$
   | $\MSG{\REQ\POLL, t, \_, \_}$ when $t > term$
-  | $\MSG{\REQ\POLL, t, \_}$ when $t > term$
+  | $\MSG{\RSP\POLL, t, \_}$ when $t > term$
   | $\MSG{\REQ\ELECTION, t, \_, \_}$ when $t > term$
   | $\MSG{\RSP\ELECTION, t, \_}$ when $t > term$ $\longrightarrow$
     update_term($t, p_s$)
@@ -1618,7 +1629,7 @@ function verify_term($m, p_s$)
     return false
 
   | $\MSG{\REQ\APPEND, t, \_, \_, \_, \_}$ when $t < term$
-    send $\MSG{\RSP\APPEND, term, -1, -1, false}$ to $p_s$
+    send $\MSG{\RSP\APPEND, term, -1, -1, false, -1}$ to $p_s$
     return false
 
   | $\MSG{\REQ\POLL, t, \_, \_}$ when $t < term$
@@ -1642,7 +1653,7 @@ function leader_recv()
 function leader_accept($m, p_s$)
   if verify_term($m, p_s$) match $m$ with
   // client commands
-  | $\MSG{\REQ\COMMAND, tag, \_, \_}$ when $\exists l \in log, l_{(tag)} = tag \land l_{(index)} \le commit_i$ $\longrightarrow$
+  | $\MSG{\REQ\COMMAND, tag, event, \_}$ when $\exists l \in log, l_{(tag)} = tag \land l_{(event)}=event \land l_{(index)} \le commit_i$ $\longrightarrow$
     send $\MSG{\RSP\COMMAND, tag, true, p_{self}}$ to $p_s$
     leader_recv()
 
@@ -1720,7 +1731,7 @@ function follower_accept($m, p_s$)
   if verify_term($m, p_s$) match $m$ with
   // prev entry not in log
   | $\MSG{\REQ\APPEND, \_, prev_t, prev_i, \_, \_}$ when $\nexists l \in log, l_{(term)} = prev_t \land l_{(index)} = prev_i$ $\longrightarrow$
-    send $\MSG{\RSP\APPEND, term, prev_t, prev_i, false}$ to $p_s$
+    send $\MSG{\RSP\APPEND, term, prev_t, prev_i, false,-1}$ to $p_s$
     follower_recv()
 
   // remove mismatching entries from log
@@ -1729,8 +1740,8 @@ function follower_accept($m, p_s$)
     $log \leftarrow log[prev_i \dots]$
     $log \leftarrow$ append($log, entries$)
     if $c > commit_i$
-      $commit_i \leftarrow$ min($c, |log|$)
-    send $\MSG{\RSP\APPEND, term, prev_t, prev_i, true, index}$ to $p_s$
+      $commit_i \leftarrow$ min($c, |log|-1$)
+    send $\MSG{\RSP\APPEND, term, prev_t, prev_i, true, |log|-1}$ to $p_s$
     follower_recv()
 
   // another follower polls before becoming candidate
