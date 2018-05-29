@@ -71,7 +71,7 @@
 	\vspace{\fill}
 	\begin{abstract}
 		In this thesis the security and optimization options provided by recent advances in trusted execution environments (TEE), specifically Intel Secure Guard Extensions (SGX), are explored in relation to the problem of decentralized partial state replication of dynamic condition response (DCR) graphs.
-		The design and implementation of this system contains several new contributions | a general proof for the transformation of byzantine faults to crashes using SGX for any distributed system, an SGX'ified version of the Raft consensus algorithm, an efficient method of collecting the state of a DCR graph called \textit{CheapShot} and an analysis of achieving ordering in DCR graphs, using minimal locking.
+		The design and implementation of this system contains several new contributions | a general proof for the transformation of byzantine faults to crashes using SGX for any distributed system, an SGX'ified version of the Raft consensus algorithm, an efficient method of collecting the state of a DCR graph called \textit{CheapShot} and an analysis of achieving ordering of executions in DCR graphs using minimal locking.
 		Lastly we describe a conversion of the implemented DCR graph system to a structure supporting arbitrary smart contracts rather than DCR graphs.
 	\end{abstract}
 \end{titlepage}
@@ -85,10 +85,11 @@
 
 \section{Introduction}
 
-	In a time where collaboration between companies, small and large, occurs daily across vast physical distances, a trusted means of coordination is key.
+	Collaboration between companies, small and large, occurs daily across vast physical distances and as part of this collaboration a trusted means of coordination is key.
 	One way to coordinate in such a setting is by using Dynamic Condition Response graphs~\cite{hildebrandt_declarative_2011}, which are workflows declaratively formulated as directed graphs.
 	DCR graphs formulate processes in terms of events and relations between those events.
 	The relations specify the order in which events can transpire, and what paths can be taken in the workflow.
+
 	DCR graphs provide a concise and simple way of describing workflows, as the effects of the execution of an event is explicitly defined by its relations.
 	This means that an event execution cannot have cascading effects.
 	This property of limited effects on execution means that DCR graphs allow for highly localized states and depending on how a specific DCR graph is constructed, it can therefore allow for a very high degree of concurrency in a distributed setting.
@@ -97,51 +98,43 @@
 	Decentralisation brings with it a completely different set of challenges, all springing from the core necessity of distributed collaboration requiring agreement between all parties on what has transpired in the workflow.
 	This set of challenges is the problem we will present and solve during this thesis.
 
-	As DCR graphs are concerned with maintaining a consistent state, the issue of making DCR graphs distributed is closely related to that of maintaining distributed state replications.
-	However, the innate properties of DCR graphs would be constrained by existing solutions to distributed state replication, due to the large number of messages required and the low degree of concurrency provided by the strict synchronization of these algorithms.
-
-	The problem, and solution, described in this thesis is not limited to applications of DCR, but can also be applied in other software concerned with maintaining a distributed, fragmented state.
-	An example of such an application is also given, in the form of a distributed smart contract algorithm, as popularized by Ethereum~\cite{_ethereum_2018}.
+	As DCR graphs are concerned with maintaining a consistent state, the issue of making DCR graphs distributed is closely related to that of maintaining partial state machine replications (PSMR).
+	However, the ability for DCR graphs to allow a high degree of concurrency, would be impeded by existing solutions to the distributed state machine replication (SMR) problem, due to the large number of messages required and the low degree of concurrency provided by the strict synchronization of these algorithms.
 
 	Recent technological advances in the field of \textit{Trusted Execution Environments} (TEEs), specifically \textit{Intel Software Guard Extensions} (SGX)~\cite{costan_intel_2016} have already made waves within state replication solutions~\cite{kapitza_cheapbft_2012,veronese_efficient_2013,liu_scalable_2016} and could potentially be leveraged to provide a solution to the described problem, while achieving the goals of a low number of messages and a high degree of concurrency.
 	Intel SGX provides a TEE in which arbitrary code can be run and the correct execution can be attested, by Intel, to other users also running Intel SGX.
-	In a network of untrusting peers, trust could therefore be guaranteed by Intel, which seems like a very strong base to build a consensus algorithm on.
+	In a network of untrusting peers, trust could therefore be guaranteed by Intel, which is a very strong base to build a consensus algorithm on.
+
+	Solutions to the PSMR problem, are widely sought, as there are a number of applications of state machine replication solutions where scalability of state are problematic.
+	An example of which is the blockchain based distributed smart contract engine, Ethereum~\cite{_ethereum_2018}.
+	We therefore analyse the effects of applying our solution to the PSMR problem to an algorithm for running distributed smart contracts.
 
 	\noindent The contributions of this thesis are as follows:
 	\begin{itemize}
-		\item The design and implementation of a concurrent and fast distributed DCR engine using SGX.
-		\item A description of a generalized version of that design and implementation supporting arbitrary smart contracts.
-		\item An algorithm for achieving consensus in a decentralized and distributed state replication system, using less than $O(n)$ messages, where $n$ is the number of nodes in the network, part of which is an SGX version of Raft~\cite{ongaro_search_2014}.
-		\item An argument for Intel SGX's ability to transform any crash stop tolerant algorithm to a byzantine failure tolerant one.
+		\item A thorough design of a DCR engine, with a potentially totally distributed graph state\footnote{By event.} and supporting concurrent executions only limited by the semantics of DCR.
+		Furthermore, this design accomplishes this in less than $O(n)$ messages, where $n$ is the number of peers in the network.
+		\item A proof-of-concept implementation of the former.
+		\item A transformation of any crash-stop tolerant consensus algorithm to a byzantine fault tolerant one, using Intel SGX.
+		\item An algorithm for achieving consensus in a decentralized and distributed state replication system, part of which is an SGX version of Raft~\cite{ongaro_search_2014}.
+		\item A description of a generalized version of the DCR engine design supporting smart contracts.
 	\end{itemize}
 
 	\subsection{Problem}
 
-	The goal is to create a DCR engine with byzantine fault tolerance, that allows mutually untrusting actors to interact with the events in the graph concurrently.
+	We formulate the problem of byzantine fault tolerant PSMR with DCR graphs as the \textit{state}, and allow for peers to collect the state and change the state through the execution of DCR events.
 	In order to achieve fault tolerance, the system must distribute the DCR graphs on several peers.
 	Distributing DCR graphs is not a trivial problem, as there are considerations for the distribution of that graph, especially given the goal of less than $O(n)$ messages when performing a state change.
-	The trivial solution to fault tolerance, is to make all peers responsible for the entire state of the system, but given that changes in the graph would then have to be synchronized with all peers, this would violate the goal of a low number of messages.
+	The trivial solution to fault tolerance, is to make all peers responsible for the entire state of the system, but given that changes in the graph would then have to be synchronized with all peers, this would not allow for achieving concensus in less than $O(n)$ messages.
 	Alternatively, the DCR graph would have to be split into parts distributed among peers, but this introduces further issues as a partial state solution would need intermittent synchronization, when several actions might affect the same parts of the state.
 	As DCR graphs are primarily used in industry where documentation of workflows is a key part of DCR graphs, it is essential that any user is able to collect the entire state of a workflow at any given time.
 	Assuming a partial state solution, collecting this state is further complicated in that a coherent state would have to be pieced together from each part of the graph.
 
-	In summary, the system must:
-	\begin{itemize}
-		\item Support the replication of a decentralized DCR graph, while maintaining a high degree of concurrency as permitted by the specific DCR graph, as shown in~\cite{debois_concurrency_2015}.
-		\item Achieve consensus on a state of a decentralized DCR graph in a number of messages by a constant factor of less than the number of nodes in the graph.
-		\item Function in the presence of malicious workflow participants and network nodes, where the only guarantees are those based on strong cryptographic security.
-	\end{itemize}
-
-	\subsection{Related works}
-
-	In~\cite{liu_scalable_2016} SGX has been utilized to implement a new Byzantine fault tolerance (BFT) consensus algorithm, called \textit{FastBFT}.
-	This is accomplished by using the \textit{strawman design} where a request is sent to a node, the \textit{primary}, who prepares a vote by distributing parts of a secret to all nodes.
-	The secret can be reconstructed given enough parts and then compared to the hash of the secret which is common knowledge.
-	This means that consensus can be achieved in only $O(n)$ messages, rather than the $O(n^2)$ messages achieved by other algorithms.
-	The reason that Intel SGX is needed for this algorithm is that the primary, who distributes the secrets, can fake being any node as he has all parts of the secret.
-	Trusted Execution Environments (TEE) as introduced by Intel SGX, means that these secrets can be computed and distributed without the primary every having access to them.
-	A further issue with the strawman design, is that the primary can change the orders of requests, thereby equivocate which request is being voted on.
-	This is once again solved by Intel SGX, by numbering requests with a trusted counter that can only be incremented.
+	In summary, the system is described as:
+	\begin{description}
+		\item[Distributed state] Supporting the distribution of the state of the DCR graph among the participants.
+		\item[Concurrent] Allowing for a high degree of concurrency as permitted by the specific DCR graph, as shown in~\cite{debois_concurrency_2015}, while achieving consensus in a number of messages less than the number of nodes in the graph.
+		\item[Byzantine fault tolerant] Functioning in the presence of malicious workflow participants and network nodes, where the only guarantees are those based on strong cryptographic security.
+	\end{description}
 
 \section{Background}
 
@@ -360,6 +353,16 @@ In order to attain a complete understanding of the problem at hand, there are th
 		Remote attestation can be performed with all other SGX enabled processes, as Intel has already provisioned keys to these.
 
 		In short, the major innovation in Intel SGX is the option of running hardware secured software, which enables tamper-proof messages, where the sender can be verified as being a correct process.
+
+		In~\cite{liu_scalable_2016} SGX has been utilized to implement a new Byzantine fault tolerance (BFT) consensus algorithm, called \textit{FastBFT}.
+		This is accomplished by using the \textit{strawman design} where a request is sent to a node, the \textit{primary}, who prepares a vote by distributing parts of a secret to all nodes.
+		The secret can be reconstructed given enough parts and then compared to the hash of the secret which is common knowledge.
+		This means that consensus can be achieved in only $O(n)$ messages, rather than the $O(n^2)$ messages achieved by other algorithms.
+		The reason that Intel SGX is needed for this algorithm is that the primary, who distributes the secrets, can fake being any node as he has all parts of the secret.
+		Trusted Execution Environments (TEE) as introduced by Intel SGX, means that these secrets can be computed and distributed without the primary every having access to them.
+		A further issue with the strawman design, is that the primary can change the orders of requests, thereby equivocate which request is being voted on.
+		This is once again solved by Intel SGX, by numbering requests with a trusted counter that can only be incremented.
+		This application of Intel SGX means that faults in a distributed network, $f$, can now be tolerated up to $f = \lfloor\frac{n-1}{2}\rfloor$.
 
 			\subsubsection{Enclave}
 			\label{subsec:enclave}
