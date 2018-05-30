@@ -1638,18 +1638,12 @@ while there are unmarked nodes do
 	This is in practice extremely taxing on performance and special consideration should be given to each individual algorithm, in order to evaluate where SGX is needed.
 	Methods such as the secret sharing scheme used in FastBFT, as described in~\cite{liu_scalable_2016}, could possible be utilised to great effect in our solution.
 
-	% - Scalability v. fault tolerance
     \subsection{Scalability and fault tolerance}
 	The balance between scalability and fault tolerance is highly relevant in the designed solution as the fault tolerance in a crash-fault tolerant system is directly defined by how many times data is replicated in the system.
 	As we uncovered in this thesis, replicating data has significant costs associated with it, in that replicas need to be updated, making it costly to perform updates in the system.
 	If the scalability of the system is deemed insignificant, or fault tolerance is to be prioritized, making all peers responsible for the entirety of the state accomplishes this.
 	This does however make the solution identical to a SMR solution.
 
-	% - PSMR
-    \subsection{Partial state machine replication}
-	The designed solution solves the issue of partial state machine replication, a problem which has few efficient solutions and none of them accomplishing it using SGX or other TEE's, as far as the authors of this thesis are aware.
-
-	% - Sammenlign med Eth løsning (evt. FastBFT)
     \subsection{Comparisons}
 	As there is only one other solution to the problem of byzantine fault tolerant distributed DCR our ability to compare our solution to others is limited.
 	The existing implementation is on the Ethereum~\cite{_ethereum_2018} blockchain, which supports arbitrary smart contracts and on which a DCR engine has been created.
@@ -1658,7 +1652,7 @@ while there are unmarked nodes do
 	The guarantees provided by the blockchain are thereby extended to each and every smart contract on the platform, as all miners process the computations performed by all paying users.
 	Aside from the blockchain constraint of a certain block frequency there is therefore also the added monetary costs associated with an execution.
 	Since the DCR engine implemented in SGX has no monetary costs associated with it and the message complexity of performing an execution in the Ethereum DCR engine is not readily available or relevant, the block frequency is the only comparable quantity between the two.
-	Ethereum has an average block frequency of 15 seconds at this time, performing a series of executions takes a considerable amount of time, compared to the SGX DCR engine.
+	Ethereum has an average block frequency of 15 seconds at this time which means that performing a series of executions takes a considerable amount of time, compared to the SGX DCR engine.
 	Additionally, the cost of creating a workflow and performing executions on it is by no means trivial (6.6 USD in the example graph).
 	There is, however, significant advantages associated with the Ethereum solution, in that the fault tolerance is not based on the users of the DCR engine, but rather the users of Ethereum, which is naturally significantly larger.
 	The sheer size of the Ethereum network therefore makes it incredibly resilient to attacks and practically guarantees availability, as each Ethereum node holds the state of the network.
