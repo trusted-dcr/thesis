@@ -115,7 +115,6 @@
 		Furthermore, this design accomplishes this in less than $O(n)$ messages, where $n$ is the number of peers in the network.
 		\item A proof-of-concept implementation of the former.
 		\item A transformation of any crash-stop tolerant distributed protocol to a byzantine fault tolerant one, using Intel SGX.
-		% \item An algorithm for achieving consensus in a decentralized and distributed state replication system, part of which is an SGX version of Raft~\cite{ongaro_search_2014}.
 		\item A description of a generalized version of the DCR engine design supporting smart contracts.
 	\end{itemize}
 
@@ -1704,6 +1703,14 @@ while there are unmarked nodes do
 	This is because executing an event does not necessarily affect the event itself, unless an explicit effect is defined targeting it.
 
 	\section{Conclusion}
+
+	In this thesis we have explored the usages of Intel SGX with regards to the problem of partial state machine replication with DCR graphs serving as the state.
+	We have described a transformation of any distributed crash-fault tolerant algorithm to a byzantine fault tolerant algorithm using SGX and are the first to do so, as far as we are aware.
+	Using this transformation, we have developed a consensus algorithm which forms part of a highly concurrent and scalable solution to the problem of decentralised, state-distributed DCR graphs.
+	Lastly we have also demonstrated that the designed partial state algorithm is not limited to running DCR graphs.
+
+	Specifically with regards to DCR, this thesis presents the first byzantine fault tolerant state-distributed DCR engine accompanied by an in-depth analysis of the necessity for execution ordering in DCR.
+	Beyond that, the presented solution to the PSMR problem goes beyond any existing solution in terms of the combination of a low number of messages required for updating the state, $O(m)$ and the high fault tolerance of $f = \lfloor\frac{n-1}{2}\rfloor$.
 
 	\newpage
 	\bibliography{bibliography}{}
