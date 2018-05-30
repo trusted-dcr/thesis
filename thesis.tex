@@ -288,7 +288,7 @@ In order to attain a complete understanding of the problem at hand, there are th
 		Take the simple graph $\ev{A} \crel \ev{B}$, and let a subset of peers $p_1$ be responsible for the state of $\ev{A}$, and a subset of peer $p_2$ be responsible for the state of $\ev{B}$.
 		If agreement on the state of $\ev{A}$ is not guaranteed, then $p_2$ might, in the belief that $\ev{A}$ is executed, execute $\ev{B}$ even though $p_1$ has never executed $\ev{A}$.
 
-		A consensus protocol is formally a protocol with $N$ processes ($p_0, p_1, \dots, p_{N-1}$), where each process $p_i$ begins in an undecided state, and proposes a single value $v_i$ from a set of values $D$. The processes then communicate their values to each other, and each process sets a decision variable $d_i$ and enters a decided state. 
+		A consensus protocol is formally a protocol with $N$ processes ($p_0, p_1, \dots, p_{N-1}$), where each process $p_i$ begins in an undecided state, and proposes a single value $v_i$ from a set of values $D$. The processes then communicate their values to each other, and each process sets a decision variable $d_i$ and enters a decided state.
 		For the protocol to solve the consensus problem, the following requirements should hold for every execution:
 		\begin{description}
 			\item[Termination] every process eventually sets its decision variable.
@@ -688,7 +688,7 @@ In order to attain a complete understanding of the problem at hand, there are th
 
 		The server state machine is a bit more complex as it must be modelled to account for the number of client processes.
 		Figure~\ref{fig:CSME-server-NFA} is a model of the server state machine in a protocol with two client processes.
-		It encompasses 6 states: 
+		It encompasses 6 states:
 		\begin{description}
 			\item[$s_0$] where no client has access to the critical section, and no requests have been sent.
 			\item[$s_1$] where no client has access to the critical section and client $1$ has requested the token and the token has been sent.
@@ -744,7 +744,7 @@ In order to attain a complete understanding of the problem at hand, there are th
 		We have omitted $s_{error}$ for readability.
 		$s_0$, $s_1$, $s_2$, $s_3$ and $s_4$ are equivalent to the states by the same names in the untransformed state machine (Figure~\ref{fig:CSME-server-NFA}).
 
-		\begin{description}	
+		\begin{description}
 			\item[$s_0$] the token has been released, and no client has requested the token.
 			\item[$s_1$] client $1$ has requested the token, $SM_s$ has verified the MAC of the request and MAC'ed the token which has then been sent to the servers wrapper state machine for redirection to the client $1$ process.
 			If the token is released by client $1$, and this message's MAC is verified, the state machine will transition to $s_0$.
@@ -764,7 +764,7 @@ In order to attain a complete understanding of the problem at hand, there are th
 		\FloatBarrier
 
 		Figure~\ref{fig:CSME-protocol-transformed} show the process's transformation.
-		Each of the client processes ($P_1$ and $P_2$), is now running the transformed client state machines in the integrity protected area. 
+		Each of the client processes ($P_1$ and $P_2$), is now running the transformed client state machines in the integrity protected area.
 		The transformed client state machines have a reliable channel to a $SM_s$, and another to a wrapper state machine outside the integrity protected area, which is responsible for passing on the messages to the server process.
 		Each of the processes have has an $SM_A$ responsible for passing Remote Attestation messages from the $SM_s$ to the new Remote Attestation process.
 		The server process is running a transformed server state machine, connected to two wrapper state machines and an $SM_s$.
@@ -850,10 +850,10 @@ In order to attain a complete understanding of the problem at hand, there are th
     \begin{figure}[ht!]
         \center
         \includegraphics[scale=0.7]{figures/dcr-graphs/central-server-approach}
-        \caption{The central server approach. 
-        The messages are ordered by the leader, $L$, such that the execution of $A$ is applied before the execution of $B$. 
-        Note that the executions are numbered in the order which they are sent and received. 
-        Peer $p_1$ is responsible for event $A$ along with $p_2$. 
+        \caption{The central server approach.
+        The messages are ordered by the leader, $L$, such that the execution of $A$ is applied before the execution of $B$.
+        Note that the executions are numbered in the order which they are sent and received.
+        Peer $p_1$ is responsible for event $A$ along with $p_2$.
         Peer $p_3$ is responsible for event $B$ along with $p_3$.}
         \label{fig:central-server-approach}
     \end{figure}
@@ -901,7 +901,7 @@ In order to attain a complete understanding of the problem at hand, there are th
         \center
         \includegraphics[scale=0.7]{figures/dcr-graphs/partial-state-single-leader-approach.pdf}
         \caption{The partial state, single leader approach.
-        There are two clusters, one for event $A$ containing $p_1$ and $p_2$, and one for event $B$ containing $p_3$ and $p_4$. 
+        There are two clusters, one for event $A$ containing $p_1$ and $p_2$, and one for event $B$ containing $p_3$ and $p_4$.
         The leader is currently $p_2$.}
         \label{fig:partial-state-single-leader-approach}
     \end{figure}
@@ -1064,13 +1064,13 @@ In order to attain a complete understanding of the problem at hand, there are th
 
 	There are additionally three cases where the ordering scheme described so far is not maximally concurrent:
 	\begin{itemize}
-		\item $\ev{A} \erel \ev{B}, \ev{C} \erel \ev{B}$ When \texttt{A} is executing, it ensures ordering on \texttt{B}. 
-        If \texttt{C} then attempts to execute it will need ensure synchronisation on \texttt{B} as well. 
+		\item $\ev{A} \erel \ev{B}, \ev{C} \erel \ev{B}$ When \texttt{A} is executing, it ensures ordering on \texttt{B}.
+        If \texttt{C} then attempts to execute it will need ensure synchronisation on \texttt{B} as well.
         As the execution of \texttt{A} and \texttt{C} have exactly the same effects on \texttt{B}, the synchronisation of these two executions is inconsequential, as they are dynamically independent.
-		\item $\ev{A} \irel \ev{B}, \ev{C} \erel \ev{B}$ When \texttt{A} is executing, it needs to ensure synchronisation on \texttt{B}. 
-        If \texttt{C} attempts to execute, it is clear that it must ensure synchronisation on \texttt{B} as well, however, \texttt{B} should be allowed to execute at any time, as it is dynamically independent with \texttt{A}. 
+		\item $\ev{A} \irel \ev{B}, \ev{C} \erel \ev{B}$ When \texttt{A} is executing, it needs to ensure synchronisation on \texttt{B}.
+        If \texttt{C} attempts to execute, it is clear that it must ensure synchronisation on \texttt{B} as well, however, \texttt{B} should be allowed to execute at any time, as it is dynamically independent with \texttt{A}.
         This is because the effect which the execution \texttt{A} has on \texttt{B} is not incompatible with the effects of an execution of \texttt{B} and the execution of \texttt{A} does not change the enabledness of \texttt{B}.
-		\item $\ev{A} \irel \ev[100]{B}, \ev[100]{B} \crel \ev{C}$ When \texttt{A} is executing, it will need to ensure synchronisation on both \texttt{B} and \texttt{C} due to the constraint originating from \texttt{B} and targeting \texttt{C}. 
+		\item $\ev{A} \irel \ev[100]{B}, \ev[100]{B} \crel \ev{C}$ When \texttt{A} is executing, it will need to ensure synchronisation on both \texttt{B} and \texttt{C} due to the constraint originating from \texttt{B} and targeting \texttt{C}.
         This is not needed, as the condition relation is invalidated by the fact that \texttt{B} is executed.
 	\end{itemize}
 
@@ -1132,12 +1132,12 @@ In order to attain a complete understanding of the problem at hand, there are th
 	After receiving an answer from each cluster, the client is able to merge the local executions sequences into a consistent cut, using the following algorithm.
 
 	Given the observed executions of each event in the DCR graph, it is always possible to reduce the cut until consistency is at some point attained.
-	In happened-before terms, an execution being committed locally and another event being notified of that execution, corresponds to sending a message (committing locally) and it being received (committing externally). 
+	In happened-before terms, an execution being committed locally and another event being notified of that execution, corresponds to sending a message (committing locally) and it being received (committing externally).
 	Therefore if any event observes the execution of another event and that execution is not present in the sequence returned by the latter event, it must be disregarded from the cut as it violates HB2.
 	Since this could lead to violation of HB1, each execution recorded after the disregarded execution is also disregarded.
 
 	Consider a simple graph of two events with a condition between them: $\ev{A} \crel \ev{B}$.
-	A global history collection is started, by a client requesting it from every cluster, and assume that \texttt{A} is the first event to send its execution sequence $\{\}$, after which \texttt{A} executes. 
+	A global history collection is started, by a client requesting it from every cluster, and assume that \texttt{A} is the first event to send its execution sequence $\{\}$, after which \texttt{A} executes.
 	Following \texttt{A}'s execution, \texttt{B} has been enabled, and upon receiving this information, \texttt{B} executes.
 	\texttt{B} then receives the execution sequence request and responds with a sequence of $\{\texttt{A}, \texttt{B}\}$.
 	In this specific example, nothing is lost by event \texttt{A}'s returned execution sequence not including the execution of \texttt{A}, as all executions are observed by \texttt{B}.
@@ -1166,10 +1166,10 @@ In order to attain a complete understanding of the problem at hand, there are th
 	Additionally, there will always be a guaranteed consistent cut, defined by the first\footnote{In the logical, happened-before, sense of first.} event cluster to reply with its observed execution sequence, as it will always be the sequence ending at the earliest, according to either definition of earliest.
 
 	For locked events, the executing events record the execution after having received all locks, and before informing the locked events that execution has been achieved.
-	For non-locking constraints, there can only exist the cases where the executing event has recorded an execution, but the constrained event has not, or when both has recoded the execution. 
+	For non-locking constraints, there can only exist the cases where the executing event has recorded an execution, but the constrained event has not, or when both has recoded the execution.
 	As such, execution is always recorded locally before externally.
 	But having a cut with a locally recorded execution that has not been externally recorded does not violate HB2, as the consistent cut contains the sending of the message (recording locally) but not the received message (recording externally).
-	As such, any locally recorded executions of the first-receiving event does not require any external records and any external executions recorded must already have been recorded on locally by their respective events. 
+	As such, any locally recorded executions of the first-receiving event does not require any external records and any external executions recorded must already have been recorded on locally by their respective events.
 
 	Note that dynamically independent activities can cause sequences apparently contradicting one another.
 	For example, a graph of $\ev{A} \crel \ev{B}, \ev{A} \crel \ev{C}, \ev{D} \crel \ev{B}, \ev{D} \crel \ev{C}$ could, by executing \texttt{A} and \texttt{D} concurrently, cause events \texttt{B} and \texttt{C} to perceive execution sequences of $\{\texttt{A}, \texttt{D}\}$ and $\{\texttt{D}, \texttt{A}\}$ respectively.
@@ -1236,7 +1236,7 @@ while there are unmarked nodes do
     mark n
     for each node m with an edge from n to m do
         visit(m)
-    add n to head of L 
+    add n to head of L
 	\end{lstlisting}
 \end{mdframed}
 \caption{Reversed postorder DFS traversal algorithm. Adapted from~\cite{_topological_2018} \label{lst:dfs-traversal}.}
@@ -1253,7 +1253,7 @@ while there are unmarked nodes do
 		But under the assumptions that look-ups in the aforementioned table, as well as checking whether or not a sequence contains a specific execution, is constant, we can at most do this operation once for each execution entry in all sequences.
 		For a graph with $e$ events and $m$ unique executions performed during the lifetime of the graph, this then has computational complexity of $O(e\cdot m)$.
 		\item Creating a graph from execution relationships. As each relationship is represented with an edge, this has computational complexity of $O(n)$ where $n$ is the number of execution relationships.
-		\item Finding a topological ordering. 
+		\item Finding a topological ordering.
 		Using the DFS traversal algorithm, means visiting each node twice via its edges and therefore this operation has a computational complexity of $O(|r|+|e|)$, where $r$ is the number of relations in the graph and $e$ is the number of events in the graph.
 	\end{enumerate}
 
@@ -1525,22 +1525,22 @@ while there are unmarked nodes do
 		We allow for a strong adversary model known as the Dolev-Yao adversary~\cite{dolev_security_1983}.
 		The Dolev-Yao adversary can intercept, tamper with, delay and duplicate all messages in the system, as well as create new messages.
 		However, the Dolev-Yao adversary cannot guess the cryptographic secrets in the system.
-		
-		In a system with no cryptographic security, such an adversary can, by utilizing these techniques completely impersonate any and all processes by intercepting all messages for a process, and creating new messages seemingly originating from that process. 
+
+		In a system with no cryptographic security, such an adversary can, by utilizing these techniques completely impersonate any and all processes by intercepting all messages for a process, and creating new messages seemingly originating from that process.
 		From the perspective of a correct process in such a system, a Dolev-Yao adversary can make any other process exhibit arbitrary behaviour and even coordinate the behaviour of all other processes by utilizing this impersonation attack.
-		Notice that such an attack would present as byzantine faults for any correct process, as that process would interpret all impersonated messages as correct, and thus experience other processes as behaving arbitrarily. 
+		Notice that such an attack would present as byzantine faults for any correct process, as that process would interpret all impersonated messages as correct, and thus experience other processes as behaving arbitrarily.
 		In a system with cryptographically signed or MAC'ed messages, however, the Dolev-Yao adversary cannot impersonate any such message, since they cannot guess the cryptographic secrets.
 		Notice that it is a quite strong assumption that the adversary cannot guess this system's cryptographic secrets, in that Intel could theoretically be an adversary and would in that case know the processor specific PID key, which is essential for the Remote Attestation secret provisioning in the SGX transformation in Section~\ref{sec:transforming-byzantine-faults}.
 
 		\subsection{Analysis}
         We will now show that the worst attack an adversary can mount on our system is a liveness attack, under our system model an adversary assumptions.
-        This will be followed by examples of liveness vulnerabilities, including an argument for the impossibility of protecting against these attacks. 
+        This will be followed by examples of liveness vulnerabilities, including an argument for the impossibility of protecting against these attacks.
 
 		Since the SGX transformation in Section~\ref{sec:transforming-byzantine-faults} results in all messages being MACed by a common secret key, any messages created by the adversary will dropped by all integrity protected subprocesses, due to the messages having incorrect MACs.
         Thereby the adversary only have the possibility of creating messages that are accepted by the wrapper-components, but not the underlying integrity protected components.
         But as the wrapper-components only serve to pass messages, this is the same as tampering with the channels as shown in Section~\ref{sec:transforming-byzantine-faults}.
-        Similarly, tampering with any message originating from an integrity protected subprocess, will be discarded when received by any other integrity protected subprocess. 
-        As such, an adversary can at most mount attacks using by message omissions, duplications and  delays. 
+        Similarly, tampering with any message originating from an integrity protected subprocess, will be discarded when received by any other integrity protected subprocess.
+        As such, an adversary can at most mount attacks using by message omissions, duplications and  delays.
         Using these abilities, the adversary can simulate crashes by omitting all messages to and from a process.
         With these restraints, an adversary can induce several attacks on liveness:
 
@@ -1567,7 +1567,7 @@ while there are unmarked nodes do
 		We argue in Section~\ref{subsub:leader-liveness-vulnerability} that eventually a new process will become the leader, which prevents an indefinite liveness attack.
 		However, under a Dolev-Yao adversary, the adversary can prevent any other process in winning the election, thus prolonging the liveness attack indefinitely.
 		A solution is also described in Section~\ref{subsub:leader-liveness-vulnerability}, in which clients that does not receive a response in due time will broadcast to the entire cluster, which will force the leader to either accept the request, or force a leader change in the cluster.
-		However, this solution does not necessarily prevent the attack, since the adversary intercept the client broadcast. 
+		However, this solution does not necessarily prevent the attack, since the adversary intercept the client broadcast.
 
 		Notice that both these attacks targets a single cluster, and therefore at most affect a subset of the clusters that make up the entire system.
 		We have not identified any single attacks that spans the entire system.
@@ -1578,12 +1578,12 @@ while there are unmarked nodes do
 		So an adversary must mount a suboptimal attack to prevent liveness in the entire system.
 
 		Safety cannot be attacked under the limitations of our adversary.
-        This is due to the fact that our adversary can only utilize message omissions, duplications and process crashes in our system, under all of which Raft guarantees safety~\cite{ongaro_search_2014}. 
+        This is due to the fact that our adversary can only utilize message omissions, duplications and process crashes in our system, under all of which Raft guarantees safety~\cite{ongaro_search_2014}.
 
         Summarized, the system is vulnerable to liveness attacks.
-        This due to the underlying SMR protocol (Raft), which solves the consensus problem in an asynchronous system with crashes, and thus must have a sequence of message omissions that violate liveness. 
+        This due to the underlying SMR protocol (Raft), which solves the consensus problem in an asynchronous system with crashes, and thus must have a sequence of message omissions that violate liveness.
         However, by the guarantees of the Raft algorithm, the system is not vulnerable to any safety attacks.
-		
+
 	\section{DCR-TEE Implementation}
 
 	\section{Discussion}
@@ -1614,7 +1614,7 @@ while there are unmarked nodes do
 	When inserting data into an enclave, for instance, that data is not allowed to contain any pointers, as those would then point to memory outside of the enclave.
 	This means that even programmatically trivial parts of the implementation of an enclave carry with it considerable work.
 	In the case of not allowing nested pointers, flattening the structure is one potential solution, meaning a multi-dimensional array or vector would become a one dimensional collection with a separate data structure containing the indices for each original collection.
-	
+
 	% - Størrelsen af TCB i forhold til systemet
 	As the performance is severely limited, due to being constrained to a single active thread, minimizing the TCB is essential for a high performance algorithm using SGX. REFREF
 	The transformation of crash-fault tolerant algorithms to byzantine fault tolerant algorithms described in this report is specifically described so as to handle any crash-fault tolerant algorithm and makes no attempt to minimize the TCB, but inserts the algorithm into SGX.
@@ -1859,10 +1859,8 @@ function follower_accept($m, p_s$)
     follower_recv()
 
   // another follower polls before becoming candidate
-  // but we already voted in this term
-  // or follower has out-of-date log
+  // but follower has out-of-date log
   // or we have communicated with the leader within min timeout
-  | $\MSG{\REQ\POLL, \_, \_, \_}$ when $endorsement \ne nil$
   | $\MSG{\REQ\POLL, \_, last_t, last_i}$ when $\exists l \in log, l_{(term)} > last_t \lor l_{(term)} = last_t \land l_{(index)} > last_i$
   | $\MSG{\REQ\POLL, \_, \_, \_}$ when now()$< \tau_{min}$ $\longrightarrow$
     send $\MSG{\RSP\POLL, term, false}$ to $p_s$
