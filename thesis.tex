@@ -340,6 +340,7 @@ In order to attain a complete understanding of the problem at hand, there are th
 		To the best of our knowledge, no solution to the PSMR problem using a trusted execution environment exists.
 
 		\subsection{Intel Software Guard Extensions}
+		\label{subsec:intel-sgx}
 
 		Intel SGX is a TEE technology which includes a set of CPU instructions, that allows user-level code to run in protected areas of memory, so called \textit{enclaves}.
 		Only processes running in enclaves are allowed to access the SGX instructions.
@@ -1585,36 +1586,71 @@ while there are unmarked nodes do
 		
 	\section{DCR-TEE Implementation}
 
+	\section{Discussion}
+
+	% - Sgx sikkerhed (ret til)
+	All aforementioned hardware guarantees are given by Intel, but since very little of the proprietary technology is documented, all security properties of SGX rely on the correctness of Intel's hardware implementation.
+	Historically Intel has had vulnerabilities in similar hardware components, like the CVE-2017-5689 security incident exposed in~\cite{silent_bob}, allowed unprivileged access to the Intel Active Management Technology.
+
+	SGX claims to provide confidentiality and integrity for running enclaves.
+	This is ensured by preventing untrusted software access to the PRM and enclaves access to other regions of the PRM besides their exclusive region.
+	However, while it is not possible to breach the integrity of PRM,~\cite{costan_intel_2016} shows several issues regarding confidentiality.
+	Because enclaves use the system page table even for data residing on PRM, it is possible for untrusted software to learn the page access order by manipulating the OS controlled page table.
+	Another possible attack vector is to perform cache timing by cleverly choosing the physical memory position of enclave memory pages on set associative caches.
+	By mapping snooping software to the same cache set as the enclave, the snooping software can evict the enclave's memory from the cache and use timing to figure out if it is accessed again.
+	Lastly, processors with hyper-threading support are vulnerable to instruction snooping, as a snooping process sharing physical core with an enclave can use performance counters to determine which instructions the out-of-order scheduler is able to run in parallel with the enclave.
+	The presence of these attacks means that enclaves using data-dependent memory access will likely not ensure confidentiality.
+	However, to our knowledge, no publicly known vulnerabilities exist on the integrity guarantee.
+	And since our system has very few confidentiality requirements, the known vulnerabilities do not seem problematic for the purposes of this project.
+
+	As mentioned SGX does not protect against flawed software, so it is up to the developer to prevent side-channel attacks through OCALLs that might expose secret data.
+	A noteworthy mention to illustrate the vigour needed is the common pitfall mentioned in~\cite{intel_sgx_guide} when using ECALLs and OCALLs.
+	Because enclaves are compiled using a standard \cpp-compiler, structure padding is likely to happen.
+	The SGX environment does not protect against leaking secret information through uninitialized structure padding when passing structures in ECALLs and OCALLs -- this, and other common security pitfalls, are not part of any SGX security guarantees.
+	Intel recommends to always clear secrets from the enclave memory after use in~\cite{intel_sgx_guide}, regardless of the guarantees given by the PRM, underlining the risk of unintended vulnerabilities.
+
+	% - Implementationsbesvære m. SGX
+	Implementing enclaves is cumbersome work, as SGX is very limited in functionality, as described in Section~\ref{subsec:intel-sgx}.
+	When inserting data into an enclave, for instance, that data is not allowed to contain any pointers, as those would then point to memory outside of the enclave.
+	This means that even programmatically trivial parts of the implementation of an enclave carry with it considerable work.
+	In the case of not allowing nested pointers, flattening the structure is one potential solution, meaning a multi-dimensional array or vector would become a one dimensional collection with a separate data structure containing the indices for each original collection.
+	
+	% - Størrelsen af TCB i forhold til systemet
+	As the performance is severely limited, due to being constrained to a single active thread, minimizing the TCB is essential for a high performance algorithm using SGX. REFREF
+	The transformation of crash-fault tolerant algorithms to byzantine fault tolerant algorithms described in this report is specifically described so as to handle any crash-fault tolerant algorithm and makes no attempt to minimize the TCB, but inserts the algorithm into SGX.
+	This is in practice extremely taxing on performance and special consideration should be given to each individual algorithm, in order to evaluate where SGX is needed.
+	Methods such as the secret sharing scheme of FastBFT, as described in~\cite{liu_scalable_2016}, could possible be utilised to great effect in our solution.
+
+	% - Scalability v. fault tolerance
+	The balance between scalability and fault tolerance is highly relevant in the designed solution as the fault tolerance in a crash-fault tolerant system is directly defined by how many times data is replicated in the system.
+	As we uncovered in this thesis, replicating data has significant costs associated with it, in that replicas need to be updated, making it costly to perform updates in the system.
+	If the scalability of the system is deemed insignificant, or fault tolerance is to be prioritized, making all peers responsible for the entirety of the state accomplishes this.
+	This does however make the solution identical to a SMR solution.
+
+	% - PSMR
+	The designed solution solves the issue of partial state machine replication, a problem which has few efficient solutions and none of them accomplishing it using SGX or other TEE's, as far as the authors of this thesis are aware.
+
+	% - Sammenlign med Eth løsning (evt. FastBFT)
+	As there is only one other solution to the problem of byzantine fault tolerant distributed DCR our ability to compare our solution to others is limited.
+	The existing implementation is on the Ethereum~\cite{_ethereum_2018} blockchain, which supports arbitrary smart contracts and on which a DCR engine has been created.
+	In the Ethereum DCR project~\cite{madsen_collaboration_2018}, a DCR engine is implemented in the Ethereum specific language, Solidity, and created as a smart contract on the Ethereum blockchain.
+	Smart contracts on the Ethereum blockchain, expose an API which any Ethereum user can call, provided that they compensate the network for processing that call.
+	The guarantees provided by the blockchain are thereby extended to each and every smart contract on the platform, as all miners process the computations performed by all paying users.
+	Aside from the blockchain constraint of a certain block frequency there is therefore also the added monetary costs associated with an execution.
+	Since the DCR engine implemented in SGX has no monetary costs associated with it and the message complexity of performing an execution in the Ethereum DCR engine is not readily available or relevant, the block frequency is the only comparable quantity between the two.
+	Ethereum has an average block frequency of 15 seconds at this time, performing a series of executions takes a considerable amount of time, compared to the SGX DCR engine.
+	Additionally, the cost of creating a workflow and performing executions on it is by no means trivial (6.6 USD in the example graph).
+	There is, however, significant advantages associated with the Ethereum solution, in that the fault tolerance is not based on the users of the DCR engine, but rather the users of Ethereum, which is naturally significantly larger.
+	The sheer size of the Ethereum network therefore makes it incredibly resilient to attacks and practically guarantees availability, as each Ethereum node holds the state of the network.
+	A main concern with the SGX project 
+	% Scalability
+
 	\section{Distributed Smart Contract Engine}
 
 	% An existing platform which partially provides a solution to the goal of this project is Ethereum~\cite{_ethereum_2018}.
 	% Ethereum is a distributed computing platform based on blockchain technologies, which does, however, also feature a currency, making computations disproportionately expensive, both monetarily and computationally due to the large amounts of computations required by proof-of-work based blockchains.
 	% Even though SGX is a new technology, it has already been proposed to solve several issues in the blockchain concept.
 	% SGX has been used as an intermediate for faster consensus about transactions in~\cite{gopinath_nirmala_improving_2017}, however it still relies on the underlying blockchain to prevent double-spending.
-
-	\section{Discussion}
-
-		\subsection{SGX security}
-
-		All aforementioned hardware guarantees are given by Intel, but since very little of the proprietary technology is documented, all security properties of SGX rely on the correctness of Intel's hardware implementation.
-		Historically Intel has had vulnerabilities in similar hardware components, like the CVE-2017-5689 security incident exposed in~\cite{silent_bob}, allowed unprivileged access to the Intel Active Management Technology.
-
-		SGX claims to provide confidentiality and integrity for running enclaves.
-		This is ensured by preventing untrusted software access to the PRM and enclaves access to other regions of the PRM besides their exclusive region.
-		However, while it is not possible to breach the integrity of PRM,~\cite{costan_intel_2016} shows several issues regarding confidentiality.
-		Because enclaves use the system page table even for data residing on PRM, it is possible for untrusted software to learn the page access order by manipulating the OS controlled page table.
-		Another possible attack vector is to perform cache timing by cleverly choosing the physical memory position of enclave memory pages on set associative caches.
-		By mapping snooping software to the same cache set as the enclave, the snooping software can evict the enclave's memory from the cache and use timing to figure out if it is accessed again.
-		Lastly, processors with hyper-threading support are vulnerable to instruction snooping, as a snooping process sharing physical core with an enclave can use performance counters to determine which instructions the out-of-order scheduler is able to run in parallel with the enclave.
-		The presence of these attacks means that enclaves using data-dependent memory access will likely not ensure confidentiality.
-		However, to our knowledge, no publicly known vulnerabilities exist on the integrity guarantee.
-		And since our system has very few confidentiality requirements, the known vulnerabilities do not seem problematic for the purposes of this project.
-
-		As mentioned SGX does not protect against flawed software, so it is up to the developer to prevent side-channel attacks through OCALLs that might expose secret data.
-		A noteworthy mention to illustrate the vigor needed is the common pitfall mentioned in~\cite{intel_sgx_guide} when using ECALLs and OCALLs.
-		Because enclaves are compiled using a standard \cpp-compiler, structure padding is likely to happen.
-		The SGX environment does not protect against leaking secret information through uninitialized structure padding when passing structures in ECALLs and OCALLs -- this, and other common security pitfalls, are not part of any SGX security guarantees.
-		Intel recommends to always clear secrets from the enclave memory after use in~\cite{intel_sgx_guide}, regardless of the guarantees given by the PRM, underlining the risk of unintended vulnerabilities.
 
 	\section{Conclusion}
 
