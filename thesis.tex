@@ -886,7 +886,7 @@ In order to attain a complete understanding of the problem at hand, there are th
 	The next approach tries to improve on the fault tolerance of the central server approach.
     An example of the simultaneous execution of two events, $A$ and $B$, are shown in Figure~\ref{fig:smr-approach}.
 	This is a classic SMR/consensus solution with crash fault tolerance.
-	There are several protocols that solve the issue of SMR, for instance in~\cite{bracha_asynchronous_1985,lamport_part-time_1998,lamport_lower_2006,ongaro_search_2014}, but as they are largely interchangeable with regards to performance\footnote{With regards to the categories specified in the Table~\ref{tab:approach-comparison}.}, we assume the existence of a solution that utilizes a leader, $L$, to achieve an optimal crash fault tolerance of $f = \lfloor \frac{(n-1)}{2} \rfloor$ is enough.
+	There are several protocols that solve the issue of SMR, for instance in~\cite{bracha_asynchronous_1985,lamport_part-time_1998,lamport_lower_2006,ongaro_search_2014}, but as they are largely interchangeable with regards to performance\footnote{With regards to the categories specified in the Table~\ref{tab:approach-comparison}.}, we assume the existence of a solution that utilizes a leader, $L$, to achieve an optimal crash fault tolerance of $f = \lfloor \frac{(n-1)}{2} \rfloor$ is enough. %Hvad skete der med "parametric"?
 
 	In this approach, every peer must replicate all events, as all executions must be committed to at least $f+1$ replicas.
 	This ensures that if a leader dies, a new leader can be chosen (using $O(n)$ messages), which gives us the aforementioned fault tolerance.
@@ -1557,9 +1557,9 @@ while there are unmarked nodes do
 		And due to the pre-election phase, the original leader will still be the leader after the attack has been terminated.
 		As such, any valid requests received by the leader will eventually be agreed upon after the attack has been terminated, if the leader does not crash during or immediately after the attack.
 
-		The proof of FLP-impossibility~\cite{fischer_impossibility_1985} shows that there will always exist a sequence of message omissions that violates availability (i.e. liveness in SMR), if the system is an asynchronous setting and handles crashing processes.
-		Therefore, any fault-tolerant SMR in an asynchronous setting will be vulnerable to such an attack.
-		This sequence in Raft is present under the leader election; any unresolved heartbeat will eventually result in a leader election, which might then never terminate if no process wins the election, which is what the adversary exploits in this attack.
+		In the proof of FLP-impossibility~\cite{fischer_impossibility_1985}, the authors shows that there will always exist a sequence of message omissions that violates availability (i.e. liveness in SMR), if the system is an asynchronous setting and handles crashing processes.
+		Therefore, we can conclude that any fault-tolerant SMR in an asynchronous setting will be vulnerable to such an attack under a Dolev-Yao adversary.
+		The sequence of message omissions that violates liveness in Raft is present under the leader election; any unresolved heartbeat will eventually result in a leader election, which might then never terminate if no process wins the election, which is what the adversary exploits in this attack.
 
 		Another attack on liveness is described in Section~\ref{subsub:leader-liveness-vulnerability}.
 		The attack consists of the adversary omitting all client messages to the leader of cluster.
@@ -1645,7 +1645,11 @@ while there are unmarked nodes do
 	A main concern with the SGX-DCR project was scalability and as joining the Ethereum network entails storing the state of all smart contracts, the DCR engine running on Ethereum should only be used in cases where scalability is of absolutely no concern.
 
 	\section{Distributed Smart Contract Engine}
-
+	% will show that the system can be used generically
+	% only view as effects and constraints
+	%
+    Vi vil nu gerne vise at systemet kan udbygges til at være mere generisk.
+    Vi forestiller os et generisk system, bestående af 
 	% An existing platform which partially provides a solution to the goal of this project is Ethereum~\cite{_ethereum_2018}.
 	% Ethereum is a distributed computing platform based on blockchain technologies, which does, however, also feature a currency, making computations disproportionately expensive, both monetarily and computationally due to the large amounts of computations required by proof-of-work based blockchains.
 	% Even though SGX is a new technology, it has already been proposed to solve several issues in the blockchain concept.

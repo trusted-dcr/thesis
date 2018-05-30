@@ -1,10 +1,3 @@
-@article{madsen_collaboration_2018,
-  title = {Collaboration amon adversaties: Distributed Workflow Execution on a Blockchain},
-  abstract = {We study distributed declarative workflow execution in an adversarial setting. In this setting, parties to an agreed-upon workflow do not trust each other to follow that workflow, or suspect the other party might misrepresent proceedings at a later time. We demonstrate how distributed declarative workflow execution can be implemented as smart contracts, guaranteeing (I) enforcement of workflow semantics, and ({II}) an incontrovertible record of workflow execution history. Crucially, we achieve both properties without relying on a trusted third party.},
-  pages = {8},
-  author = {Madsen, Mads Frederik and Gaub, Mikkel and Høgnason, Tróndur},
-  langid = {english}
-}
 
 @article{schneider_implementing_1990,
   title = {Implementing {{Fault}}-Tolerant {{Services Using}} the {{State Machine Approach}}: {{A Tutorial}}},
@@ -344,12 +337,12 @@
   pages = {298-309}
 }
 
-@article{ongaro_search_2014,
-  title = {In {{Search}} of an {{Understandable Consensus Algorithm}}},
-  abstract = {Raft is a consensus algorithm for managing a replicated log. It produces a result equivalent to (multi-)Paxos, and it is as efficient as Paxos, but its structure is different from Paxos; this makes Raft more understandable than Paxos and also provides a better foundation for building practical systems. In order to enhance understandability, Raft separates the key elements of consensus, such as leader election, log replication, and safety, and it enforces a stronger degree of coherency to reduce the number of states that must be considered. Results from a user study demonstrate that Raft is easier for students to learn than Paxos. Raft also includes a new mechanism for changing the cluster membership, which uses overlapping majorities to guarantee safety.},
-  language = {en},
-  author = {Ongaro, Diego and Ousterhout, John},
-  year = {2014}
+@inproceedings{madsen_collaboration_2018,
+  title = {Collaboration among {{Adversaries}}: {{Distributed Workflow Execution}} on a {{Blockchain}}},
+  shorttitle = {Collaboration among {{Adversaries}}},
+  booktitle = {2018 {{Symposium}} on {{Foundations}} and {{Applications}} of {{Blockchain}}},
+  author = {Madsen, Mads Frederik and Gaub, Mikkel and H{\o}gnason, Tr{\'o}ndur and Kirkbro, Malthe Ettrup and Slaats, Tijs and Debois, S{\o}ren},
+  year = {2018}
 }
 
 @incollection{debois_safety_2015,
@@ -492,16 +485,6 @@
   pages = {90-99}
 }
 
-@article{dolev_security_1983,
-  title = {On the {{Security}} of {{Public Key Protocols}}},
-  language = {en},
-  number = {2},
-  journal = {IEEE TRANSACTIONS ON INFORMATION THEORY},
-  author = {DOLEV, DANNY},
-  year = {1983},
-  pages = {11}
-}
-
 @book{sedgewick_algorithms_2011,
   edition = {4th},
   title = {Algorithms},
@@ -533,6 +516,24 @@
   author = {Debois, S{\o}ren and Hildebrandt, Thomas T. and Slaats, Tijs},
   month = sep,
   year = {2017}
+}
+
+@article{dolev_security_1983,
+  title = {On the Security of Public Key Protocols},
+  volume = {29},
+  number = {2},
+  journal = {IEEE Transactions on information theory},
+  author = {Dolev, Danny and Yao, Andrew},
+  year = {1983},
+  pages = {198--208}
+}
+
+@inproceedings{ongaro_search_2014,
+  title = {In Search of an Understandable Consensus Algorithm.},
+  booktitle = {{{USENIX Annual Technical Conference}}},
+  author = {Ongaro, Diego and Ousterhout, John K.},
+  year = {2014},
+  pages = {305--319}
 }
 
 
