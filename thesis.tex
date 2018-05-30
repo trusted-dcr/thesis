@@ -1619,7 +1619,7 @@ while there are unmarked nodes do
 	As the performance is severely limited, due to being constrained to a single active thread, minimizing the TCB is essential for a high performance algorithm using SGX. REFREF
 	The transformation of crash-fault tolerant algorithms to byzantine fault tolerant algorithms described in this report is specifically described so as to handle any crash-fault tolerant algorithm and makes no attempt to minimize the TCB, but inserts the algorithm into SGX.
 	This is in practice extremely taxing on performance and special consideration should be given to each individual algorithm, in order to evaluate where SGX is needed.
-	Methods such as the secret sharing scheme of FastBFT, as described in~\cite{liu_scalable_2016}, could possible be utilised to great effect in our solution.
+	Methods such as the secret sharing scheme used in FastBFT, as described in~\cite{liu_scalable_2016}, could possible be utilised to great effect in our solution.
 
 	% - Scalability v. fault tolerance
 	The balance between scalability and fault tolerance is highly relevant in the designed solution as the fault tolerance in a crash-fault tolerant system is directly defined by how many times data is replicated in the system.
@@ -1642,8 +1642,7 @@ while there are unmarked nodes do
 	Additionally, the cost of creating a workflow and performing executions on it is by no means trivial (6.6 USD in the example graph).
 	There is, however, significant advantages associated with the Ethereum solution, in that the fault tolerance is not based on the users of the DCR engine, but rather the users of Ethereum, which is naturally significantly larger.
 	The sheer size of the Ethereum network therefore makes it incredibly resilient to attacks and practically guarantees availability, as each Ethereum node holds the state of the network.
-	A main concern with the SGX project 
-	% Scalability
+	A main concern with the SGX-DCR project was scalability and as joining the Ethereum network entails storing the state of all smart contracts, the DCR engine running on Ethereum should only be used in cases where scalability is of absolutely no concern.
 
 	\section{Distributed Smart Contract Engine}
 
