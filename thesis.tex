@@ -1645,37 +1645,65 @@ while there are unmarked nodes do
 	A main concern with the SGX-DCR project was scalability and as joining the Ethereum network entails storing the state of all smart contracts, the DCR engine running on Ethereum should only be used in cases where scalability is of absolutely no concern.
 
 	\section{Distributed Smart Contract Engine}
-	% An existing platform which partially provides a solution to the goal of this project is Ethereum~\cite{_ethereum_2018}.
-	% Ethereum is a distributed computing platform based on blockchain technologies, which does, however, also feature a currency, making computations disproportionately expensive, both monetarily and computationally due to the large amounts of computations required by proof-of-work based blockchains.
-	% Even though SGX is a new technology, it has already been proposed to solve several issues in the blockchain concept.
-	% SGX has been used as an intermediate for faster consensus about transactions in~\cite{gopinath_nirmala_improving_2017}, however it still relies on the underlying blockchain to prevent double-spending.
+
+	The system described in this thesis, which solves the problem of a partial state DCR engine in a byzantine setting, can be converted to support a variety of programs, much like Ethereum.
+	The classic Ethereum example is the Decentralized Autonomous Organization (DAO), which is was a decentralized investment fund, where an Ethereum peer could invest some money and be paid in kind if the investment made by the DAO earned money.
+	What the DAO actually invested in was decided by the peers who voted, weighted by how much money they had placed into the DAO.
+
+	If a system like the DAO were to be implemented into a general version of the DCR engine described in this thesis, a transformation of the state is required.
+	We start this transformation by redefining events to contain an arbitrary amount of data, rather than the DCR state of its executed, included and pending attributes.
+	Since the state of an event can now be arbitrary, a more generalised version of effects and constraints are required.
+	\begin{description}
+		\item[Effects] applies the specified modification to the state of target event.
+		\item[Constraints] specifies whether or not the target event is executable, based on a set of criteria on the originating event. 
+	\end{description}
+
+	\begin{figure}[t]
+  	\includegraphics[width=\textwidth]{figures/dcr-graphs/dao-simple.pdf}
+	  \caption{The simple implementation of the DAO.
+	  The lines ending in arrowheads are effects and the lines ending in circles are conditions. }
+	  \label{fig:dao-simple}
+	\end{figure}
+
+	We can now define implement the DAO in our transformed system, as shown in Figure~\ref{fig:dao-simple}.
+	The figure shows five events, one of which is executable by the coordinator of the DAO and the rest of which are executable by a peer, $p_1$.
+	We distribute the weight of votes by selling \textit{tickets} at a set price.
+	The coordinator maintains a state consisting of the current sum of money placed in the DAO, the number of votes for investment option 1 and the number of votes for option 2.
+	$p_1$ has can execute the following events:
+	\begin{description}
+		\item[State] which is the event containing the state of $p_1$. This event has no effect on execution.
+		\item[Buy ticket] which on execution subtracts the fee of a ticket from the state of $p_1$, adds a ticket to the state of $p_1$ and adds the fee to the state of the coordinator.
+		Note that this event can only be executed if $p_1$ has enough money.
+		\item[Vote option$_\textbf{1}$] which on execution adds a ticket to the vote tally of option$_1$ kept by the coordinator and removes a ticket from the state of $p_1$.
+		This event can only be executed when $p_1$ has a ticket to spend.
+		\item[Vote option$_\textbf{2}$] which on execution adds a ticket to the vote tally of option$_2$ kept by the coordinator and removes a ticket from the state of $p_1$.
+		This event can only be executed when $p_1$ has a ticket to spend.
+	\end{description}
+	Note that the state of $p_1$ could be stored in each event belonging to $p_1$, but as this would require the events of $p_1$ to subtract tickets and money from all occurrences of the state of $p_1$, the state is kept separately in order to reduce the complexity of the example.
+	This subsystem of events belonging to $p_1$ can be duplicated for each respective peer which participates in the DAO.
+	Note that performing the investment itself is illustrated in the example, but could easily be accomplished by having events deciding for option$_1$ and option$_2$. 
+	Option$_1$ would only be executable if every peer has spent their tickets and option$_1$ has more votes than option$_2$.
+	The opposite would be true for Option$_2$.
+	Additional state would be needed in order to return the correct amount of money back to the investors, but that should be trivial given the functionality displayed in this example.
+
+	Due to the way the DCR engine is defined, all events and relations must be created simultaneously with the creation of the graph.
+	We could however improve the simplicity of the solution by introducing the concept of parametrised effects.
+
+	\begin{figure}[t]
+  	\includegraphics[width=\textwidth]{figures/dcr-graphs/dao-parametrised.pdf}
+	  \caption{The parametrised implementation of the DAO.}
+	  \label{fig:dao-parametrised}
+	\end{figure}
+
+	In Figure~\ref{fig:dao-parametrised} the DAO is shown implemented with parametrised effects.
+	When an event is executed, it is supplied with the required variables.
+	For example, when the \textit{Vote} event is executed, it is supplied with the option to be voted for, \textit{opt}, and how many tickets to assign in that vote, \textit{t}.
+	An even more condensed parametrised version of this example could be created, by representing all of the events executable by $p_1$ as a single event and denoting what the execution of that event should do using parameters.
+
+	The execution ordering semantics described in Section~\ref{subsec:execution-ordering}, largely still apply to this transformation, with the exception that an event does not have to lock itself when executing.
+	This is because executing an event does not necessarily affect the event itself, unless an explicit effect is defined targeting it.
 
 	\section{Conclusion}
-
-	\subsection{Future Works}
-
-	% \subsection{Network topology}
-	% Due to the algorithm not requiring the executioner of an event to have the global state of the workflow at the time of execution, any state changes are only propagated to the relevant parties.
-	% This means that any single crash could potentially make collecting the global state, or history of executions, impossible, as the localized state of the crashed peer would be lost.
-	% To make the system more tolerant to crashes, the state of each event is tracked by a number of peers.
-	% This means that all locks need to be made on a subsystem rather than a single peer.
-	% As this lock needs to prevent others from locking simultaneously, $\dfrac{m}{2} +1$ locks are required for each peer, where $m$ is the number of peers tracking the state of that event.
-
-	% \subsubsection{Peer distribution}
-	% Given that the relations of a workflow are fixed at creation, the peers can be distributed efficiently by assigning events frequently locked simultaneously to the same peers.
-	% This can be accomplished by the following steps:
-	% \begin{itemize}
-	%   \item Each event is assigned a set of peers, called the primaries of that event, containing at least one peer.
-	%   \item The primaries of each event are added to each event on which the execution of the event tracked by the primaries could incur a lock. The peers added this way are called secondaries for that event.
-	% \end{itemize}
-
-	% The peer-to-peer network is then configured in such a way that each peer is a neighbour to any peer which tracks the same events.
-	% This means that the execution of an event can be performed by a primary, by that primary attempting to lock all of its neighbours and checking whether or not the acquired locks are sufficient in order to perform the execution, meaning that the set of locked peers forms a quorum for each event requiring a lock.
-
-	% Crash recovery
-
-	% \subsection{Message composition}
-	% In order to reduce the amount of messages needed in the system, the locking of an event can incorporate.
 
 	\newpage
 	\bibliography{bibliography}{}
