@@ -1727,12 +1727,7 @@ enclave {
     As such it is possible for untrusted software to learn the page access order by manipulating the OS controlled page table.
 	Another possible attack vector is to perform cache timing by cleverly choosing the physical memory position of enclave memory pages on set associative caches.
 	By mapping snooping software to the same cache set as the enclave, the snooping software can evict the enclave's memory from the cache and use timing to figure out if it is accessed again.
-<<<<<<< HEAD
-
-    Lastly, processors with hyper-threading support are vulnerable to instruction snooping, as a snooping process sharing physical core with an enclave can use performance counters to determine which instructions the out-of-order scheduler is able to run in parallel with the enclave.
-=======
     \cite{costan_intel_2016} also identifies a vulnerability in utilising hyper-threading to snoop instructions run by the enclave process. A snooping process sharing physical core with an enclave can use performance counters to determine which instructions the out-of-order scheduler is able to run in parallel with the enclave.
->>>>>>> discussion/security and discussion/scalability
 	The presence of these attacks means that enclaves using data-dependent memory access will likely not ensure confidentiality.
 
 	Lastly, it is shown in~\cite{chen_sgxpectre_2018} that SGX is vulnerable to a variant of the infamous \textit{Spectre} vulnerability. 
