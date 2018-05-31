@@ -81,8 +81,10 @@
 	\vspace{0.5cm}
 
 	\begin{abstract}
-		In this thesis the security and optimization options provided by recent advances in trusted execution environments (TEE), specifically Intel Secure Guard Extensions (SGX), are explored in relation to the problem of decentralized partial state replication of dynamic condition response (DCR) graphs.
-		The design and implementation of this system contains several new contributions | a general proof for the transformation of byzantine faults to crashes using SGX for any distributed system, an SGX'ified version of the Raft consensus algorithm, an efficient method of collecting the state of a DCR graph called \textit{CheapShot} and an analysis of ordering executions in DCR graphs using minimal locking.
+		In this thesis we present a solution to the problem of decentralized distributed workflow execution. 
+		The presented solution utilises partial state replication of dynamic condition response (DCR) graphs to achieve execution of events in less than the number of peers in the system.
+		We also explore the security and optimization options provided by recent advances in trusted execution environments (TEE), specifically Intel Secure Guard Extensions (SGX), to achieve byzantine fault tolerance in the context of this problem.
+		The design and implementation of this system contains several new contributions: a general transformation of crash fault tolerant distributed protocols to byzantine fault tolerant protocols using SGX, a version of the Raft consensus algorithm implemented in SGX, an efficient method of collecting the state of a DCR graph called \textit{CheapShot} and an analysis of the synchronisation of executions in DCR graphs using minimal locking.
 		Lastly we describe a conversion of the implemented DCR graph system to a structure supporting arbitrary smart contracts rather than DCR graphs.
 	\end{abstract}
 \end{titlepage}
