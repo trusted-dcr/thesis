@@ -1551,6 +1551,7 @@ while there are unmarked nodes do
 		Notice that it is a quite strong assumption that the adversary cannot guess this system's cryptographic secrets, in that Intel could theoretically be an adversary and would in that case know the processor specific PID key, which is essential for the Remote Attestation secret provisioning in the SGX transformation in Section~\ref{sec:transforming-byzantine-faults}.
 
 		\subsection{Analysis}
+
         We will now show that the worst attack an adversary can mount on our system is a liveness attack, under our system model an adversary assumptions.
         This will be followed by examples of liveness vulnerabilities, including an argument for the impossibility of protecting against these attacks.
 
@@ -1602,33 +1603,37 @@ while there are unmarked nodes do
         This due to the underlying SMR protocol (Raft), which solves the consensus problem in an asynchronous system with crashes, and thus must have a sequence of message omissions that violate liveness.
         However, by the guarantees of the Raft algorithm, the system is not vulnerable to any safety attacks.
 
-	\section{DCR-TEE Implementation}
+	\section{Secure DCR Implementation}
+
 	\begin{figure}[t]
 		\centering
 		\includegraphics[width=\textwidth]{figures/dcr-graphs/network-stack.pdf}
-		\caption{TODO}
+		\caption{Figure showing the components of the trusted DCR implementation. 
+		The rectangles are the components themselves and the lines are the channels which are used for communication between the connected components. }
 		\label{fig:network-stack}
 	\end{figure}
 
 	As a proof-of-concept, we have implemented the system discussed in Section~\ref{subsec:protocol}.
 	The system consists of an implementation of the Raft~\cite{ongaro_search_2014} algorithm augmented with our protocol for DCR execution.
-	Further, this implementation is hardened against Byzantine faults via the transformation of Section~\ref{sec:transforming-byzantine-faults}.
+	Further, this implementation is hardened against Byzantine faults via the transformation described in Section~\ref{sec:transforming-byzantine-faults}.
 	The implementation in its entirety can be found at \url{https://github.com/trusted-dcr}.
 
 	Figure~\ref{fig:network-stack} shows an overview of the system.
 	An SGX enclave drives the major parts of the system.
 	Both Raft and a DCR execution engine exists inside the protected enclave environment, preventing Byzantine faults at these components.
-	However, the enclave does not have access to the system's network stack.
+	However, the enclave does not have access to the network stack of the system it is running on.
 	To provide inter-peer communication, the enclave instead contacts a daemon using O/ECALLs.
 	This call interface is defined in the Enclave Definition Language (EDL)~\cite{intel_sgx_guide} layer.
 
 	\subsection{SGX Enclave}
+
 	The enclave protects the classical Raft algorithm against Byzantine faults as described in Section~\ref{sec:transforming-byzantine-faults}.
 	All Raft messages are augmented with a message authentication code (MAC) using a key shared between all peers.
-	The shared key is obtained through attestation and is confidential to the enclaves (i.e. it can never leave protected memory).\footnote{The implementation does not currently use SGX attestation for key distribution, but instead relies on an unsafe hard-coded shared key.}
+	The shared key is obtained through attestation and is confidential to the enclaves (meaning that it can never leave protected memory).\footnote{The implementation does not currently use SGX attestation for key distribution, but instead relies on an unsafe hard-coded shared key.}
 
 	\subsection{EDL}
-	Using our EDL definitions, the SGX SDK generates a secure call interface between the trusted enclave and untrusted daemon.
+
+	Using our EDL definitions, the SGX SDK generates a secure call interface between the trusted enclave and the untrusted daemon.
 	Specifically, the call interface
 	\begin{enumerate*}[label=\textbf{(\alph*)}]
 		\item limits all external interaction with the enclave to exactly what is defined by the EDL definitions,
@@ -1637,8 +1642,8 @@ while there are unmarked nodes do
 	\end{enumerate*}
 
 	An excerpt of the enclave--daemon interface definition can be seen in Listing~\ref{listing:edl}.
-	The trusted part define ECALLs, allowing untrusted code to call enclave functions.
-	The untrusted part define OCALLs, allowing the enclave to call untrusted functions outside the enclave.
+	The trusted part defines ECALLs, allowing untrusted code to call enclave functions.
+	The untrusted part defines OCALLs, allowing the enclave to call untrusted functions outside the enclave.
 	Listing~\ref{listing:edl} shows trusted functions for the enclave to receive network messages from the daemon and untrusted functions for the enclave to send network messages to the daemon.
 
 	The considerations of \textbf{(b)} are apparent in the untrusted \texttt{send\_append\_req} function.
@@ -1679,10 +1684,11 @@ enclave {
 	\end{snippet}
 
 	\subsection{Daemon}
-	As the enclave cannot communicate directly with the system's network stack, a daemon is needed for inter-peer communication.
-	The daemon implements OCALLs for sending messages, parameterized by the ID of the target peer.
+
+	As the enclave cannot communicate directly with the network stack of the system, a daemon is needed for inter-peer communication.
+	The daemon implements OCALLs for sending messages, parametrised by the ID of the target peer.
 	The enclave uses these OCALLs for all message passing.
-	Oppositely, when a message destined for the enclave arrives at the daemon, the daemon passes the message to the enclave via an ECALL.
+	Messages heading in the opposite directed are passed to the enclave via an ECALL by the daemon.
 
 	Inter-peer communication uses TCP for all messages.
 	Specifically, the daemon implements a gRPC server and client.
@@ -1694,114 +1700,99 @@ enclave {
 	It contains the DCR graph, cluster memberships, and the ID of the local enclave.
 	In the current implementation, the configuration also includes a hard-coded mapping between peer IDs and IP addresses.
 	During attestation, peers must agree on this configuration.
-	Otherwise a malicious actor would be able operate in the network with a less restrictive configuration.\footnote{The configuration should map client public keys with events if authentication is needed for execution. This functionality does not currently exist in the implementation.}
+	Otherwise a malicious actor would be able operate in the network with a less restrictive configuration\footnote{The configuration should map client public keys with events if authentication is needed for execution. This functionality does not currently exist in the implementation.}.
 
 	\subsection{Client}
+
 	Finally a simple command line interface has been implemented as a client.
-	This client is capable of communicating with the daemon to configure the enclave, start and execution, and fetch the global execution history.
+	This client is capable of communicating with the daemon to configure the enclave, initialise it, perform executions and fetch the global execution history.
 	Configuration is handled using a JSON configuration file.
 	After parsing the configuration, the client starts the daemon process and transmits the configuration via gRPC.
 	Execution and global history requests are similarly handled through gRPC calls to the daemon.
 	After receiving an execution or history request, the daemon will use an ECALL to start the operation.
-	When completed, the results are communicated back to the daemon and later the client via OCALLs and gRPC.\footnote{In the current implementation, the client is not notified when and if the execution succeeds.}
+	When completed, the results are communicated back to the daemon and later the client via OCALLs and gRPC\footnote{In the current implementation, the client is not notified when and if the execution succeeds.}.
 	When fetching the global execution history, the client will create a consistent cut from the logs retrieved by the daemon and validated by the local enclave, as described in Section~\ref{subsec:global-history-collection}.
 
 	\section{Discussion}
 
-	% - Sgx sikkerhed (ret til)
+	We will now provide some perspective on the contributions of this thesis in relation to other solutions and the considerations of the solution presented here.	
+
     \subsection{Security of SGX}
+
 	All aforementioned security guarantees are derived by the confidentiality and integrity guarantees given by Intel, but since very little of the proprietary technology is documented, or documented contradictory in different documentations as noted in~\cite{costan_intel_2016}, all security assumptions of SGX rely on trust in Intel's implementation.
-    While an argument can be made that every security critical protocol must to some extend trust the manufacturer of the hardware on which the protocol runs, Intel has historically had vulnerabilities in components similar to SGX.
+    While an argument can be made that every security critical protocol must to some extent trust the manufacturer of the hardware on which the protocol runs, Intel has historically had vulnerabilities in components similar to SGX.
     For example the CVE-2017-5689 security incident named \textit{Silent Bob} exposed in~\cite{silent_bob}, which allowed unprivileged access to the Intel Active Management Technology.
+
     Intel Active Management Technology is a component made for controlling networked host devices remotely, and is completely independent of the OS.
-    The Silent Bob vulnerability allowed an adversary complete Admin access to the Intel Active Management Technology, which roughly gave them the same possibilities as physical access to the host device.
+    The Silent Bob vulnerability allowed an adversary complete Admin\footnote{A role specific to the Intel Active Management Technology.} access to the Intel Active Management Technology, which roughly gave them the same possibilities as physical access to the host device.
     Such a vulnerability in SGX could potentially invalidate the security analysis presented in Section~\ref{sec:security-analysis}.
-    We will therefore shortly present the most pertinent SGX vulnerabilities found at the time of writing, and asses the implications for the described system.
+    We will therefore shortly present the most pertinent SGX vulnerabilities found at the time of writing, and assess the implications for the described system.
 
     As mentioned SGX does not protect against flawed software, so it is up to the developer to prevent side-channel attacks through OCALLs that might expose secret data.
 	A noteworthy mention to illustrate the vigour needed is the common pitfall mentioned in~\cite{intel_sgx_guide} when using ECALLs and OCALLs.
 	Because enclaves are compiled using a standard \cpp-compiler, structure padding is likely to happen.
-	The SGX environment does not protect against leaking secret information through uninitialized structure padding when passing structures in ECALLs and OCALLs -- this, and other common security pitfalls, are not part of any SGX security guarantees.
+	The SGX environment does not protect against leaking secret information through uninitialized structure padding when passing structures in ECALLs and OCALLs | this, and other common security pitfalls, are not part of any SGX security guarantees.
 	Intel recommends to always clear secrets from the enclave memory after use in~\cite{intel_sgx_guide}, regardless of the guarantees given by the PRM, underlining the risk of unintended vulnerabilities.
 
     Recall that Intel claims that SGX provides confidentiality and integrity for running enclaves.
     To the best of our knowledge, no integrity vulnerabilities have been identified at the time of writing.
-    However, a couple of confidentiality vulnerabilities have been identified, most notably in~\cite{costan_intel_2016} and~\cite{chen_sgxpectre_2018}.
+    However, a number of confidentiality vulnerabilities have been identified, most notably in~\cite{costan_intel_2016} and~\cite{chen_sgxpectre_2018}.
 	\cite{costan_intel_2016} shows several issues regarding confidentiality, most notably an address translation attack, a cache timing attack and an instruction snooping attack.
 
-    In short, the address translation attacks utilises the fact that enclaves use the system page table even for data residing on PRM.
-    As such it is possible for untrusted software to learn the page access order by manipulating the OS controlled page table.
+    The address translation attacks utilises the fact that enclaves use the system page table even for data residing on PRM.
+    As such it is possible for untrusted software to learn the page access order by manipulating the OS-controlled page table.
 	Another possible attack vector is to perform cache timing by cleverly choosing the physical memory position of enclave memory pages on set associative caches.
 	By mapping snooping software to the same cache set as the enclave, the snooping software can evict the enclave's memory from the cache and use timing to figure out if it is accessed again.
     \cite{costan_intel_2016} also identifies a vulnerability in utilising hyper-threading to snoop instructions run by the enclave process. A snooping process sharing physical core with an enclave can use performance counters to determine which instructions the out-of-order scheduler is able to run in parallel with the enclave.
 	The presence of these attacks means that enclaves using data-dependent memory access will likely not ensure confidentiality.
 
-	Lastly, it is shown in~\cite{chen_sgxpectre_2018} that SGX is vulnerable to a variant of the infamous \textit{Spectre} vulnerability.
-	Very abstractly, the so-called \textit{SgxPectre}, attack utilises out-of-order execution, by influencing branch prediction, to force an enclave process to load confidential data into the cache.
-	The changes in the cache can then be observed, so by flushing the cache with known data before-hand, an adversary knows exactly the data that has been loaded into the cache.
+	Lastly, it is shown in~\cite{chen_sgxpectre_2018} that SGX is vulnerable to a variant of the infamous \textit{Spectre} vulnerability. 
+	The Spectre vulnerability on SGX, so-called \textit{SgxPectre}, can be exploited by utilising out-of-order execution to influencing branch prediction and force an enclave process to load confidential data into the cache.
+	The changes in the cache can then be read, so by flushing the cache with known data before-hand, an adversary knows exactly the data that has been loaded into the cache. 
 
 	Notice that all of these attacks requires physical access to the device running, and therefore does not at first glance seem overly dangerous for our system.
-	However, our SGX transformation use a symmetric key for the MACing of our messages in Section~\ref{sec:transforming-byzantine-faults}.
+	However, our SGX transformation uses a symmetric key for the MAC'ing of our messages, as described in Section~\ref{sec:transforming-byzantine-faults}. 
 	As such the same secret is shared between all of the processes running in our system, and an adversary needs only access to any one of them, to gain access to the key.
-	But since any process running the enclave on a SGX enabled device can be provisioned with the shared secret through remote attestation, which means that an adversary only needs access to any SGX enabled device and the correct enclave, to potentially gain access to the shared secret.
-	This is if course a serious security concern, as access to the shared secret enables an adversary in introducing byzantine failures, by sending inconsistent messages while any impersonating correct process.
-	And since the underlying Raft algorithm is not byzantine fault safe, the system would begin to exhibit undocumented behaviour.
+	But since any process running the enclave on a SGX enabled device can be provisioned with the shared secret through remote attestation, this means that an adversary only needs access to any SGX enabled device and the correct enclave, to potentially gain access to the shared secret.
+	This is of course a serious security concern, as access to the shared secret enables an adversary to introduce byzantine failures, by sending inconsistent messages while impersonating any process.
+	And since the underlying Raft algorithm is not byzantine fault safe, the system would begin to exhibit undocumented behaviour. 
 
 	To solve this problem, we could introduce authentication in the remote attestation protocol, so that only participants in the workflow would be attested.
 	However, this would not protect against a malicious participant, who could control the workflow by impersonating leader processes.
 
-	Another solution is to remotely attest each message, i.e. each message must be verified as being correct by remote attestation service, which will then sign the message for the process.
+	Another solution is to remotely attest each message, i.e. requiring that each message is verified as being correct by a remote attestation service, which will then sign the message for the process. 
 	This solution is essentially a central server solution, and would introduce a single point of failure as well as the remote attestation server as a bottleneck of messages.
 
 	In conclusion, we have not identified a simple solution to these vulnerabilities, and advise against using the system for security critical workflows until the aforementioned vulnerabilities have been addressed and secured by Intel.
 
-	% - Implementationsbesvær m. SGX
-    % \subsection{SGX Curiosities}
-	% Implementing enclaves is cumbersome work, as SGX is very limited in functionality, as described in Section~\ref{subsec:intel-sgx}.
-	% When returning data from an enclave, for instance, that data is not allowed to contain any pointers, as those would then point to trusted memory inside the enclave.
-	% This means that even programmatically trivial parts of the implementation of an enclave carry with it considerable work.
-	% In the case of not allowing nested pointers, flattening the structure is one potential solution, meaning a multi-dimensional array or vector would become a one dimensional collection with a separate data structure containing the indices for each original collection.
-
-	% - Størrelsen af TCB i forhold til systemet
-	% As the performance of enclave processes is severely limited, due to them being constrained to a single active thread, minimizing the TCB is essential for a high performance algorithm using SGX. REFREF
-	% The transformation of crash-fault tolerant algorithms to byzantine fault tolerant algorithms described in this report is specifically described so as to handle any crash-fault tolerant algorithm and makes no attempt to minimize the TCB, but inserts the algorithm into SGX.
-	% This is in practice extremely taxing on performance and special consideration should be given to each individual algorithm, in order to evaluate where SGX is needed.
-	% Methods such as the secret sharing scheme used in FastBFT, as described in~\cite{liu_scalable_2016}, could possible be utilised to great effect in our solution.
-
 	\subsection{Scalability and fault tolerance}
+
     One of the central aspects of our system, is the separation of state, i.e. each cluster stores a different state and keeps it updated.
    	This allows for high scalability, in that we can execute events in $O(m \cdot E_{eff}(G,e) + 1)$ messages, where $m$ is size of the clusters.
    	It will trivially be true that $n \geq m \cdot E_{eff}(G,e) + 1$, and for some graphs $n > m \cdot E_{eff}(G,e) + 1$, as described in Section~\ref{subsubsec:concurrency} and~\ref{sec:analysis}.
-    An argument could be made that reducing $n$ in an SMR approach can achieve the exact same message complexity and fault tolerance, since the relationship between scalability and fault tolerance is highly interdependent in these approaches.
-    To show this relationship, lets look at an example with $3$ statically independent events and $15$ peers in the network.
-    In an SMR protocol, where all peers share all state, and which achieves consensus in $O(n)$ messages under no faults, and has a fault tolerance of $f = \lfloor \frac{n-1}{2} \rfloor$, we can achieve an execution of an event in $k \cdot 15$ messages, where $k$ is some constant, with a fault tolerance of $7$.
-    Our solution, where we distribute the state evenly in clusters (i.e. $5$ peers per cluster), achieve an execution in $k \cdot 5$ messages with a fault tolerance of $2$.
+
+    An argument could be made that reducing $n$ in an SMR approach can achieve the exact same message complexity and fault tolerance, since the relationship between scalability and fault tolerance is highly interdependent in these approaches. 
+    To show this relationship, lets look at an example with $3$ statically independent events and $15$ peers in the network. 
+    In an SMR protocol, where all peers share the entirety of the state, and which achieves consensus in $O(n)$ messages under no faults, and has a fault tolerance of $f = \lfloor \frac{n-1}{2} \rfloor$, we can achieve an execution of an event in $k \cdot 15$ messages, where $k$ is some constant, with a fault tolerance of $7$.
+    Our solution, where we distribute the state evenly in clusters (in this case $5$ peers per cluster), commits an execution in the system in $k \cdot 5$ messages with a fault tolerance of $2$.
     However, if we reduce the peer size in the SMR to $5$, we achieve exactly the same properties in terms required messages and fault tolerance, which begs the question of what properties we have actually achieved by the distribution of the workflow.
 
     The four major improvements over an SMR solution we have identified are:
     \begin{itemize}
     	\item Event executions are no longer bounded by a single leader's capacity.
+	    In a high intensity workflow, with many concurrent event executions, an SMR solution would be bounded by the leader's network and computational capacity.
+	    In our solution, the concurrent executions are performed on different leaders with no intercommunication, and thus we are instead bounded by the cumulated capacity all leaders.
     	\item A faulty cluster at most affect liveness of the clusters holding $D_{stat}(e)$, not the entire workflow.
+	    If a cluster experiences $f+1$ crashes, liveness can no longer be guaranteed. 
+	    However, a cluster with no liveness does not necessarily completely halt execution of the workflow, as all clusters for the events in $I_{stat}(e)$ can never be affected by $e$. 
     	\item A peer need only store part of the workflow, not the entire workflow.
-    	\item In settings with fixed peer sizes, we gain better message complexity than a SMR solution.
+    	Any peer in the cluster responsible for $e$ need only store the state of $e$ and the executions that effect $e$, which is bounded by $N(N(e)) \cup N(e) \cup e$, where $N$ denotes the neighbourhood.
+    	\item In a comparison between our solution and an SMR solution with a fixed number of peers, the former achieves superior message complexity.
+    	Lastly, in a setting where the number of peers are given, for instance due to hardware or legal restraints, we gain a better message complexity than SMR, at the expense of a lower fault tolerance. 
     \end{itemize}
 
-    In a high intensity workflow, with many concurrent event executions, an SMR solution would be bounded by the leader's network and computational capacity.
-    In our solution, the concurrent executions are performed on different leaders with no intercommunication, and thus we are instead bounded several leaders' cumulated capacity.
-
-    If a cluster experiences $f+1$ crashes, liveness can no longer be guaranteed.
-    However, a cluster with no liveness does not necessarily completely halt execution of the workflow, as all clusters for the events in $I_{stat}(e)$ can never be affected by $e$.
-
-    Any peer in the cluster responsible for $e$ need only store the state of $e$ and the executions that effect $e$, which is bounded by $N(N(e))$.
-
-    Lastly, in a setting where the number of peers are given, for instance due to hardware or legal restraints, we gain a better message complexity than SMR, at the expense of a lower fault tolerance.
-
-	% - PSMR
-    %\subsection{Partial state machine replication}
-	% The designed solution solves the issue of partial state machine replication, a problem which has few efficient solutions and none of them accomplishing it using SGX or other TEE's, as far as the authors of this thesis are aware.
-
-	% - Sammenlign med Eth løsning (evt. FastBFT)
     \subsection{Comparisons}
+
 	As there is only one other solution to the problem of byzantine fault tolerant distributed DCR our ability to compare our solution to others is limited.
 	The existing implementation is on the Ethereum~\cite{_ethereum_2018} blockchain, which supports arbitrary smart contracts and on which a DCR engine has been created.
 	In the Ethereum DCR project~\cite{madsen_collaboration_2018}, a DCR engine is implemented in the Ethereum specific language, Solidity, and created as a smart contract on the Ethereum blockchain.
@@ -1809,11 +1800,11 @@ enclave {
 	The guarantees provided by the blockchain are thereby extended to each and every smart contract on the platform, as all miners process the computations performed by all paying users.
 	Aside from the blockchain constraint of a certain block frequency there is therefore also the added monetary costs associated with an execution.
 	Since the DCR engine implemented in SGX has no monetary costs associated with it and the message complexity of performing an execution in the Ethereum DCR engine is not readily available or relevant, the block frequency is the only comparable quantity between the two.
-	Ethereum has an average block frequency of 15 seconds at this time which means that performing a series of executions takes a considerable amount of time, compared to the SGX DCR engine.
-	Additionally, the cost of creating a workflow and performing executions on it is by no means trivial (6.6 USD in the example graph).
-	There is, however, significant advantages associated with the Ethereum solution, in that the fault tolerance is not based on the users of the DCR engine, but rather the users of Ethereum, which is naturally significantly larger.
+	Ethereum has an average block frequency of 15 seconds at this time which means that performing a series of executions takes a considerable amount of time, compared to the trusted DCR engine.
+	Additionally, the cost of creating a workflow and performing executions on it is by no means trivial (6.6 USD in the example graph, at the time of that article's writing).
+	There is, however, significant advantages associated with the Ethereum solution, in that the fault tolerance is not based on the users of the DCR engine, but rather the users of Ethereum, which is currently of considerable size.
 	The sheer size of the Ethereum network therefore makes it incredibly resilient to attacks and practically guarantees availability, as each Ethereum node holds the state of the network.
-	A main concern with the SGX-DCR project was scalability and as joining the Ethereum network entails storing the state of all smart contracts, the DCR engine running on Ethereum should only be used in cases where scalability is of absolutely no concern.
+	A main concern with the trusted DCR project was scalability and as joining the Ethereum network entails storing the state of all smart contracts, the DCR engine running on Ethereum should only be used in cases where scalability is of absolutely no concern.
 
 	\section{Distributed Smart Contract Engine}
 
@@ -1854,10 +1845,11 @@ enclave {
 	This subsystem of events belonging to $p_1$ can be duplicated for each respective peer which participates in the DAO.
 	Note that performing the investment itself is illustrated in the example, but could easily be accomplished by having events deciding for option$_1$ and option$_2$.
 	Option$_1$ would only be executable if every peer has spent their tickets and option$_1$ has more votes than option$_2$.
-	The opposite would be true for Option$_2$.
+	The inverse would be true for Option$_2$.
 	Additional state would be needed in order to return the correct amount of money back to the investors, but that should be trivial given the functionality displayed in this example.
 
 	Due to the way the DCR engine is defined, all events and relations must be created simultaneously with the creation of the graph.
+	This is limiting, in that events can only interact with each other in very specific predefined ways, such as the separate events for voting for option$_1$ and option$_2$ respectively.
 	We could however improve the simplicity of the solution by introducing the concept of parametrised effects.
 
 	\begin{figure}[t]
