@@ -1006,7 +1006,6 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	Due to the fact that these clusters can be seen as completely individual networks of peers, any consensus algorithm can be used to solve the problem of synchronizing executions and locks as it is completely detached from the locking mechanism and reduces to the problem of consensus.
 	Choosing a consensus algorithm to manage the clusters is however still an important decision, as the wrong choice could form significant bottlenecks in the system.
 	For this implementation we have chosen Raft~\cite{ongaro_search_2014}, as the basis for the cluster consensus algorithm, modified by the transformation we described earlier in Section~\ref{sec:transforming-byzantine-faults} to reduce byzantine faults to crash-stop failures.
-    Additionally a small modification has been added with regards to leader election, to avoid deliberate crashes live-locking the network.
 	The reason for choosing Raft is that it is widely used commercially, relatively simple and able to achieve consensus in very few messages.
 	Additionally Raft only handles crash faults and is therefore an ideal candidate for the transformation of byzantine faults to crashes.
 	The consensus algorithm applied in the clusters is described in Section~\ref{subsec:cluster-consensus}.
@@ -1022,8 +1021,8 @@ In order to attain a complete understanding of the problem at hand, three subjec
 
 	For this section, we apply terms used in directed graphs and define variations of neighbourhoods with regards to DCR graphs as:
 	\begin{description}
-		\item[Out-neighbourhood] denoted $N_{out}(v)$, defined as the set of events where event $v'$ is in $N_{out}(v)$ iff there is a relation in $G$ that originates from $v$ and targets $v'$.
-		\item[In-neighbourhood] denoted $N_{in}(v)$, defined as the set of events where event $v'$ is in $N_{in}(v)$ iff there is a relation in $G$ that originates from $v'$ and targets $v$.
+		\item[Out-neighbourhood] denoted $N_{out}(e)$, defined as the set of events where event $e'$ is in $N_{out}(e)$ iff there is a relation in $G$ that originates from $e$ and targets $e'$.
+		\item[In-neighbourhood] denoted $N_{in}(e)$, defined as the set of events where event $e'$ is in $N_{in}(e)$ iff there is a relation in $G$ that originates from $e'$ and targets $e$.
 	\end{description}
 
 	As discussed in Section~\ref{sec:analysis}, the execution of non-independent events must be synchronised.
@@ -1042,34 +1041,34 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	\begin{figure}[ht!]
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/race-condition.pdf}
-		\caption{Graph illustrating the need for ordering effects in $N_{out}(v)$.}
+		\caption{Graph illustrating the need for ordering effects in $N_{out}(e)$.}
 		\label{fig:race-condition}
 	\end{figure}
 
 	If \texttt{A} has effects originating from it, the need for synchronization arises as shown in Figure~\ref{fig:race-condition}.
 	In the graph events \texttt{A} and \texttt{B} both modify the same event state attributes and a race condition is present as a result.
 	In order to prevent the race condition from having adverse effect, synchronization is needed between the two executing events, \texttt{A} and \texttt{B}.
-	This means that events with effects which target events within $N_{out}(v)$ need to ensure synchronisation on the targeted events of $v$'s execution.
+	This means that events with effects which target events within $N_{out}(E)$ need to ensure synchronisation on the targeted events of $e$'s execution.
 
 	Since effects can modify events which in turn have constraints originating from it, there are situations where locking in the neighbourhood of the executed event is no longer sufficient.
 
 	\begin{figure}[ht!]
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/second-degree-effect.pdf}
-		\caption{Graph illustrating that ordering only within $N_{out}(v) \cup v$ is insufficient.}
+		\caption{Graph illustrating that ordering only within $N_{out}(e) \cup e$ is insufficient.}
 		\label{fig:second-degree-effect}
 	\end{figure}
 
-	In the graph shown in Figure~\ref{fig:second-degree-effect} it is shown that the set of events requiring ordering of an execution has to include either a subset of $N_{out}(N_{out}(v))$, $N_{in}(v) \cup N_{out}(v)$ or $N_{in}(N_{in}(v))$.
+	In the graph shown in Figure~\ref{fig:second-degree-effect} it is shown that the set of events requiring ordering of an execution has to include either a subset of $N_{out}(N_{out}(e))$, $N_{in}(e) \cup N_{out}(e)$ or $N_{in}(N_{in}(e))$.
 	Otherwise, the graph could end in a state where only \texttt{A} and \texttt{B} have been executed, which should be impossible due to the execution of either including a condition on the other.
-	As ordering within the set of $N_{in}(N_{in}(v))$ is not enough on its own, due to the case shown in Figure~\ref{fig:race-condition}, we regard this option as worse than any of the other two.
+	As ordering within the set of $N_{in}(N_{in}(e))$ is not enough on its own, due to the case shown in Figure~\ref{fig:race-condition}, we regard this option as worse than any of the other two.
 
 	We now show that the cases shown in Figure~\ref{fig:race-condition} and in Figure~\ref{fig:second-degree-effect} cover all situations where ordering is needed.
-	According to the semantics of DCR relations (see Section~\ref{subsec:dcr}), the enabledness of an event, $v$, can only be changed by state changes in $N_{in}(v) \cup v$, and the state of the event can only be affected by an execution in $N_{in}(v) \cup v$.
-	Consider an event $v$.
-	Executing $v$ can then change the state and enabledness of any event in $N_{out}(v) \cup v$.
-	Changes of the enabledness of an event in $N_{out}(v)$ cannot propagate\footnote{Unless the enabledness change of the event is a result of a state change of the event, e.g. if the event is excluded}, since no relation relies on the enabledness of the originating event.
-	Changes of the state of an event in $N_{out}(v)$, \textit{can} propagate, since the constraining relations relies on the state of the originating event.
+	According to the semantics of DCR relations (see Section~\ref{subsec:dcr}), the enabledness of an event, $e$, can only be changed by state changes in $N_{in}(e) \cup e$, and the state of the event can only be affected by an execution in $N_{in}(e) \cup e$.
+	Consider an event $e$.
+	Executing $e$ can then change the state and enabledness of any event in $N_{out}(e) \cup e$.
+	Changes of the enabledness of an event in $N_{out}(e)$ cannot propagate\footnote{Unless the enabledness change of the event is a result of a state change of the event, e.g. if the event is excluded}, since no relation relies on the enabledness of the originating event.
+	Changes of the state of an event in $N_{out}(e)$, \textit{can} propagate, since the constraining relations relies on the state of the originating event.
 	But since only the constraining relations rely on the state of the originating event, the state change can only propagate enabledness changes, which in turn cannot propagate.
 
 	Summarized we have the following cases where ordering must occur:
@@ -1079,20 +1078,20 @@ In order to attain a complete understanding of the problem at hand, three subjec
 		\item[Effect-Condition] Consider a graph of three events: \ev{A}, \ev{B} and \ev{C}, with an effect originating from \texttt{A}, targeting \texttt{B} and a constraint originating from \texttt{B}, targeting \texttt{C}.
 		If \texttt{A} is executed, ordering of that execution must be ensured on \texttt{B} and \texttt{C}.
 	\end{description}
-	Both of these cases can be covered by ordering in $N_{out}(N_{out}(v)) \cup N_{out}(v) \cup v$ or $N_{in}(v) \cup N_{out}(v) \cup v$.
+	Both of these cases can be covered by ordering in $N_{out}(N_{out}(e)) \cup N_{out}(e) \cup e$ or $N_{in}(e) \cup N_{out}(e) \cup e$.
 
 	\begin{figure}[ht!]
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/second-degree-no-effect.pdf}
-		\caption{Graph illustrating the advantage of locking in $N_{out}(N_{out}(v)) \cup N_{out}(v) \cup v$ rather than $N_{in}(v) \cup N_{out}(v) \cup v$.}
+		\caption{Graph illustrating the advantage of locking in $N_{out}(N_{out}(e)) \cup N_{out}(e) \cup e$ rather than $N_{in}(e) \cup N_{out}(e) \cup e$.}
 		\label{fig:second-degree-no-effect}
 	\end{figure}
 
 	In the graph shown in Figure~\ref{fig:second-degree-no-effect} an execution of \texttt{A} no longer has an effect on the enabledness of \texttt{B}, as \texttt{C} is included and therefore has the same state before and after the execution of \texttt{A}.
-	An argument can be made here for the $N_{out}(N_{out}(v)) \cup N_{out}(v) \cup v$ ordering scheme over $N_{in}(v) \cup N_{out}(v) \cup v$, as it allows for optimizations in that ordering is not needed on \texttt{B}, meaning that the former ordering scheme would be more efficient than the latter.
+	An argument can be made here for the $N_{out}(N_{out}(e)) \cup N_{out}(e) \cup e$ ordering scheme over $N_{in}(e) \cup N_{out}(e) \cup e$, as it allows for optimizations in that ordering is not needed on \texttt{B}, meaning that the former ordering scheme would be more efficient than the latter.
 	This optimization is, however, only possible when the state of \texttt{C} is known and this is not a trivial problem.
 	The solution of simply notifying \texttt{A} of \texttt{C}'s state when changed, is insufficient as the notification might not arrive before \texttt{A} performs ordering based on a previous state.
-	A different solution could be to evaluate the need for ordering in steps, meaning that in the described example, \texttt{A} would inform \texttt{B} that it is executing an that ordering is required and \texttt{B} then evaluates whether or not ordering on \texttt{C} is needed, based on the state of \texttt{B}.
+	A different solution could be to evaluate the need for ordering in steps, meaning that in the described example, \texttt{A} would inform \texttt{B} that it is executing and that ordering is required and \texttt{B} then evaluates whether or not ordering on \texttt{C} is needed, based on the state of \texttt{B}.
 	This two-step solution has the disadvantage of potentially taking twice as long, assuming that transporting a message between \texttt{A} and \texttt{C} takes the same amount of time as between \texttt{A} and \texttt{B}.
 
 	There are additionally three cases where the ordering scheme described so far is not maximally concurrent:
@@ -1118,7 +1117,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	We therefore ideally need a way to be certain that an execution is possible before it is performed on any event.
 	One way to accomplish this in reasonable time, is by using \textit{locking}.
 
-	In a graph, $G(E,V)$, we define the set of locked events, $L$, on the execution of an event, $v$, as $L(v)$.
+	In a graph, $G(E,V)$, we define the set of locked events, $L$, on the execution of an event, $e$, as $L(e)$.
 	An event can only be locked by a single event at any time and is unlocked when a lock either leads to an execution or when an execution is aborted due to all locks not being attainable.
 
 	For the implementation described in this thesis, the simpler rules of ordering is implemented, namely always locking on \textbf{Effects} and on \textbf{Effect-Conditions} as described earlier, which should be sufficient as it covers all situations where synchronisation is needed.
@@ -1129,7 +1128,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 
 	We define a global history to be a DCR run.
 	Both as documentation of the process upon completion of the workflow and during the life cycle of the workflow, the global history is relevant, in the latter case because the global state can be derived from the global history.
-	In this section we conflate a cluster with the event which the cluster is responsible for, for simplicity.
+	In this section we conflate a cluster with the event which the cluster is responsible for, for brevity.
 
 	For a global history to be collectible, each event must track more than just their own executions, as the only relationships between executions that can be established are those that are observed locally on a single execution.
 	Events must also track all executions that affect its state and enabledness.
@@ -1174,7 +1173,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	Following \texttt{A}'s execution, \texttt{B} has been enabled, and upon receiving this information, \texttt{B} executes.
 	\texttt{B} then receives the execution sequence request and responds with a sequence of $\{\texttt{A}, \texttt{B}\}$.
 	In this specific example, nothing is lost by event \texttt{A}'s returned execution sequence not including the execution of \texttt{A}, as all executions are observed by \texttt{B}.
-	However, if \texttt{A} is not able to be executed, it is impossible to interpolate what has happened.
+	However, if \texttt{A} is not executable, it is impossible to interpolate what has happened.
 	An example of this is the graph $\ev{A} \erel \ev{B} \crel \ev{C} \crel \ev{D}$, where the collection of the global history could return an empty sequence for \texttt{A}, \texttt{B} and \texttt{C}, but a sequence of $\{\texttt{C}, \texttt{D}\}$ from \texttt{D}.
 	It is unknown whether an execution of \text{A} or an execution of \texttt{B} allowed the execution of \texttt{C} and then \texttt{D}.
 	To solve this, any execution not present in the sequence returned by the event itself is considered invalid and therefore that execution is deleted from the sequence of all events, as well as all following executions in that sequence.
@@ -1184,7 +1183,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	\begin{figure}[ht!]
 		\center
 		\includegraphics[scale=0.6]{figures/dcr-graphs/global-history-collection-consistent-cut.pdf}
-		\caption{Global history collection consistent cut. Note that execution process of locking and then committing is illustrated as a single message, for brevity. The green and blue executions illustrate two possibilities which could have preceded \texttt{D}'s perceived execution sequence of $\{\texttt{C}, \texttt{D}\}$. The red, dotted line shows an inconsistent cut and the black, dotted line shows the consistent cut.}
+		\caption{Global history collection consistent cut. Note that execution process of locking and then committing is illustrated as a single message, for brevity. The green and blue executions illustrate two possibilities which could have preceded \texttt{D}'s perceived execution sequence of $\{\texttt{C}, \texttt{D}\}$. The red, dotted line shows an inconsistent cut and the black, dotted line shows the found consistent cut.}
 		\label{fig:global-history-collection-consistent-cut}
 	\end{figure}
     \FloatBarrier
@@ -1226,7 +1225,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	From each sequence, an implicit valid ordering is present, in the sense that from event \texttt{B} it is shown that execution $B_1$ can happen before $A_1$ happens.
 	An linearisation of these sequences needs to be found, which can be accomplished through the construction of a directed graph and topologically ordering the vertices of that graph.
 	Before a linearisation can be performed, we define each sequence as a set of execution relationships.
-	For example the execution sequence recorded by \texttt{B} could also be formulated as: $\{A_1 \rightarrow B_1, B_1 \rightarrow E_1, E_1 \rightarrow F_1, F_1 \rightarrow E_2, E_2 \rightarrow F_2\}$ where the arrow denotes that the right hand side can occur after the left hand side, given that is has been observed.
+	For example the execution sequence recorded by \texttt{B} could also be formulated as: $\{A_1 \rightarrow B_1, B_1 \rightarrow E_1, E_1 \rightarrow F_1, F_1 \rightarrow E_2, E_2 \rightarrow F_2\}$ where the arrow denotes that the right hand side can occur after the left hand side, given that it has been observed.
 
 	If each sequence is formulated as a series of execution relationships they can easily be aggregated in order to define the rules which a valid execution sequence must adhere to for this specific DCR graph and its state.
 	For the example in Figure~\ref{fig:global-history-collection-example} where a union of the execution relationships result in the following set of relationships: $\{A_1 \rightarrow D_1, A_1 \rightarrow B_1, B_1 \rightarrow E_1, E_1 \rightarrow E_2, E_1 \rightarrow F_1, F_1 \rightarrow F_2, F_1 \rightarrow E_2, E_2 \rightarrow F_2, F_2 \rightarrow C_1\}$
@@ -1240,7 +1239,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
     \FloatBarrier
 
 	From the total list of relationships, a graph can now be constructed of possible executions, as seen in Figure~\ref{fig:execution-sequence-graph-example}.
-	Because the execution of dynamically dependent events is not required to be synchronized, a cycle is present in that relationship $F_1 \rightarrow E_2$ is present in the set as well as the, seemingly contradictory, $E_2 \rightarrow F_1$.
+	Because the execution of dynamically dependent events is not required to be synchronized, a cycle is present in that the relationship $F_1 \rightarrow E_2$ is present in the set as well as the, seemingly contradictory, $E_2 \rightarrow F_1$.
 	This is still valid, as cycles in the happened-before relationships of executions, entails that the executions happened concurrently, because the locking rules would ensure an ordering if they were not independent.
 	And since the locking rules from Section~\ref{subsec:execution-ordering}, only allow concurrent executions when the events are dynamically independent, any linearisation of the concurrent executions must result in the same state of the graph.
 	Topological ordering behaviour with regards to cyclical graphs is, however, undefined and as cycles in the graphs created from execution relationships define concurrent executions, any ordering of executions in a cycle is valid.
@@ -1253,7 +1252,8 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	Note that a reverse postorder DFS graph traversal is exactly a topological order, if the graph is a directed \textit{acyclic} graph~\cite[chapter 4, page 582]{sedgewick_algorithms_2011}.
 	In order to extend the algorithm to allow any order of vertices in cyclical components, the third case of the proof is replaced with the following:
 	\begin{itemize}
-		\item The marked neighbour has been visited in the \textit{same} DFS traversal, implying that the two vertices are part of a cycle. But in this case, any ordering of the two vertices are acceptable, as it implies that the event executions, that the two vertices represent, happened concurrently.
+		\item The marked neighbour has been visited in the \textit{same} DFS traversal, implying that the two vertices are part of a cycle. 
+		But in this case, any ordering of the two vertices are acceptable, as it implies that the event executions, that the two vertices represent, happened concurrently.
 	\end{itemize}
 	Pseudo code of the DFS traversal algorithm can be seen in Listing~\ref{lst:dfs-traversal}.
 \begin{snippet}
