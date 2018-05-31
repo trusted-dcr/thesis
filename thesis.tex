@@ -166,7 +166,7 @@ In order to attain a complete understanding of the problem at hand, there are th
 	\label{subsec:dcr}
 
 	A DCR graph, $G$, is a graph representation of a workflow, made up of $v$ stateful nodes, $E=\{e_1, e_2, \dots, e_v\}, v \geq 1$, called \textit{events}, with a number of directed edges called \textit{relations} between them.
-	The cumulated state of all the events in a graph $G$ is called the $G$'s state.
+	The cumulated state of all the events in a graph $G$ is called the state of $G$.
 	Depending on the relations, an event, $e$, in a graph, $G$, can be \textit{executed}, which will change the state of events in $G$ according to the rules defined by $e$'s outgoing relations.
 	We denote this execution $E(G,e)=G'$.
 
@@ -176,7 +176,7 @@ In order to attain a complete understanding of the problem at hand, there are th
 			This is an event: \ev{A}
 
 			\begin{description}
-				\item[Executed attribute] If an event's \textit{executed} attribute is false executing the event will set its \textit{executed} attribute to true.
+				\item[Executed attribute] If the \textit{executed} attribute of an event is false executing the event will set its \textit{executed} attribute to true.
 				Executing an already executed event will have no effect on the \textit{executed} attribute.
 				The \textit{executed} attribute is shown as a tick mark: \ev[101]{A}
 				\item[Included attribute] If the \textit{included} attribute is true, the event is said to be \textit{included}. 
@@ -193,7 +193,7 @@ In order to attain a complete understanding of the problem at hand, there are th
 
 			Relations are directed edges between events in the workflow.
 			Each relation is directed from an origin event, toward a target event.
-			There are five types of relations which define different types of relationships between events in a workflow.
+			There are five types of relations which each specify different behaviour between events in a workflow.
 			The origin and the target of a relation can be the same event.
 			The relations can be divided into two categories:
 
@@ -222,7 +222,7 @@ In order to attain a complete understanding of the problem at hand, there are th
 
 			\subsubsection{Enabledness}
 
-			We use the notion of \textit{enabledness} to describe if an event is able to execute in a given graph's state or not.
+			We use the notion of \textit{enabledness} to describe whether an event is executable in the state of a given graph or not.
 			An event is \textit{enabled} if it can be executed, and \textit{disabled} if it cannot.
 			An event's enabledness is strictly controlled by the state of its constraining events, and its included variable:
 			\begin{itemize}
