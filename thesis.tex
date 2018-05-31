@@ -311,8 +311,9 @@ In order to attain a complete understanding of the problem at hand, there are th
 
 		Consensus is the problem of achieving agreement between the processes in a distributed system.
 		It is central to the problem of distributed DCR, as agreement on the states of events must be achieved to ensure that all correct peers adhere to the semantics of the DCR graph.
-		Take the simple graph $\ev{A} \crel \ev{B}$, and let a subset of peers $p_1$ be responsible for the state of $\ev{A}$, and a subset of peer $p_2$ be responsible for the state of $\ev{B}$.
-		If agreement on the state of $\ev{A}$ is not guaranteed, then $p_2$ might, in the belief that $\ev{A}$ is executed, execute $\ev{B}$ even though $p_1$ has never executed $\ev{A}$.
+
+		Consider a simple graph: $\ev{A} \crel \ev{B}$, and let a subset of peers, $ps_1$, be responsible for the state of $\ev{A}$, and a subset of peers, $ps_2$, be responsible for the state of $\ev{B}$.
+		If agreement on the state of $\ev{A}$ is not guaranteed, then $ps_2$ might, in the belief that $\ev{A}$ is executed, execute $\ev{B}$ even though $ps_1$ has never executed $\ev{A}$.
 
 		A consensus protocol is formally a protocol with $N$ processes ($p_0, p_1, \dots, p_{N-1}$), where each process $p_i$ begins in an undecided state, and proposes a single value $v_i$ from a set of values $D$. The processes then communicate their values to each other, and each process sets a decision variable $d_i$ and enters a decided state.
 		For the protocol to solve the consensus problem, the following requirements should hold for every execution:
@@ -322,7 +323,7 @@ In order to attain a complete understanding of the problem at hand, there are th
 			\item[Validity] if a correct process decides $d$, then some correct process has proposed a value $v$, where $v = d$.
 		\end{description}
 
-		We show that distributed DCR reduces to consensus, under the assumptions that the correct graph has been distributed to all peers, and initial state is agreed upon:
+		We show that distributed DCR reduces to consensus, under the assumptions that the correct graph has been distributed to all peers, and that the initial state is agreed upon:
 		\begin{itemize}
 			\item Let $D$ be the set of enabled events.
 			\item Let $v_i$ be an identifier an event.
@@ -338,20 +339,20 @@ In order to attain a complete understanding of the problem at hand, there are th
 
 		One problem that relates directly to consensus, is \textit{State Machine Replication}~\cite{schneider_implementing_1990} (SMR).
 		SMR is the problem of replicating the state of a system on several nodes, called \textit{replicas}.
-		Replicas are each running an instance of the same state machine, and must take requests and pass them on to the state machine.
-		In SMR systems, \textit{clients} send requests to replicas who must then guarantee:
+		On each Replica an instance of the same state machine is running, and must take requests and pass them on to the state machine.
+		In SMR systems, \textit{clients} send requests to the replicas who must then guarantee:
 		\begin{description}
 			\item[Safety] all non-faulty replicas execute the requests in the same order.
 			\item[Liveness] clients eventually receive replies to their requests.
 		\end{description}
-		The state machine replication problem is equivalent to the consensus problem and provides the same guarantees~\cite{schneider_implementing_1990}, since a solution to SMR is consensus on a request log.
+		The state machine replication problem is equivalent to the consensus problem and provides the same guarantees~\cite{schneider_implementing_1990}, since a solution to SMR is consensus on the state of a request log.
 		This is evident in the fact that the safety requirement is essentially an aggregation of the agreement and validity requirements in consensus, while the liveness property is equivalent to termination.
 		As such, FLP impossibility entails that one of the requirements must be relaxed in fault tolerant SMR systems.
 		This is often done by only guaranteeing liveness when no failures are present.
 
-		A version of SMR deals with byzantine faults, instead of crash failures.
-		These systems are knowns as \textit{byzantine fault tolerance} (BFT) systems.
-		These systems deal with arbitrary faults, that is arbitrary behaviour of faulty processes and channels, including changing messages, creating new messages and changing local state.
+		A version of SMR deals with byzantine faults, rather than crash failures.
+		These systems are knowns as \textit{byzantine fault tolerant} (BFT) systems.
+		These systems deal with arbitrary faults, meaning arbitrary behaviour of faulty processes and channels, including modified messages, new messages and changes in local state.
 		It has been shown that $2f+1$ processes are necessary and sufficient to solve SMR with relaxed liveness if faulty processes only exhibit crashes~\cite{bracha_asynchronous_1985}.
 		Similarly it has been shown that $3f+1$ processes are necessary and sufficient to solve SMR with relaxed liveness if faulty processes can exhibit byzantine faults~\cite{bracha_asynchronous_1985,pease_reaching_1980}.
 		Recent advances have been made in BFT-algorithms, which increase fault tolerance from $3f+1$ to $2f+1$ by utilizing TEE features~\cite{liu_scalable_2016,kapitza_cheapbft_2012,veronese_efficient_2013}.
