@@ -23,11 +23,12 @@
 \usepackage{mathtools}
 \usepackage{bm}
 \usepackage{newfloat}
+\usepackage{xspace}
 
 \include{dcr-preamble}
 \include{msg-preamble}
 
-\newcommand\cpp{C\nolinebreak[4]\hspace{-.05em}\raisebox{.4ex}{\relsize{-1}{\textbf{++}}}}
+\newcommand\cpp{C\texttt{++}\xspace}
 
 \DeclareFloatingEnvironment[
     fileext=los,
@@ -1434,6 +1435,7 @@ while there are unmarked nodes do
 	Given the argument that \textbf{(a)} causes the malicious processor to eventually become leader, it follows that another processor will eventually overthrow the malicious processor, restoring liveness.
 
 	\subsection{Protocol}
+	\label{subsec:protocol}
 
 	We use Raft to implement event locking (Section~\ref{subsec:execution-ordering}) and cluster consensus (Section~\ref{subsec:cluster-consensus}), by exploiting the guarantees given by Figure~\ref{fig:raft-properties}.
 	We define three command types for accomplishing this:
@@ -1595,6 +1597,108 @@ while there are unmarked nodes do
         However, by the guarantees of the Raft algorithm, the system is not vulnerable to any safety attacks.
 
 	\section{DCR-TEE Implementation}
+	\begin{figure}[t]
+		\centering
+		\includegraphics[width=\textwidth]{figures/dcr-graphs/network-stack.pdf}
+		\caption{TODO}
+		\label{fig:network-stack}
+	\end{figure}
+
+	As a proof-of-concept, we have implemented the system discussed in Section~\ref{subsec:protocol}.
+	The system consists of an implementation of the Raft~\cite{ongaro_search_2014} algorithm augmented with our protocol for DCR execution.
+	Further, this implementation is hardened against Byzantine faults via the transformation of Section~\ref{sec:transforming-byzantine-faults}.
+	The implementation in its entirety can be found at \url{https://github.com/trusted-dcr}.
+
+	Figure~\ref{fig:network-stack} shows an overview of the system.
+	An SGX enclave drives the major parts of the system.
+	Both Raft and a DCR execution engine exists inside the protected enclave environment, preventing Byzantine faults at these components.
+	However, the enclave does not have access to the system's network stack.
+	To provide inter-peer communication, the enclave instead contacts a daemon using O/ECALLs.
+	This call interface is defined in the Enclave Definition Language (EDL)~\cite{intel_sgx_guide} layer.
+
+	\subsection{SGX Enclave}
+	The enclave protects the classical Raft algorithm against Byzantine faults as described in Section~\ref{sec:transforming-byzantine-faults}.
+	All Raft messages are augmented with a message authentication code (MAC) using a key shared between all peers.
+	The shared key is obtained through attestation and is confidential to the enclaves (i.e. it can never leave protected memory).\footnote{The implementation does not currently use SGX attestation for key distribution, but instead relies on an unsafe hard-coded shared key.}
+
+	\subsection{EDL}
+	Using our EDL definitions, the SGX SDK generates a secure call interface between the trusted enclave and untrusted daemon.
+	Specifically, the call interface
+	\begin{enumerate*}[label=\textbf{(\alph*)}]
+		\item limits all external interaction with the enclave to exactly what is defined by the EDL definitions,
+		\item prevents leaking protected memory through pointers by first copying structures to a zeroed scratch space, and
+		\item prevents concurrent calls to the enclave unless explicitly allowed.
+	\end{enumerate*}
+
+	An excerpt of the enclave--daemon interface definition can be seen in Listing~\ref{listing:edl}.
+	The trusted part define ECALLs, allowing untrusted code to call enclave functions.
+	The untrusted part define OCALLs, allowing the enclave to call untrusted functions outside the enclave.
+	Listing~\ref{listing:edl} shows trusted functions for the enclave to receive network messages from the daemon and untrusted functions for the enclave to send network messages to the daemon.
+
+	The considerations of \textbf{(b)} are apparent in the untrusted \texttt{send\_append\_req} function.
+	Here the structure \texttt{append\_req\_t} contains a pointer to a range of entries.
+	Inside of the enclave, such a pointer would map to protected memory, which is inaccessible to the untrusted function definition.
+	Therefore the pointer is extracted from the structure and given as a parameter tagged with \texttt{[in, count=size]}.
+	The \texttt{in}-part causes the interface to create a scratch space in unprotected memory, where the entries are copied to, allowing the untrusted function access~\cite{intel_sgx_developer_reference}.
+
+	While the enclave can be written in \cpp, EDL is a superset of plain C.
+	This means a lot of work goes into converting from \cpp types, like vectors and maps, to types consumable by the EDL layer.
+
+	\begin{snippet}
+		\begin{mdframed}[backgroundcolor=Papyrus]
+			\begin{lstlisting}[basicstyle=\small\ttfamily]
+enclave {
+  ...
+  trusted {
+    ...
+    public void recv_append_req(append_req_t req);
+    public void recv_append_rsp(append_rsp_t rsp);
+    ...
+  };
+
+  untrusted {
+    ...
+    void send_append_req(
+    	append_req_t req,
+    	[in, count=size] entry_t* entries,
+    	int size);
+    void send_append_rsp(append_rsp_t rsp);
+    ...
+  };
+};
+			\end{lstlisting}
+		\end{mdframed}
+		\caption{Excerpt from the \texttt{enclave.edl} file.}
+		\label{listing:edl}
+	\end{snippet}
+
+	\subsection{Daemon}
+	As the enclave cannot communicate directly with the system's network stack, a daemon is needed for inter-peer communication.
+	The daemon implements OCALLs for sending messages, parameterized by the ID of the target peer.
+	The enclave uses these OCALLs for all message passing.
+	Oppositely, when a message destined for the enclave arrives at the daemon, the daemon passes the message to the enclave via an ECALL.
+
+	Inter-peer communication uses TCP for all messages.
+	Specifically, the daemon implements a gRPC server and client.
+	Note that there is no particular reason to use gRPC or even TCP other than for ease of implementation.
+
+	The daemon also facilitates user input into the enclave, as the enclave has no access to the command line.
+	During start up, the daemon sends a configuration message to the enclave.
+	This configuration is primarily constructed at the client and passed to the daemon, again via gRPC.
+	It contains the DCR graph, cluster memberships, and the ID of the local enclave.
+	In the current implementation, the configuration also includes a hard-coded mapping between peer IDs and IP addresses.
+	During attestation, peers must agree on this configuration.
+	Otherwise a malicious actor would be able operate in the network with a less restrictive configuration.\footnote{The configuration should map client public keys with events if authentication is needed for execution. This functionality does not currently exist in the implementation.}
+
+	\subsection{Client}
+	Finally a simple command line interface has been implemented as a client.
+	This client is capable of communicating with the daemon to configure the enclave, start and execution, and fetch the global execution history.
+	Configuration is handled using a JSON configuration file.
+	After parsing the configuration, the client starts the daemon process and transmits the configuration via gRPC.
+	Execution and global history requests are similarly handled through gRPC calls to the daemon.
+	After receiving an execution or history request, the daemon will use an ECALL to start the operation.
+	When completed, the results are communicated back to the daemon and later the client via OCALLs and gRPC.\footnote{In the current implementation, the client is not notified when and if the execution succeeds.}
+	When fetching the global execution history, the client will create a consistent cut from the logs retrieved by the daemon and validated by the local enclave, as described in Section~\ref{subsec:global-history-collection}.
 
 	\section{Discussion}
 
@@ -1606,7 +1710,7 @@ while there are unmarked nodes do
     Intel Active Management Technology is a component made for controlling networked host devices remotely, and is completely independent of the OS.
     The Silent Bob vulnerability allowed an adversary complete Admin access to the Intel Active Management Technology, which roughly gave them the same possibilities as physical access to the host device.
     Such a vulnerability in SGX could potentially invalidate the security analysis presented in Section~\ref{sec:security-analysis}.
-    We will therefore shortly present the most pertinent SGX vulnerabilities found at the time of writing, and asses the implications for the described system. 
+    We will therefore shortly present the most pertinent SGX vulnerabilities found at the time of writing, and asses the implications for the described system.
 
 
 	SGX claims to provide confidentiality and integrity for running enclaves.
@@ -1616,7 +1720,7 @@ while there are unmarked nodes do
 
 	Another possible attack vector is to perform cache timing by cleverly choosing the physical memory position of enclave memory pages on set associative caches.
 	By mapping snooping software to the same cache set as the enclave, the snooping software can evict the enclave's memory from the cache and use timing to figure out if it is accessed again.
-	
+
     Lastly, processors with hyper-threading support are vulnerable to instruction snooping, as a snooping process sharing physical core with an enclave can use performance counters to determine which instructions the out-of-order scheduler is able to run in parallel with the enclave.
 	The presence of these attacks means that enclaves using data-dependent memory access will likely not ensure confidentiality.
     However, to our knowledge, no publicly known vulnerabilities exist on the integrity guarantee.
@@ -1679,7 +1783,7 @@ while there are unmarked nodes do
 	Since the state of an event can now be arbitrary, a more generalised version of effects and constraints are required.
 	\begin{description}
 		\item[Effects] applies the specified modification to the state of target event.
-		\item[Constraints] specifies whether or not the target event is executable, based on a set of criteria on the originating event. 
+		\item[Constraints] specifies whether or not the target event is executable, based on a set of criteria on the originating event.
 	\end{description}
 
 	\begin{figure}[t]
@@ -1705,7 +1809,7 @@ while there are unmarked nodes do
 	\end{description}
 	Note that the state of $p_1$ could be stored in each event belonging to $p_1$, but as this would require the events of $p_1$ to subtract tickets and money from all occurrences of the state of $p_1$, the state is kept separately in order to reduce the complexity of the example.
 	This subsystem of events belonging to $p_1$ can be duplicated for each respective peer which participates in the DAO.
-	Note that performing the investment itself is illustrated in the example, but could easily be accomplished by having events deciding for option$_1$ and option$_2$. 
+	Note that performing the investment itself is illustrated in the example, but could easily be accomplished by having events deciding for option$_1$ and option$_2$.
 	Option$_1$ would only be executable if every peer has spent their tickets and option$_1$ has more votes than option$_2$.
 	The opposite would be true for Option$_2$.
 	Additional state would be needed in order to return the correct amount of money back to the investors, but that should be trivial given the functionality displayed in this example.
