@@ -83,7 +83,7 @@
 	\begin{abstract}
 		In this thesis we present a solution to the problem of decentralized distributed workflow execution. 
 		The presented solution utilises partial state replication of dynamic condition response (DCR) graphs to achieve execution of events in less than the number of peers in the system.
-		We also explore the security and optimization options provided by recent advances in trusted execution environments (TEE), specifically Intel Secure Guard Extensions (SGX), to achieve byzantine fault tolerance in the context of this problem.
+		We also explore the security and optimization options provided by recent advances in trusted execution environments (TEEs), specifically Intel Secure Guard Extensions (SGX), to achieve byzantine fault tolerance in the context of this problem.
 		The design and implementation of this system contains several new contributions: a general transformation of crash fault tolerant distributed protocols to byzantine fault tolerant protocols using SGX, a version of the Raft consensus algorithm implemented in SGX, an efficient method of collecting the state of a DCR graph called \textit{CheapShot} and an analysis of the synchronisation of executions in DCR graphs using minimal locking.
 		Lastly we describe a conversion of the implemented DCR graph system to a structure supporting arbitrary smart contracts rather than DCR graphs.
 	\end{abstract}
@@ -98,7 +98,8 @@
 
 \section{Introduction}
 
-	Collaboration between companies, small and large, occurs daily across vast physical distances and as part of this collaboration a trusted means of coordination is key.
+	Collaboration between companies, small and large, occurs daily across vast physical distances.
+	As part of this collaboration a trusted means of coordination is key.
 	One way to coordinate in such a setting is by using Dynamic Condition Response graphs~\cite{hildebrandt_declarative_2011}, which are workflows declaratively formulated as directed graphs.
 	DCR graphs formulate processes in terms of events and relations between those events.
 	The relations specify the order in which events can transpire, and what paths can be taken in the workflow.
@@ -106,21 +107,24 @@
 	DCR graphs provide a concise and simple way of describing workflows, as the effects of the execution of an event is explicitly defined by its relations.
 	This means that an event execution cannot have cascading effects.
 	This property of limited effects on execution means that DCR graphs allow for highly localized states and depending on how a specific DCR graph is constructed, it can therefore allow for a very high degree of concurrency in a distributed setting.
-	Central servers would be an easy solution to this problem, but would require trust and most likely payment, due to a third party being involved and managing the process.
-	An alternative to central servers is, of course, a decentralized solution, in which participants act as peers in a peer-to-peer network.
+	Central servers would be an easy way to enable a distribution of a workflow execution, but would require trust and most likely payment, due to a third party being involved and managing the process.
+
+	The alternative to central servers is a decentralized solution, in which participants act as peers in a peer-to-peer network.
 	Decentralisation brings with it a completely different set of challenges, all springing from the core necessity of distributed collaboration requiring agreement between all parties on what has transpired in the workflow.
 	This set of challenges is the problem we will present and solve during this thesis.
 
-	As DCR graphs are concerned with maintaining a consistent state, the issue of making DCR graphs distributed is closely related to that of maintaining partial state machine replications (PSMR).
-	However, the ability for DCR graphs to allow a high degree of concurrency, would be impeded by existing solutions to the distributed state machine replication (SMR) problem, due to the large number of messages required and the low degree of concurrency provided by the strict synchronization of these algorithms.
+	As DCR graphs are concerned with maintaining a consistent state across peers, the issue of making DCR graphs distributed is closely related to that of distributed replications of state machines, especially when peers can exhibit faulty behaviour.
+	However, the ability for DCR graphs to allow a high degree of concurrency, would be impeded by existing solutions to the distributed state machine replication (SMR) problem, due to the large number of messages required and the low degree of concurrency provided by the strict synchronisation of these algorithms.
+	To improve on this strict synchronisation, different parts of the state could distributed to different peers, thus allowing for synchronisation only between the parts of the state, which affect each other.
+	This is refereed to as the \textit{partial state machine replication} (PSMR) problem.
 
-	Recent technological advances in the field of \textit{Trusted Execution Environments} (TEEs), specifically \textit{Intel Software Guard Extensions} (SGX)~\cite{costan_intel_2016} have already made waves within state replication solutions~\cite{kapitza_cheapbft_2012,veronese_efficient_2013,liu_scalable_2016} and could potentially be leveraged to provide a solution to the described problem, while achieving the goals of a low number of messages and a high degree of concurrency.
-	Intel SGX provides a TEE in which arbitrary code can be run and the correct execution can be attested, by Intel, to other users also running Intel SGX.
-	In a network of untrusting peers, trust could therefore be guaranteed by Intel, which is a very strong base to build a consensus algorithm on.
-
-	Solutions to the PSMR problem, are widely sought, as there are a number of applications of state machine replication solutions where scalability of state are problematic.
+	Solutions to the PSMR problem are widely sought, as there are a number of applications of state machine replication solutions where scalability of state are problematic.
 	An example of which is the blockchain based distributed smart contract engine, Ethereum~\cite{_ethereum_2018}.
 	We therefore analyse the effects of applying our solution to the PSMR problem to an algorithm for running distributed smart contracts.
+
+	Recent technological advances in the field of \textit{Trusted Execution Environments} (TEEs), specifically \textit{Intel Software Guard Extensions} (SGX)~\cite{costan_intel_2016} have already made waves within state replication solutions~\cite{kapitza_cheapbft_2012,veronese_efficient_2013,liu_scalable_2016} and could potentially be leveraged to provide a solution to the described problem, while achieving a low number of messages and a high degree of concurrency.
+	Intel SGX provides a TEE in which arbitrary code can be run and the correct execution can be attested by Intel, to other users also running Intel SGX.
+	In a network of untrusting peers, trust could therefore be guaranteed by Intel, which is a very strong base to build a consensus algorithm on.
 
 	\noindent The contributions of this thesis are as follows:
 	\begin{itemize}
