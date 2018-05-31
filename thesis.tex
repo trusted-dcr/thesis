@@ -83,7 +83,7 @@
 	\begin{abstract}
 		In this thesis we present a solution to the problem of decentralized distributed workflow execution.
 		The presented solution utilises partial state replication of dynamic condition response (DCR) graphs to achieve execution of events with complexity less than the number of peers in the system.
-		We also explore the security and optimization options provided by recent advances in trusted execution environments (TEEs), specifically Intel Secure Guard Extensions (SGX), to achieve byzantine fault tolerance in the context of this problem.
+		We also explore the security and optimization options provided by recent advances in trusted execution environments (TEEs), specifically Intel Secure Guard Extensions (SGX), in order to achieve byzantine fault tolerance in the context of this problem.
 		The design and implementation of this system contains several new contributions: a general transformation of crash fault tolerant distributed protocols to byzantine fault tolerant protocols using SGX, an SGX implementation of the Raft consensus algorithm, an efficient method of collecting the state of a DCR graph called \textit{CheapShot}, and an analysis of the synchronisation of executions in DCR graphs using a minimal locking scheme.
 		Lastly we describe a generalisation of the implemented DCR graph system to a structure supporting arbitrary smart contracts.
 	\end{abstract}
@@ -107,9 +107,9 @@
 	DCR graphs provide a concise and simple way of describing workflows, as the effects of the execution of an event is explicitly defined by its relations.
 	This means that an event execution cannot have cascading effects.
 	This property of limited effects on execution means that DCR graphs allow for highly localized states and, depending on how a specific DCR graph is constructed, it can therefore allow for a very high degree of concurrency in a distributed setting.
-	Central servers would be an easy way to enable a distribution of a workflow execution, but would introduce a single point of failure as well as require trust and most likely payment, due to a third party being involved and managing the process.
+	Central servers would be an easy way to enable a distribution of a workflow execution, but would introduce a single point of failure as well as require trust and most likely payment, due to a third party being involved in managing the process.
 
-	The alternative to central servers is a decentralized solution, in which participants act as peers in a peer-to-peer network.
+	The alternative to a solution using a central server is a decentralized solution, in which participants act as peers in a peer-to-peer network.
 	Decentralisation brings with it a completely different set of challenges, all springing from the core necessity of distributed collaboration requiring agreement between all parties on what has transpired in the workflow.
 	This set of challenges is the problem we will present and solve during this thesis.
 
@@ -118,11 +118,11 @@
 	To improve on this strict synchronisation, different parts of the state can be distributed to different peers, thus allowing for synchronisation only between the parts of the state which affect each other.
 	This is refereed to as the \textit{partial state machine replication} (PSMR) problem.
 
-	Solutions to the PSMR problem are widely sought, as there are a number of applications of SMR solutions where scalability of state is problematic.
+	Solutions to the PSMR problem are widely sought, as there are a number of applications of SMR solutions where the scalability of state is problematic.
 	An example of this is the blockchain based distributed smart contract engine, Ethereum~\cite{_ethereum_2018}.
 	We will therefore analyse the effects of applying our solution to the PSMR problem to an algorithm for running distributed smart contracts.
 
-	Recent technological advances in the field of \textit{Trusted Execution Environments} (TEEs), specifically \textit{Intel Software Guard Extensions} (SGX)~\cite{costan_intel_2016}, have already made waves within state replication solutions~\cite{kapitza_cheapbft_2012,veronese_efficient_2013,liu_scalable_2016} and could potentially be leveraged to provide a solution to the described problem, while achieving a low number of messages and a high degree of concurrency.
+	Recent technological advances in the field of \textit{Trusted Execution Environments} (TEEs), specifically \textit{Intel Software Guard Extensions} (SGX)~\cite{costan_intel_2016}, have already made waves within state replication solutions~\cite{kapitza_cheapbft_2012,veronese_efficient_2013,liu_scalable_2016} and could potentially be leveraged to provide a solution to the described problem, efficiency in terms of required messages and a high degree of concurrency.
 	Intel SGX provides a TEE in which arbitrary code can be run and the correct execution can be attested by Intel to other users also running Intel SGX.
 	In a network of untrusting peers, trust can therefore be guaranteed by Intel, which is a very strong base to build a consensus algorithm on.
 
@@ -130,7 +130,7 @@
 	\begin{itemize}
 		\item An implementation of the Raft consensus algorithm inside of a TEE.
 		\item A thorough design of a DCR engine, with a potentially totally distributed graph state\footnote{By event.}, supporting concurrent executions only limited by the semantics of DCR.
-		Furthermore, the design accomplishes this in less than $O(n)$ messages, where $n$ is the number of peers in the network.
+		Furthermore, the design accomplishes consensus on executions in less than $O(n)$ messages, where $n$ is the number of peers in the network.
 		\item A proof-of-concept implementation of the former two.
 		\item A transformation of any crash-stop tolerant distributed protocol to a byzantine fault tolerant one, using Intel SGX.
 		\item A description of a generalised version of the DCR engine design supporting smart contracts.
@@ -141,16 +141,16 @@
 	We formulate the problem of byzantine fault tolerant PSMR with a DCR graph as the \textit{state}, and allow for peers to collect the state and change the state through the execution of DCR events.
 	In order to achieve fault tolerance, the system must distribute the DCR graphs on several peers, so that if one peer fails, other peers can take over correct execution of the DCR graph.
 	Distributing DCR graphs is not a trivial problem, as there are considerations for the distribution of that graph, especially given the goal of less than $O(n)$ messages when performing a state change.
-	The trivial solution to fault tolerance, is to make all peers responsible for the entire state of the system, but given that changes in the graph would then have to be synchronized with all peers, this would not allow for achieving concensus in less than $O(n)$ messages.
+	The trivial method of ensuring fault tolerance, is to make all peers responsible for the entire state of the system, but given that changes in the graph would then have to be synchronized with all peers, this would not allow for achieving consensus in less than $O(n)$ messages.
 	Alternatively, the DCR graph would have to be split into parts distributed among peers, but this introduces further issues as a partial state solution would need intermittent synchronization, when several actions might affect the same parts of the state.
-	As DCR graphs are primarily used in industry where documentation of workflows is a key part of DCR graphs, it is essential that any user is able to collect the entire state of a workflow at any given time.
+	As DCR graphs are primarily used in industry where the documentation of workflows is important, it is essential that any user is able to collect the entire state of a workflow at any given time.
 	Assuming a partial state solution, collecting this state is further complicated in that a coherent state would have to be pieced together from each part of the graph.
 
-	In summary, the system is described as:
+	In summary, the system should:
 	\begin{description}
-		\item[Concurrent] Allowing for a high degree of concurrency as permitted by the specific DCR graph, as shown in~\cite{debois_concurrency_2015}.
-        \item[Scalable] Achieving a successful transaction in less than $O(n)$ messages, where $n$ is the number of peers in the graph, while supporting the distribution of the state of the DCR graph among the participants.
-		\item[Byzantine fault tolerant] Functioning in the presence of malicious workflow participants and network nodes, where the only guarantees are those based on strong cryptographic security.
+		\item[Concurrent] Allow for a high degree of concurrency as permitted by DCR graphs, as shown in~\cite{debois_concurrency_2015}.
+        \item[Scalable] Achieve consensus on a state change in less than $O(n)$ messages, where $n$ is the number of peers in the graph, while supporting the distribution of the state of the DCR graph among those peers.
+		\item[Byzantine fault tolerant] Function in the presence of malicious workflow participants and network nodes, where the only guarantees are those based on strong cryptographic security.
 	\end{description}
 
 \section{Background}
