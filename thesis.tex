@@ -237,58 +237,59 @@ In order to attain a complete understanding of the problem at hand, there are th
 			\label{subsubsec:formalising-g}
 
 			After the previous definitions, we can now formalise the concept of a DCR graph $G$:
-			$G = (E, I, P, Ex, En, R)$, where
+			$G = (E,R)$, where
 			\begin{itemize}
-				\item $E$ is the set of all events,
-				\item $I \subseteq E$ is set of the included events,
-				\item $P \subseteq E$ is the set of pending events,
-				\item $Ex \subseteq E$ is the set of excluded event,
-				\item $En \subseteq E$ is the set of enabled events and
-				\item $R = \{r_1, r_2, \dots r_e\}$ is the set of relations, where each relation, $r$, has the form $r=(e_{from}, e_{to}, Type)$ and $e_{from}$ is the event for which $r$ is directed from, $e_{to}$ is the event for which $r$ is directed to, and $Type$ is one of the relation typed described in Section~\ref{subsubsec:relations}.
+				\item $E$ is the set of all events in the workflow,
+				\item $R = \{r_1, r_2, \dots r_e\}$ is the set of relations in the workflow, where each relation, $r$, has the form $r=(e_{from}, e_{to}, Type)$ and $e_{from}$ is the event $r$ is originating from, $e_{to}$ is the event $r$ is targeting, and $Type$ is one of the relation types described in Section~\ref{subsubsec:relations}.
 			\end{itemize}
 
-			If, in a given state of $G$, an event $e$ changes state or enabledness if event $e'$ is executed, we say that $e$ is in $e'$s \textit{effecting event set}, denoted $E_{eff}(G,e')$.
-			Additionally, we define a \textit{run} as a series of executions.
-			For a run to be valid, each execution must be enabled at the point of execution in the sequence.
-            We say that two runs, $R_1$ and $R_2$, on a graph, $G$, are equivalent when the results of performing $R_1$ on $G$ leads to $G'$ and performing $R_2$ on $G$ also leads to $G'$.
-            This is trivially the case for $R_1 = R_2$, but as there is a notion of concurrent executions this definition is needed, as sequences of concurrent executions can be swapped internally in a run, without the resulting graph state differing.
+			If, in a given state of $G$, an event $e'$ changes state or enabledness when event $e$ is executed, we say that $e'$ is in $e$'s \textit{effecting event set}, denoted $E_{eff}(G,e)$.
 
 			\subsubsection{Concurrency}
 			\label{subsubsec:concurrency}
 
-			The notion of concurrency in DCR graphs, described in~\cite{debois_concurrency_2015}, is the property a pair of events is said to have when the graph allows those events to be executed in either order with the same resulting state in graph.
+			The notion of concurrency in DCR graphs, described in~\cite{debois_concurrency_2015}, is the property a pair of events have when the graph allows those events to be executed in either order with the same resulting graph state.
+
 			More formally, given a graph, $G$, and two events $e_1, e_2$ in $G$, we say that $e_1$ and $e_2$ are concurrent if $E(E(G, e_1),e_2)=E(E(G, e_2),e_1)$.
-			If two events are concurrent, we say that they are independent.
-			There are two types of independence analyses relevant for this thesis:
+
+			We define a \textit{run} as a series of consecutive executions.
+			For a run to be valid, each execution must be enabled at the point of execution in the sequence.
+            We say that two runs, $R_1$ and $R_2$, on a graph, $G$, are \textit{equivalent up to concurrency} when the results of performing $R_1$ on $G$ leads to $G'$ and performing $R_2$ on $G$ also leads to $G'$.
+            If there exist a run $R$ which, when applied to a graph state $G$ results in graph state $G'$, we say that $G'$ is \textit{reachable} from $G$ via $R$.
+
+			We identify three concurrency relationships between events, and name these relationships \textit{independence relationships}, and say that the events in an independence relationship are \textit{independent}:
 			\begin{description}
-				\item[Dynamic independence] means that for two given events and their current state, are they independent.
+				\item[Dynamic independence] Two events are \textit{dynamically independent} if they are both enabled and concurrent in the current state of the graph.
 				That is, $e_1$ and $e_2$ are dynamically independent if $E(E(G, e_1),e_2)=E(E(G, e_2),e_1)$ for the current $G$.
+				Dynamic independence is essentially what we have defined as concurrency.
 
 				We say that an event, $e$, has a \textit{dynamic independence set}, $I_{dyn}(G,e)$, such that $e' \in I_{dyn}(G,e)$ iff. $e$ and $e'$ are dynamically independent in graph state $G$.
 				Likewise an event, $e$, has a \textit{dynamic dependence set}, $D_{dyn}(G,e) = E \setminus I_{dyn}(G,e)$.
 
-				\item[Static independence] means that two events, are dynamically independent in every \textit{reachable} state of the graph, where they are both enabled.
+				\item[Static independence] Two events are \textit{statically independent}, if they are dynamically independent, in every \textit{reachable} state of the graph from the initial graph state.
 				That is, $e_1$ and $e_2$ are statically independent in $G$, if they are dynamically independent in all states of $G$ that can be reached by a run.
 
 				We say that an event, $e$, has a \textit{static independence set}, $I_{stat}(e)$, such that $e' \in I_{stat}(e)$ iff. $e$ and $e'$ are statically independent.
 				Likewise an event, $e$, has a \textit{static dependence set}, $D_{stat}(e) = E \setminus I_{stat}(e)$.
-				Notice that $e$s static dependence set is the set of events that are dependent with $e$ in \textit{some} state of $G$, not all.
-				This problem is NP-hard and an approximation will have to be used instead~\cite{debois_concurrency_2015}.
+				Notice that $e$'s static dependence set is the set of events that are dependent with $e$ in \textit{some} state of $G$, not all.
+				The problem of finding all static independence sets is NP-hard in~\cite{debois_replication_2017-1} and an approximation will have to be used instead.
 			\end{description}
 
 			The approximation we use of static event independence is from~\cite{debois_concurrency_2015}, and boils down to the following principles, where we say that $e_1$ and $e_2$ are approximately statically dependent if, in any event-state permutation of $G$:
 			\begin{itemize}
-				\item $e_1$ can enable $e_2$, and vice versa.
-				\item $e_1$ can disable $e_2$, and vice versa.
-				\item $e_1$ can disable some $e$, if $e_2$ can enable it, and vice versa.
-				\item $e_1$ can exclude some $e$, if $e_2$ can include it, and vice versa.
-				\item $e_1$ can set $e_2$ to pending, unless $e_2$ sets itself to pending, and vice versa.
+				\item $e_1$ can enable $e_2$, or vice versa.
+				\item $e_1$ can disable $e_2$, or vice versa.
+				\item $e_1$ can disable some $e$, if $e_2$ can enable it, or vice versa.
+				\item $e_1$ can exclude some $e$, if $e_2$ can include it, or vice versa.
+				\item $e_1$ can set $e_2$ to pending, unless $e_2$ sets itself to pending, or vice versa.
 			\end{itemize}
-			This approximation is sound, but incomplete, which means that it contains all statically dependent event pairs, but does not guarantee that an event pair in the approximation is not statically independent.
+			This approximation is complete, but not sound, which means that it contains all statically dependent event pairs, but does not guarantee that an event pair in the approximation is not statically independent.
 			We say that an event, $e$, has an \textit{approximate static dependence set}, $D_{appr}(e)$, such that $e' \in D_{appr}(e)$ iff. $e$ and $e'$ are approximately statically dependent, according to the above approximation.
 			Likewise an event, $e$, has an \textit{approximate static independence set}, $I_{appr}(e),  = E \setminus D_{appr}(e)$.
+			Notice that the an approximate static independence set is sound but incomplete.
+
 			All the independence- and dependence sets are reflexive: $e' \in S(e) \iff e \in S(e')$, where $S$ is any of the described (in-)dependency sets.
-			Notice that in any DCR graph it must hold that $\forall G. \forall e. I_{dyn}(G,e) \geq I_{stat}(e) \geq I_{appr}(e)$, which speaks to the desirability of the different concurrency levels; a system that supports concurrent execution of dynamically independent events allows for more concurrent executions than a one that supports execution of statically independent events, which in turn allows for more concurrent executions than one that supports execution of approximate statically independent events.
+			Notice that in any DCR graph it must hold that $\forall G. \forall e. |I_{dyn}(G,e)| \geq |I_{stat}(e)| \geq |I_{appr}(e)|$, which speaks to the desirability of the different concurrency levels; a system that supports concurrent execution of dynamically independent events allows for more concurrent executions than a one that supports execution of statically independent events, which in turn allows for more concurrent executions than one that supports execution of approximate statically independent events.
 			Figure~\ref{fig:concurrency-all} shows examples of independence in DCR graphs.
 
 		\begin{figure}[!ht]
