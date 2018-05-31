@@ -155,7 +155,7 @@
 
 \section{Background}
 
-In order to attain a complete understanding of the problem at hand, there are three subject areas which need further explanation:
+In order to attain a complete understanding of the problem at hand, three subject areas need further explanation:
 \begin{description}
 	\item[DCR] which must be defined and the requirements of which must be explored, as it forms the basic limitations of a potential solution.
 	\item[Consensus] which defines the fundamental challenge of any decentralized system, in which agreement on state is needed.
@@ -165,9 +165,9 @@ In order to attain a complete understanding of the problem at hand, there are th
 	\subsection{DCR}
 	\label{subsec:dcr}
 
-	A DCR graph, $G$, is a graph representation of a workflow, made up of $v$ stateful nodes, $E=\{e_1, e_2, \dots, e_v\}, v \geq 1$, called \textit{events}, with a number of directed edges called \textit{relations} between them.
+	A DCR graph $G$, is a graph representation of a workflow, made up of $v$ stateful nodes, $E=\{e_1, e_2, \dots, e_v\}, v \geq 1$, called \textit{events}, with a number of directed edges called \textit{relations} between them.
 	The cumulated state of all the events in a graph $G$ is called the state of $G$.
-	Depending on the relations, an event, $e$, in a graph, $G$, can be \textit{executed}, which will change the state of events in $G$ according to the rules defined by $e$'s outgoing relations.
+	Depending on the relations, an event $e$, in a graph $G$, can be \textit{executed}, which will change the state of events in $G$ according to the rules defined by $e$'s outgoing relations.
 	We denote this execution $E(G,e)=G'$.
 
 			\subsubsection{Event State}
@@ -176,14 +176,14 @@ In order to attain a complete understanding of the problem at hand, there are th
 			This is an event: \ev{A}
 
 			\begin{description}
-				\item[Executed attribute] If the \textit{executed} attribute of an event is false executing the event will set its \textit{executed} attribute to true.
+				\item[Executed attribute] If the \textit{executed} attribute of an event is false, executing the event will set its \textit{executed} attribute to true.
 				Executing an already executed event will have no effect on the \textit{executed} attribute.
 				The \textit{executed} attribute is shown as a tick mark: \ev[101]{A}
-				\item[Included attribute] If the \textit{included} attribute is true, the event is said to be \textit{included}. 
+				\item[Included attribute] If the \textit{included} attribute is true, the event is said to be \textit{included}.
 				If the \textit{included} attribute of an event is false, the event is said to be \textit{excluded} and it cannot be executed.
-				The \textit{included} attribute is denoted by the outline of the event: \ev{A} when included is true and \ev[000]{A} when included is false.
-				\item[Pending attribute] If any event in a workflow has a \textit{pending} attribute which is true and that event is included, we expected further executions of events in the workflow, and say that the workflow is in an unfinished state.
-				Every time an event is executed its \textit{pending} attribute is set to false.
+				The \textit{included} attribute is denoted by the outline of the event: \ev{A} when included and \ev[000]{A} when excluded.
+				\item[Pending attribute] If any event in a workflow has a \textit{pending} attribute which is true and that event is included, we expected further executions of events in the workflow and say that the workflow is in an unfinished state.
+				Every time an event is executed, its \textit{pending} attribute is set to false.
 				This means that setting the \textit{pending} attribute of an included event to true is specifying that this event must be executed or excluded at some point to leave the workflow in a finished state.
 				The \textit{pending} attribute is shown as an exclamation point: \ev[011]{A}
 			\end{description}
@@ -1624,7 +1624,7 @@ while there are unmarked nodes do
 	\begin{figure}[t]
 		\centering
 		\includegraphics[width=\textwidth]{figures/dcr-graphs/network-stack.pdf}
-		\caption{Figure showing the components of the trusted DCR implementation. 
+		\caption{Figure showing the components of the trusted DCR implementation.
 		The rectangles are the components themselves and the lines are the channels which are used for communication between the connected components. }
 		\label{fig:network-stack}
 	\end{figure}
@@ -1731,7 +1731,7 @@ enclave {
 
 	\section{Discussion}
 
-	We will now provide some perspective on the contributions of this thesis in relation to other solutions and the considerations of the solution presented here.	
+	We will now provide some perspective on the contributions of this thesis in relation to other solutions and the considerations of the solution presented here.
 
     \subsection{Security of SGX}
 
@@ -1762,21 +1762,21 @@ enclave {
     \cite{costan_intel_2016} also identifies a vulnerability in utilising hyper-threading to snoop instructions run by the enclave process. A snooping process sharing physical core with an enclave can use performance counters to determine which instructions the out-of-order scheduler is able to run in parallel with the enclave.
 	The presence of these attacks means that enclaves using data-dependent memory access will likely not ensure confidentiality.
 
-	Lastly, it is shown in~\cite{chen_sgxpectre_2018} that SGX is vulnerable to a variant of the infamous \textit{Spectre} vulnerability. 
+	Lastly, it is shown in~\cite{chen_sgxpectre_2018} that SGX is vulnerable to a variant of the infamous \textit{Spectre} vulnerability.
 	The Spectre vulnerability on SGX, so-called \textit{SgxPectre}, can be exploited by utilising out-of-order execution to influencing branch prediction and force an enclave process to load confidential data into the cache.
-	The changes in the cache can then be read, so by flushing the cache with known data before-hand, an adversary knows exactly the data that has been loaded into the cache. 
+	The changes in the cache can then be read, so by flushing the cache with known data before-hand, an adversary knows exactly the data that has been loaded into the cache.
 
 	Notice that all of these attacks requires physical access to the device running, and therefore does not at first glance seem overly dangerous for our system.
-	However, our SGX transformation uses a symmetric key for the MAC'ing of our messages, as described in Section~\ref{sec:transforming-byzantine-faults}. 
+	However, our SGX transformation uses a symmetric key for the MAC'ing of our messages, as described in Section~\ref{sec:transforming-byzantine-faults}.
 	As such the same secret is shared between all of the processes running in our system, and an adversary needs only access to any one of them, to gain access to the key.
 	But since any process running the enclave on a SGX enabled device can be provisioned with the shared secret through remote attestation, this means that an adversary only needs access to any SGX enabled device and the correct enclave, to potentially gain access to the shared secret.
 	This is of course a serious security concern, as access to the shared secret enables an adversary to introduce byzantine failures, by sending inconsistent messages while impersonating any process.
-	And since the underlying Raft algorithm is not byzantine fault safe, the system would begin to exhibit undocumented behaviour. 
+	And since the underlying Raft algorithm is not byzantine fault safe, the system would begin to exhibit undocumented behaviour.
 
 	To solve this problem, we could introduce authentication in the remote attestation protocol, so that only participants in the workflow would be attested.
 	However, this would not protect against a malicious participant, who could control the workflow by impersonating leader processes.
 
-	Another solution is to remotely attest each message, i.e. requiring that each message is verified as being correct by a remote attestation service, which will then sign the message for the process. 
+	Another solution is to remotely attest each message, i.e. requiring that each message is verified as being correct by a remote attestation service, which will then sign the message for the process.
 	This solution is essentially a central server solution, and would introduce a single point of failure as well as the remote attestation server as a bottleneck of messages.
 
 	In conclusion, we have not identified a simple solution to these vulnerabilities, and advise against using the system for security critical workflows until the aforementioned vulnerabilities have been addressed and secured by Intel.
@@ -1787,8 +1787,8 @@ enclave {
    	This allows for high scalability, in that we can execute events in $O(m \cdot E_{eff}(G,e) + 1)$ messages, where $m$ is size of the clusters.
    	It will trivially be true that $n \geq m \cdot E_{eff}(G,e) + 1$, and for some graphs $n > m \cdot E_{eff}(G,e) + 1$, as described in Section~\ref{subsubsec:concurrency} and~\ref{sec:analysis}.
 
-    An argument could be made that reducing $n$ in an SMR approach can achieve the exact same message complexity and fault tolerance, since the relationship between scalability and fault tolerance is highly interdependent in these approaches. 
-    To show this relationship, lets look at an example with $3$ statically independent events and $15$ peers in the network. 
+    An argument could be made that reducing $n$ in an SMR approach can achieve the exact same message complexity and fault tolerance, since the relationship between scalability and fault tolerance is highly interdependent in these approaches.
+    To show this relationship, lets look at an example with $3$ statically independent events and $15$ peers in the network.
     In an SMR protocol, where all peers share the entirety of the state, and which achieves consensus in $O(n)$ messages under no faults, and has a fault tolerance of $f = \lfloor \frac{n-1}{2} \rfloor$, we can achieve an execution of an event in $k \cdot 15$ messages, where $k$ is some constant, with a fault tolerance of $7$.
     Our solution, where we distribute the state evenly in clusters (in this case $5$ peers per cluster), commits an execution in the system in $k \cdot 5$ messages with a fault tolerance of $2$.
     However, if we reduce the peer size in the SMR to $5$, we achieve exactly the same properties in terms required messages and fault tolerance, which begs the question of what properties we have actually achieved by the distribution of the workflow.
@@ -1799,12 +1799,12 @@ enclave {
 	    In a high intensity workflow, with many concurrent event executions, an SMR solution would be bounded by the leader's network and computational capacity.
 	    In our solution, the concurrent executions are performed on different leaders with no intercommunication, and thus we are instead bounded by the cumulated capacity all leaders.
     	\item A faulty cluster at most affect liveness of the clusters holding $D_{stat}(e)$, not the entire workflow.
-	    If a cluster experiences $f+1$ crashes, liveness can no longer be guaranteed. 
-	    However, a cluster with no liveness does not necessarily completely halt execution of the workflow, as all clusters for the events in $I_{stat}(e)$ can never be affected by $e$. 
+	    If a cluster experiences $f+1$ crashes, liveness can no longer be guaranteed.
+	    However, a cluster with no liveness does not necessarily completely halt execution of the workflow, as all clusters for the events in $I_{stat}(e)$ can never be affected by $e$.
     	\item A peer need only store part of the workflow, not the entire workflow.
     	Any peer in the cluster responsible for $e$ need only store the state of $e$ and the executions that effect $e$, which is bounded by $N(N(e)) \cup N(e) \cup e$, where $N$ denotes the neighbourhood.
     	\item In a comparison between our solution and an SMR solution with a fixed number of peers, the former achieves superior message complexity.
-    	Lastly, in a setting where the number of peers are given, for instance due to hardware or legal restraints, we gain a better message complexity than SMR, at the expense of a lower fault tolerance. 
+    	Lastly, in a setting where the number of peers are given, for instance due to hardware or legal restraints, we gain a better message complexity than SMR, at the expense of a lower fault tolerance.
     \end{itemize}
 
     \subsection{Comparisons}
