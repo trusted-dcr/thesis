@@ -1974,14 +1974,16 @@ function leader_recv()
 function leader_accept($m, p_s$)
   if verify_term($m, p_s$) match $m$ with
   // client commands
-  | $\MSG{\REQ\COMMAND, tag, event, \_}$ when $\exists l \in log, l_{(tag)} = tag \land l_{(event)}=event \land l_{(index)} \le commit_i$ $\longrightarrow$
+  | $\MSG{\REQ\COMMAND, tag, event, \_}$ when $\exists l \in log, l_{(tag)} = tag \land l_{(event)}=event$
+                          $\land l_{(index)} \le commit_i$ $\longrightarrow$
     send $\MSG{\RSP\COMMAND, tag, true, p_{self}}$ to $p_s$
     leader_recv()
 
   | $\MSG{\REQ\COMMAND, tag, event, type}$ $\longrightarrow$
-    $entry \leftarrow (tag, term, index, event, type)$
+    $entry \leftarrow (tag, term, |log|-1, event, type)$
     $log \leftarrow$ append($log, entry$)
-    broadcast $\MSG{\REQ\APPEND, last\_entry()_{(term)}, last\_entry()_{(index)}, commit_i, \{entry\}}$
+    $l \leftarrow $last_entry()
+    broadcast $\MSG{\REQ\APPEND, l_{(term)}, l_{(index)}, commit_i, \{entry\}}$
     $\tau \leftarrow$now()$+ \Delta_{heartbeat}$
     leader_recv()
 
@@ -2029,7 +2031,8 @@ function candidate_accept($m, p_s$)
     $votes_{election} \leftarrow votes_{election} + 1$
     if $votes_{election} > n/2$
       // help prevent further timeouts
-      broadcast $\MSG{\REQ\APPEND, term, last\_entry()_{(term)}, last\_entry()_{(index)}, commit_i, []}$
+      $l \leftarrow $last_entry()
+      broadcast $\MSG{\REQ\APPEND, term, l_{(term)}, l_{(index)}, commit_i, []}$
       leader_recv()
     else
       candidate_recv()
@@ -2051,7 +2054,8 @@ function follower_accept($m, p_s$)
 
   if verify_term($m, p_s$) match $m$ with
   // prev entry not in log
-  | $\MSG{\REQ\APPEND, \_, prev_t, prev_i, \_, \_}$ when $\nexists l \in log, l_{(term)} = prev_t \land l_{(index)} = prev_i$ $\longrightarrow$
+  | $\MSG{\REQ\APPEND, \_, prev_t, prev_i, \_, \_}$ when $\nexists l \in log, l_{(term)} = prev_t$
+                             $\land l_{(index)} = prev_i$ $\longrightarrow$
     send $\MSG{\RSP\APPEND, term, prev_t, prev_i, false,-1}$ to $p_s$
     follower_recv()
 
@@ -2067,8 +2071,9 @@ function follower_accept($m, p_s$)
 
   // another follower polls before becoming candidate
   // but follower has out-of-date log
-  // or we have communicated with the leader within min timeout
-  | $\MSG{\REQ\POLL, \_, last_t, last_i}$ when $\exists l \in log, l_{(term)} > last_t \lor l_{(term)} = last_t \land l_{(index)} > last_i$
+  // or we communicated with the leader within min timeout
+  | $\MSG{\REQ\POLL, \_, last_t, last_i}$ when $\exists l \in log, l_{(term)} > last_t \lor l_{(term)} = last_t$
+                        $\land l_{(index)} > last_i$
   | $\MSG{\REQ\POLL, \_, \_, \_}$ when now()$< \tau_{min}$ $\longrightarrow$
     send $\MSG{\RSP\POLL, term, false}$ to $p_s$
     follower_recv()
@@ -2092,7 +2097,8 @@ function follower_accept($m, p_s$)
   // we already voted in this term
   // or candidate has out-of-date log
   | $\MSG{\REQ\ELECTION, \_, last_t, last_i}$ when $endorsement \ne nil$
-  | $\MSG{\REQ\ELECTION, \_, last_t, last_i}$ when $\exists l \in log, l_{(term)} > last_t \lor l_{(term)} = last_t \land l_{(index)} > last_i$
+  | $\MSG{\REQ\ELECTION, \_, last_t, last_i}$ when $\exists l \in log, l_{(term)} > last_t \lor l_{(term)} = last_t$
+                           $\land l_{(index)} > last_i$
     send $\MSG{\RSP\ELECTION, term, false}$ to $p_s$
     follower_recv()
 
