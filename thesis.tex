@@ -138,8 +138,8 @@
 
 	\subsection{Problem}
 
-	We formulate the problem of byzantine fault tolerant PSMR with DCR graphs as the \textit{state}, and allow for peers to collect the state and change the state through the execution of DCR events.
-	In order to achieve fault tolerance, the system must distribute the DCR graphs on several peers.
+	We formulate the problem of byzantine fault tolerant PSMR with a DCR graph as the \textit{state}, and allow for peers to collect the state and change the state through the execution of DCR events.
+	In order to achieve fault tolerance, the system must distribute the DCR graphs on several peers, so that if one peer fails, other peers can take over correct execution of the DCR graph.
 	Distributing DCR graphs is not a trivial problem, as there are considerations for the distribution of that graph, especially given the goal of less than $O(n)$ messages when performing a state change.
 	The trivial solution to fault tolerance, is to make all peers responsible for the entire state of the system, but given that changes in the graph would then have to be synchronized with all peers, this would not allow for achieving concensus in less than $O(n)$ messages.
 	Alternatively, the DCR graph would have to be split into parts distributed among peers, but this introduces further issues as a partial state solution would need intermittent synchronization, when several actions might affect the same parts of the state.
@@ -149,7 +149,7 @@
 	In summary, the system is described as:
 	\begin{description}
 		\item[Concurrent] Allowing for a high degree of concurrency as permitted by the specific DCR graph, as shown in~\cite{debois_concurrency_2015}.
-        \item[Scalable] Achieving consensus in less than $O(n)$ messages, where $n$ is the number of peers in the graph, while supporting the distribution of the state of the DCR graph among the participants.
+        \item[Scalable] Achieving a successful transaction in less than $O(n)$ messages, where $n$ is the number of peers in the graph, while supporting the distribution of the state of the DCR graph among the participants.
 		\item[Byzantine fault tolerant] Functioning in the presence of malicious workflow participants and network nodes, where the only guarantees are those based on strong cryptographic security.
 	\end{description}
 
