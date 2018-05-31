@@ -837,7 +837,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	With a better understanding of the prerequisite information, we now present a more thorough definition of the problem.
 
 	We define our system as having $n$ peers $\{p_1, p_2 \dots p_n\}$, and a DCR graph $G$, which consists of $v$ events $E = \{e_1, e_2, \dots, e_v\}$.
-	Each peer is said to be responsible for one or more events, where responsibility for an event, $e$, means that requests for executions of $e$ and requests for the state of $e$ can be handled by that peer.
+	Each peer is said to be responsible for one or more events, where being responsible for an event, $e$, means that requests for executions of $e$ and requests for the state of $e$ can be handled by that peer.
 	Furthermore the system must have the following properties:
 	\begin{description}
 		\item[Safety] all peers responsible for $e$ execute the requests on $e$ in the same order.
@@ -853,7 +853,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
     \end{description}
 
 	 Additionally, any peer should be able to collect the run, $R$, which is compatible with all prior collected runs, meaning that a run collected at logical time $t$, must be prefixed by the run collected at time $t-1$\footnote{Up to concurrency, as defined in~\ref{subsubsec:concurrency}.}.
-     Note that from this, it follows that two runs collected at time $t$, are not required to be identical, but are required to be \textit{equivalent}.
+     Note that from this, it follows that two runs collected at time $t$, are not required to be identical, but are required to be \textit{equivalent}, meaning that they result in the same graph state.
      Since the peers responsible for each event can always be required to store executions which it has \textit{observed} and include it alongside the state of the event, we assume that collecting a run will always be possible, as long as maintaining the state of the graph is and therefore disregard it at this point in the analysis.
 
 	\begin{landscape}
@@ -877,7 +877,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	\end{landscape}
 
 	We consider several possible approaches to solving this problem, the performance of which can be seen in Table~\ref{tab:approach-comparison}.
-	The following is a short summary of each approach starting at the most intuitive and followed by improvements on it, in iterations:
+	The following is a short summary of each approach starting at the most intuitive and followed by iterative improvements on it:
 
     \FloatBarrier
     \begin{figure}[ht!]
@@ -897,13 +897,13 @@ In order to attain a complete understanding of the problem at hand, three subjec
     An example of the simultaneous execution of two events, $A$ and $B$, are shown in Figure~\ref{fig:central-server-approach}.
 	There is a single leader, $L$, each of the other peers replicate some subset of $E$ and can redirect requests to the leader.
 	When the leader receives a request, it is queued in the order they are received in, and applied to $G$ in that order.
-	After an execution of an event $e$, each of the peers replicating $e$ or an event in $E_{eff}(G,e)$ is informed by $L$ of that execution, with a monotonic counter value that enables ordering of the events' execution.
+	After the execution of an event $e$, each of the peers replicating $e$ or an event in $E_{eff}(G,e)$ are informed by $L$ of that execution, with a monotonic counter value that enables ordering of the execution of the events.
 	This ensures safety, since each of the peers will apply the executions in the same order as $L$.
-	Since every request is managed by a single leader, we are automatically given DCR linearisability, since the executions can be totally ordered.
-	However, this solution does not ensure any concurrency, since $L$ needs to apply each previous execution before the next.
-	If some concurrency is desired, $L$ can execute requests in parallel, while keeping track of current executions.
+	Since every request is managed by a single leader, we are automatically given DCR linearisability, since the executions are totally ordered.
+	However, this solution does not ensure concurrency, since $L$ needs to apply each previous execution before the next.
+	If concurrency is desired, $L$ can execute requests in parallel, while keeping track of current executions.
 	When an execution request is received of an event that is dynamically dependent on one of the currently executing events, it is queued, and so is all other requests that are not in the approximate static independence set of all the currently executing and queued events.
-	Furthermore, there is no fault tolerance because under a leader crash, there is no guarantee that the remaining peers can recreate the last state.
+	Furthermore, there is no fault tolerance because under a leader crash, there is no guarantee that the remaining peers can recreate the most recent state.
 
     \FloatBarrier
     \begin{figure}[ht!]
@@ -917,13 +917,13 @@ In order to attain a complete understanding of the problem at hand, three subjec
 
 	\paragraph{SMR approach}
 	The next approach tries to improve on the fault tolerance of the central server approach.
-    An example of the simultaneous execution of two events, $A$ and $B$, are shown in Figure~\ref{fig:smr-approach}.
+    An example of the simultaneous execution of two events, $A$ and $B$, is shown in Figure~\ref{fig:smr-approach}.
 	This is a classic SMR/consensus solution with crash fault tolerance.
-	There are several protocols that solve the issue of SMR, for instance in~\cite{bracha_asynchronous_1985,lamport_part-time_1998,lamport_lower_2006,ongaro_search_2014}, but as they are largely interchangeable with regards to performance\footnote{With regards to the categories specified in the Table~\ref{tab:approach-comparison}.}, we assume the existence of a solution that utilizes a leader, $L$, to achieve an optimal crash fault tolerance of $f = \lfloor \frac{(n-1)}{2} \rfloor$ is enough. %Hvad skete der med "parametric"?
+	There are several protocols that solve the issue of SMR, for instance in~\cite{bracha_asynchronous_1985,lamport_part-time_1998,lamport_lower_2006,ongaro_search_2014}, but as they are largely interchangeable with regards to performance\footnote{With regards to the categories specified in the Table~\ref{tab:approach-comparison}.}, we assume the existence of a solution that utilizes a leader, $L$, to achieve an optimal crash fault tolerance of $f = \lfloor \frac{(n-1)}{2} \rfloor$ is enough.
 
 	In this approach, every peer must replicate all events, as all executions must be committed to at least $f+1$ replicas.
 	This ensures that if a leader dies, a new leader can be chosen (using $O(n)$ messages), which gives us the aforementioned fault tolerance.
-	However, now $L$ must synchronise all requests, to ensure that they are applied in the same order by all replicas, which translates to no DCR concurrency.
+	However, now $L$ must synchronise all requests, to ensure that they are applied in the same order by all replicas, which translates to no concurrency in executions.
 	Some SMR protocols (e.g.~\cite{castro_practical_1999}) allow for concurrent request commits, under the constraint that requests that are committed must not be applied to the underlying state machine before any uncommitted request that happened-before~\cite{lamport_time_1978} on $L$.
 	In order to allow for the concurrent execution of dynamically independent events, this constraint could be relaxed to allow for applying the execution of $e$ when the request has committed, if the peer is aware of which events is in the previous uncommitted execution requests, and none of these events are in $D_{dyn}(e)$.
 	Because the peer needs to know the previous uncommitted requests, this results in worse concurrency than dynamic independence.
@@ -942,18 +942,18 @@ In order to attain a complete understanding of the problem at hand, three subjec
 
 	\paragraph{Partial state, single leader approach}
 	The next approach is an attempt to reduce the amount of messages needed for executing an event.
-    An example of the simultaneous execution of two events, $A$ and $B$, are shown in Figure~\ref{fig:partial-state-single-leader-approach}.
+    An example of the simultaneous execution of two events, $A$ and $B$, is shown in Figure~\ref{fig:partial-state-single-leader-approach}.
 	The basic idea is to distribute the event responsibility out to a subset of peers, which will then only be responsible for that event.
 	We name these subsets \textit{clusters} and denote the size of these clusters $m$.
 	The system still utilizes a single leader, which synchronises the requests.
 	When event $e$ is requested executed, the leader runs an SMR algorithm similar to the one described in the SMR approach, but only with the cluster for $e$, and the clusters of $E_{eff}(G,e)$ | to ensure that the clusters of $E_{eff}(G,e)$ has updated the state/enabledness of the events they are responsible for.
-	This ensures a lesser message complexity than SMR approach, given $n > m \cdot (|E_{eff}(G,e)|+1)$ where $n$ is the number of peers in the system.
+	This ensures a lower message complexity than the SMR approach, given $n > m \cdot (|E_{eff}(G,e)|+1)$ where $n$ is the number of peers in the system.
 	Notice that $\forall e. n = m \cdot v \geq m \cdot (|E_{eff}(G,e)|+1))$ where $v$ is the number of events in the graph.
-	And for graphs where $\nexists e. N(N(e)) = E$, i.e. no events has all events within its neighbourhood's neighbourhood's, $\forall e. n > m \cdot (|E_{eff}(G,e)|+1))$, since no event can then affect state or enabledness of all other events as described in Section~\ref{subsubsec:concurrency}.
+	And for graphs where $\nexists e. N(N(e)) = E$, i.e. no events has all events within the neighbourhood of its neighbourhood, $\forall e. n > m \cdot (|E_{eff}(G,e)|+1))$, since no event can then affect state or enabledness of all other events as described in Section~\ref{subsubsec:concurrency}.
 	Another improvement is the fact that if more than half of a cluster crashes, only part of the availability is affected, since the statically independent clusters can continue operating normally.
 	However, $L$ must still synchronise all requests, and worse, cannot allow for concurrent request commits, since the peers would not necessarily be able to recreate the synchronisation between these.
 	The one exception is dynamically independent events, since the ordering of the execution of these does not matter.
-	Under leader crashes, all clusters need to synchronise their logs, which requires $O(n^2)$ messages.
+	Under leader crashes, all clusters need to synchronise their logs, which would require $O(n^2)$ messages.
 
     \FloatBarrier
     \begin{figure}[ht!]
@@ -968,11 +968,11 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	\paragraph{Complete distribution approach}
 	The next approach is heavily inspired by~\cite{hildebrandt_safe_2011}.
     An example showing the execution of an event is shown in Figure~\ref{fig:complete-distribution-approach}.
-	In it $n = v$, and each peer has responsibility for only a single event.
+	In it $n = v$, and each peer is only responsible for a single event.
 	There is no leader, and an execution is done through synchronisation between peers.
-	I.e. if event $e$ is to be executed, the responsible peer will use a synchronisation technique (e.g. 2 phase locking) with all the peers responsible for the events in $E_{eff}(G,e)$, who will update their state accordingly.
+	If event $e$ is to be executed, the responsible peer will use a synchronisation technique (e.g. 2 phase locking) with all the peers responsible for the events in $E_{eff}(G,e)$, who will update their state accordingly.
 	This guarantees DCR linearisability.
-	The fault tolerance of this approach is quite bad, as any peer crashing will result in a data loss, and effect availability, even though it has the same property as the partial state, single leader approach of not effecting the events in $I_{stat}\{e\}$
+	The fault tolerance of this approach is quite bad, as any peer crashing will result in a data loss, and effect availability, even though it has the same property as the partial state, single leader approach of not effecting the events in $I_{stat}\{e\}$.
 
     \FloatBarrier
     \begin{figure}[ht!]
