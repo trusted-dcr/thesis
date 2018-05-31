@@ -27,10 +27,6 @@
 \include{dcr-preamble}
 \include{msg-preamble}
 
-\title{DCR/TEE \\
-\large Working subtitle in a trusted execution environment}
-\author{Mikkel Gaub \and Malthe Ettrup Kirkbro \and Mads Frederik Madsen}
-
 \newcommand\cpp{C\nolinebreak[4]\hspace{-.05em}\raisebox{.4ex}{\relsize{-1}{\textbf{++}}}}
 
 \DeclareFloatingEnvironment[
@@ -65,10 +61,24 @@
 \sloppy
 
 \begin{titlepage}
-	\maketitle
+	\centering {\huge Trusted DCR: Distributed workflow management in a byzantine setting}
+
+	\vspace{1.5cm}
+
+	{\large Mikkel Gaub \\ Malthe Ettrup Kirkbo \\ Mads Frederik Madsen}
+
+	\vspace{0.5cm}
+
+	\today
+
 	\pagenumbering{gobble}
 
 	\vspace{\fill}
+
+	{\large Supervisor: Søren Debois}
+
+	\vspace{0.5cm}
+
 	\begin{abstract}
 		In this thesis the security and optimization options provided by recent advances in trusted execution environments (TEE), specifically Intel Secure Guard Extensions (SGX), are explored in relation to the problem of decentralized partial state replication of dynamic condition response (DCR) graphs.
 		The design and implementation of this system contains several new contributions | a general proof for the transformation of byzantine faults to crashes using SGX for any distributed system, an SGX'ified version of the Raft consensus algorithm, an efficient method of collecting the state of a DCR graph called \textit{CheapShot} and an analysis of ordering executions in DCR graphs using minimal locking.
