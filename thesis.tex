@@ -311,12 +311,12 @@ In order to attain a complete understanding of the problem at hand, three subjec
 		\label{subsec:consensus}
 
 		Consensus is the problem of achieving agreement between the processes in a distributed system.
-		It is central to the problem of distributed DCR, as agreement on the states of events must be achieved to ensure that all correct peers adhere to the semantics of the DCR graph.
+		It is central to the problem of decentralised DCR, as agreement on the states of events must be achieved to ensure that all correct peers adhere to the semantics of the DCR graph.
 
-		Consider a simple graph: $\ev{A} \crel \ev{B}$, and let a subset of peers, $ps_1$, be responsible for the state of $\ev{A}$, and a subset of peers, $ps_2$, be responsible for the state of $\ev{B}$.
+		Consider a simple graph: $\ev{A} \crel \ev{B}$, and let a subset of peers, $ps_1$, store the state of $\ev{A}$, and a subset of peers, $ps_2$, store the state of $\ev{B}$.
 		If agreement on the state of $\ev{A}$ is not guaranteed, then $ps_2$ might, in the belief that $\ev{A}$ is executed, execute $\ev{B}$ even though $ps_1$ has never executed $\ev{A}$.
 
-		A consensus protocol is formally a protocol with $N$ processes ($p_0, p_1, \dots, p_{N-1}$), where each process $p_i$ begins in an undecided state, and proposes a single value $v_i$ from a set of values $D$. The processes then communicate their values to each other, and each process sets a decision variable $d_i$ and enters a decided state.
+		A consensus protocol is formally a protocol with $n$ processes ($p_0, p_1, \dots, p_{n-1}$), where each process $p_i$ begins in an undecided state, and proposes a single value $v_i$ from a set of values $D$. The processes then communicate their values to each other, and each process sets a decision variable $d_i$ and enters a decided state.
 		For the protocol to solve the consensus problem, the following requirements should hold for every execution:
 		\begin{description}
 			\item[Termination] every process eventually sets its decision variable.
@@ -333,14 +333,15 @@ In order to attain a complete understanding of the problem at hand, three subjec
 			\item Each process recalculates $D$ to reflect the new global state, and repeats the protocol until the workflow has been completed.
 		\end{itemize}
 
-		In the famous FLP impossibility result from 1985~\cite{fischer_impossibility_1985}, it was shown that non-termination was possible in all consensus protocol systems with asynchronous communication channels and at least one faulty process.
-		In order to circumvent this impossibility, the guarantees of a fault-tolerant system that utilizes a consensus protocol are relaxed, for instance by guaranteeing termination only when no faults are present, as is the case in the Paxos protocol~\cite{lamport_part-time_1998}.
+		In the famous FLP impossibility result from 1985~\cite{fischer_impossibility_1985}, it was shown that no consensus protocol could have termination, agreement and validity.
+		The proof essentially boils down to showing that that non-termination is possible in all consensus protocol systems with asynchronous communication channels and at least one faulty process.
+		In order to circumvent this impossibility, the guarantees of a fault-tolerant system that utilizes a consensus protocol must be relaxed, for instance by guaranteeing termination only when no faults are present, as is the case in the Paxos protocol~\cite{lamport_part-time_1998}.
 
 		\subsubsection{State Machine Replication}
 
 		One problem that relates directly to consensus, is \textit{State Machine Replication}~\cite{schneider_implementing_1990} (SMR).
 		SMR is the problem of replicating the state of a system on several nodes, called \textit{replicas}.
-		On each Replica an instance of the same state machine is running, and must take requests and pass them on to the state machine.
+		On each Replica, an instance of the same state machine is running, and must take requests and pass them on to the state machine.
 		In SMR systems, \textit{clients} send requests to the replicas who must then guarantee:
 		\begin{description}
 			\item[Safety] all non-faulty replicas execute the requests in the same order.
@@ -349,18 +350,18 @@ In order to attain a complete understanding of the problem at hand, three subjec
 		The state machine replication problem is equivalent to the consensus problem and provides the same guarantees~\cite{schneider_implementing_1990}, since a solution to SMR is consensus on the state of a request log.
 		This is evident in the fact that the safety requirement is essentially an aggregation of the agreement and validity requirements in consensus, while the liveness property is equivalent to termination.
 		As such, FLP impossibility entails that one of the requirements must be relaxed in fault tolerant SMR systems.
-		This is often done by only guaranteeing liveness when no failures are present.
+		This is often done by only guaranteeing liveness when no failures are present~\cite{chandra_unreliable_1996,lamport_part-time_1998,castro_practical_1999,kotla_zyzzyva_2007}.
 
 		A version of SMR deals with byzantine faults, rather than crash failures.
-		These systems are knowns as \textit{byzantine fault tolerant} (BFT) systems.
+		These systems are knowns as \textit{byzantine fault tolerant} (BFT) systems~\cite{castro_practical_1999,correia_byzantine_2011,veronese_efficient_2013,liu_scalable_2016}.
 		These systems deal with arbitrary faults, meaning arbitrary behaviour of faulty processes and channels, including modified messages, new messages and changes in local state.
-		It has been shown that $2f+1$ processes are necessary and sufficient to solve SMR with relaxed liveness if faulty processes only exhibit crashes~\cite{bracha_asynchronous_1985}.
+		It has been shown that $2f+1$\footnote{Reads as $n=2f+1$, where $n$ is the number of processes, and $f$ is the number of recoverable faults} processes are necessary and sufficient to solve SMR with relaxed liveness if faulty processes only exhibit crashes~\cite{bracha_asynchronous_1985}.
 		Similarly it has been shown that $3f+1$ processes are necessary and sufficient to solve SMR with relaxed liveness if faulty processes can exhibit byzantine faults~\cite{bracha_asynchronous_1985,pease_reaching_1980}.
-		Recent advances have been made in BFT-algorithms, which increase fault tolerance from $3f+1$ to $2f+1$ by utilizing TEE features~\cite{liu_scalable_2016,kapitza_cheapbft_2012,veronese_efficient_2013}.
+		However, recent advances have been made in BFT-algorithms, which increase fault tolerance from $3f+1$ to $2f+1$ by utilizing TEE features~\cite{liu_scalable_2016,kapitza_cheapbft_2012,veronese_efficient_2013}.
 
 		SMR brings with it the taxing job of pushing each update to all nodes in the network, which leads to obvious scalability issues in large networks.
 		One solution to that problem is delegating the responsibility of segments of data to each node in the network.
-		This is called \textit{Partial State Machine Replication} (PSMR).
+		This is called \textit{Partial State Machine Replication} (PSMR)~\cite{sousa_partial_2001}.
 		Since the state in PSMR is divided into parts, it is possible for multiple leaders to be active concurrently, as opposed to traditional SMR implementations, that have a single leader at any given time.
 		Having multiple leaders means that the availability of the system is much greater, as a single node does not have to process all requests.
 		High concurrency and performance also follows from the partial states reducing the number of nodes which have to be notified of a state change leading to both fewer messages and less chance of two state changes overlapping, requiring ordering.
@@ -375,7 +376,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 		Intel guarantees that any code run within an enclave, and any data loaded into an enclave, is protected from access by any process running outside of that enclave~\cite{intel_sgx}.
 		More specifically, the guarantees encompass \textit{confidentiality}, as only the process running in the enclave can read the contents of the enclave, and \textit{integrity}, as only the process running in the enclave can modify the contents of the enclave.
 		These guarantees of the enclave comes at the expense of direct access to system calls, and by extension drives, network cards and all hardware components other than the processor it runs on.
-		In order to access any of these, an enclave therefore needs a so-called \textit{wrapper component} which is a non-enclave process that make calls to, and receive calls from enclave processes.
+		In order to access any of these, an enclave therefore needs a so-called \textit{wrapper component} which is a non-enclave block of memory that the process can make calls to, and receive calls from.
 
 		This is all made possible by a set of unique keys generated during manufacturing and permanently stored inside the so-called \textit{fuse array} of the processor | an array of fuses that can be programmed once and then protected from further manipulation~\cite{robson_electrically_2007}.
 		Using these keys, an enclave process is able to identify if another process is an enclave process, using the process of \textit{local attestation}.
