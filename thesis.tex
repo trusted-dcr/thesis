@@ -81,11 +81,11 @@
 	\vspace{0.5cm}
 
 	\begin{abstract}
-		In this thesis we present a solution to the problem of decentralized distributed workflow execution. 
-		The presented solution utilises partial state replication of dynamic condition response (DCR) graphs to achieve execution of events in less than the number of peers in the system.
+		In this thesis we present a solution to the problem of decentralized distributed workflow execution.
+		The presented solution utilises partial state replication of dynamic condition response (DCR) graphs to achieve execution of events with complexity less than the number of peers in the system.
 		We also explore the security and optimization options provided by recent advances in trusted execution environments (TEEs), specifically Intel Secure Guard Extensions (SGX), to achieve byzantine fault tolerance in the context of this problem.
-		The design and implementation of this system contains several new contributions: a general transformation of crash fault tolerant distributed protocols to byzantine fault tolerant protocols using SGX, a version of the Raft consensus algorithm implemented in SGX, an efficient method of collecting the state of a DCR graph called \textit{CheapShot} and an analysis of the synchronisation of executions in DCR graphs using minimal locking.
-		Lastly we describe a conversion of the implemented DCR graph system to a structure supporting arbitrary smart contracts rather than DCR graphs.
+		The design and implementation of this system contains several new contributions: a general transformation of crash fault tolerant distributed protocols to byzantine fault tolerant protocols using SGX, an SGX implementation of the Raft consensus algorithm, an efficient method of collecting the state of a DCR graph called \textit{CheapShot}, and an analysis of the synchronisation of executions in DCR graphs using a minimal locking scheme.
+		Lastly we describe a generalisation of the implemented DCR graph system to a structure supporting arbitrary smart contracts.
 	\end{abstract}
 \end{titlepage}
 
@@ -1736,24 +1736,24 @@ enclave {
     \cite{costan_intel_2016} also identifies a vulnerability in utilising hyper-threading to snoop instructions run by the enclave process. A snooping process sharing physical core with an enclave can use performance counters to determine which instructions the out-of-order scheduler is able to run in parallel with the enclave.
 	The presence of these attacks means that enclaves using data-dependent memory access will likely not ensure confidentiality.
 
-	Lastly, it is shown in~\cite{chen_sgxpectre_2018} that SGX is vulnerable to a variant of the infamous \textit{Spectre} vulnerability. 
+	Lastly, it is shown in~\cite{chen_sgxpectre_2018} that SGX is vulnerable to a variant of the infamous \textit{Spectre} vulnerability.
 	Very abstractly, the so-called \textit{SgxPectre}, attack utilises out-of-order execution, by influencing branch prediction, to force an enclave process to load confidential data into the cache.
-	The changes in the cache can then be observed, so by flushing the cache with known data before-hand, an adversary knows exactly the data that has been loaded into the cache. 
+	The changes in the cache can then be observed, so by flushing the cache with known data before-hand, an adversary knows exactly the data that has been loaded into the cache.
 
 	Notice that all of these attacks requires physical access to the device running, and therefore does not at first glance seem overly dangerous for our system.
-	However, our SGX transformation use a symmetric key for the MACing of our messages in Section~\ref{sec:transforming-byzantine-faults}. 
+	However, our SGX transformation use a symmetric key for the MACing of our messages in Section~\ref{sec:transforming-byzantine-faults}.
 	As such the same secret is shared between all of the processes running in our system, and an adversary needs only access to any one of them, to gain access to the key.
 	But since any process running the enclave on a SGX enabled device can be provisioned with the shared secret through remote attestation, which means that an adversary only needs access to any SGX enabled device and the correct enclave, to potentially gain access to the shared secret.
 	This is if course a serious security concern, as access to the shared secret enables an adversary in introducing byzantine failures, by sending inconsistent messages while any impersonating correct process.
-	And since the underlying Raft algorithm is not byzantine fault safe, the system would begin to exhibit undocumented behaviour. 
+	And since the underlying Raft algorithm is not byzantine fault safe, the system would begin to exhibit undocumented behaviour.
 
 	To solve this problem, we could introduce authentication in the remote attestation protocol, so that only participants in the workflow would be attested.
-	However, this would not protect against a malicious participant, who could control the workflow by impersonating leader processes. 
+	However, this would not protect against a malicious participant, who could control the workflow by impersonating leader processes.
 
-	Another solution is to remotely attest each message, i.e. each message must be verified as being correct by remote attestation service, which will then sign the message for the process. 
+	Another solution is to remotely attest each message, i.e. each message must be verified as being correct by remote attestation service, which will then sign the message for the process.
 	This solution is essentially a central server solution, and would introduce a single point of failure as well as the remote attestation server as a bottleneck of messages.
 
-	In conclusion, we have not identified a simple solution to these vulnerabilities, and advise against using the system for security critical workflows until the aforementioned vulnerabilities have been addressed and secured by Intel. 
+	In conclusion, we have not identified a simple solution to these vulnerabilities, and advise against using the system for security critical workflows until the aforementioned vulnerabilities have been addressed and secured by Intel.
 
 	% - Implementationsbesvær m. SGX
     % \subsection{SGX Curiosities}
@@ -1772,8 +1772,8 @@ enclave {
     One of the central aspects of our system, is the separation of state, i.e. each cluster stores a different state and keeps it updated.
    	This allows for high scalability, in that we can execute events in $O(m \cdot E_{eff}(G,e) + 1)$ messages, where $m$ is size of the clusters.
    	It will trivially be true that $n \geq m \cdot E_{eff}(G,e) + 1$, and for some graphs $n > m \cdot E_{eff}(G,e) + 1$, as described in Section~\ref{subsubsec:concurrency} and~\ref{sec:analysis}.
-    An argument could be made that reducing $n$ in an SMR approach can achieve the exact same message complexity and fault tolerance, since the relationship between scalability and fault tolerance is highly interdependent in these approaches. 
-    To show this relationship, lets look at an example with $3$ statically independent events and $15$ peers in the network. 
+    An argument could be made that reducing $n$ in an SMR approach can achieve the exact same message complexity and fault tolerance, since the relationship between scalability and fault tolerance is highly interdependent in these approaches.
+    To show this relationship, lets look at an example with $3$ statically independent events and $15$ peers in the network.
     In an SMR protocol, where all peers share all state, and which achieves consensus in $O(n)$ messages under no faults, and has a fault tolerance of $f = \lfloor \frac{n-1}{2} \rfloor$, we can achieve an execution of an event in $k \cdot 15$ messages, where $k$ is some constant, with a fault tolerance of $7$.
     Our solution, where we distribute the state evenly in clusters (i.e. $5$ peers per cluster), achieve an execution in $k \cdot 5$ messages with a fault tolerance of $2$.
     However, if we reduce the peer size in the SMR to $5$, we achieve exactly the same properties in terms required messages and fault tolerance, which begs the question of what properties we have actually achieved by the distribution of the workflow.
@@ -1789,12 +1789,12 @@ enclave {
     In a high intensity workflow, with many concurrent event executions, an SMR solution would be bounded by the leader's network and computational capacity.
     In our solution, the concurrent executions are performed on different leaders with no intercommunication, and thus we are instead bounded several leaders' cumulated capacity.
 
-    If a cluster experiences $f+1$ crashes, liveness can no longer be guaranteed. 
-    However, a cluster with no liveness does not necessarily completely halt execution of the workflow, as all clusters for the events in $I_{stat}(e)$ can never be affected by $e$. 
+    If a cluster experiences $f+1$ crashes, liveness can no longer be guaranteed.
+    However, a cluster with no liveness does not necessarily completely halt execution of the workflow, as all clusters for the events in $I_{stat}(e)$ can never be affected by $e$.
 
     Any peer in the cluster responsible for $e$ need only store the state of $e$ and the executions that effect $e$, which is bounded by $N(N(e))$.
 
-    Lastly, in a setting where the number of peers are given, for instance due to hardware or legal restraints, we gain a better message complexity than SMR, at the expense of a lower fault tolerance. 
+    Lastly, in a setting where the number of peers are given, for instance due to hardware or legal restraints, we gain a better message complexity than SMR, at the expense of a lower fault tolerance.
 
 	% - PSMR
     %\subsection{Partial state machine replication}
