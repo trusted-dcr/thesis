@@ -140,16 +140,16 @@
 
 	We formulate the problem of byzantine fault tolerant PSMR with a DCR graph as the \textit{state}, and allow for peers to collect the state and change the state through the execution of DCR events.
 	In order to achieve fault tolerance, the system must distribute the DCR graphs on several peers, so that if one peer fails, other peers can take over correct execution of the DCR graph.
-	Distributing DCR graphs is not a trivial problem, as there are considerations for the distribution of that graph, especially given the goal of less than $O(n)$ messages when performing a state change.
-	The trivial method of ensuring fault tolerance, is to make all peers responsible for the entire state of the system, but given that changes in the graph would then have to be synchronized with all peers, this would not allow for achieving consensus in less than $O(n)$ messages.
-	Alternatively, the DCR graph would have to be split into parts distributed among peers, but this introduces further issues as a partial state solution would need intermittent synchronization, when several actions might affect the same parts of the state.
+	The trivial method of ensuring fault tolerance, is to make all peers responsible for the entire state of the system, but means that changes in the graph would then have to be synchronized with all peers.
+	For a solution to this problem to be scalable in large networks, a message complexity below $O(n)$ is desirable, where $n$ is the number of peers.
+	Alternatively, the DCR graph would have to be split into parts distributed among peers, but this introduces further issues, as a partial state solution would need intermittent synchronization, when several actions might affect the same parts of the state.
 	As DCR graphs are primarily used in industry where the documentation of workflows is important, it is essential that any user is able to collect the entire state of a workflow at any given time.
 	Assuming a partial state solution, collecting this state is further complicated in that a coherent state would have to be pieced together from each part of the graph.
 
 	In summary, the system should:
 	\begin{description}
-		\item[Concurrent] Allow for a high degree of concurrency as permitted by DCR graphs, as shown in~\cite{debois_concurrency_2015}.
-        \item[Scalable] Achieve consensus on a state change in less than $O(n)$ messages, where $n$ is the number of peers in the graph, while supporting the distribution of the state of the DCR graph among those peers.
+		\item[Concurrent] Allow for a high degree of concurrency as permitted by DCR graphs, shown in~\cite{debois_concurrency_2015}.
+		\item[Scalable] Achieve consensus on a state change in less than $O(n)$ messages, where $n$ is the number of peers participating in the graph, while supporting the distribution of the state of the DCR graph among those peers.
 		\item[Byzantine fault tolerant] Function in the presence of malicious workflow participants and network nodes, where the only guarantees are those based on strong cryptographic security.
 	\end{description}
 
