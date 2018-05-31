@@ -158,43 +158,47 @@
 In order to attain a complete understanding of the problem at hand, there are three subject areas which need further explanation:
 \begin{description}
 	\item[DCR] which must be defined and the requirements of which must be explored, as it forms the basic limitations of a potential solution.
-	\item[Consensus] which defines the fundamental challenge of any decentralized system.
-	\item[Intel SGX] which forms the basis for any innovation in achieving consensus.
+	\item[Consensus] which defines the fundamental challenge of any decentralized system, in which agreement on state is needed.
+	\item[Intel SGX] which has recently shown promise in improving the fault tolerance of consensus solutions, notably in~\cite{kapitza_cheapbft_2012,veronese_efficient_2013,liu_scalable_2016}.
 \end{description}
 
 	\subsection{DCR}
 	\label{subsec:dcr}
 
-	A DCR graph, $G$, is a graph representation of a workflow, made up of $v$ nodes, $E=\{e_1, e_2, \dots, e_v\}, v \geq 1$,  called \textit{events}, with a number of edges called \textit{relations} between them.
-	Sometimes an event, $e$, in a graph, $G$, can be \textit{executed}, which will change the state and ability to execute of some events in $G$ according to the rules defined by $e$'s outgoing relations.
+	A DCR graph, $G$, is a graph representation of a workflow, made up of $v$ stateful nodes, $E=\{e_1, e_2, \dots, e_v\}, v \geq 1$, called \textit{events}, with a number of directed edges called \textit{relations} between them.
+	The cumulated state of all the events in a graph $G$ is called the $G$'s state.
+	Depending on the relations, an event, $e$, in a graph, $G$, can be \textit{executed}, which will change the state of events in $G$ according to the rules defined by $e$'s outgoing relations.
 	We denote this execution $E(G,e)=G'$.
 
 			\subsubsection{Event State}
 
-			The events in a DCR graph have three binary attributes: \textit{included}, \textit{executed} and \textit{pending}.
+			The events in a DCR graph have three binary attributes: \textit{executed}, \textit{included} and \textit{pending}.
 			This is an event: \ev{A}
 
 			\begin{description}
-				\item[Executed attribute] If an events \textit{executed} attribute is false executing the event will set its \textit{executed} attribute to true.
+				\item[Executed attribute] If an event's \textit{executed} attribute is false executing the event will set its \textit{executed} attribute to true.
 				Executing an already executed event will have no effect on the \textit{executed} attribute.
 				The \textit{executed} attribute is shown as a tick mark: \ev[101]{A}
-				\item[Pending attribute] If any event in a workflow has a \textit{pending} attribute that is true and the event is included, the workflow is in an unfinished state.
+				\item[Included attribute] If the \textit{included} attribute is true, the event is said to be \textit{included}. 
+				If the \textit{included} attribute of an event is false, the event is said to be \textit{excluded} and it cannot be executed.
+				The \textit{included} attribute is denoted by the outline of the event: \ev{A} when included is true and \ev[000]{A} when included is false.
+				\item[Pending attribute] If any event in a workflow has a \textit{pending} attribute which is true and that event is included, we expected further executions of events in the workflow, and say that the workflow is in an unfinished state.
 				Every time an event is executed its \textit{pending} attribute is set to false.
 				This means that setting the \textit{pending} attribute of an included event to true is specifying that this event must be executed or excluded at some point to leave the workflow in a finished state.
 				The \textit{pending} attribute is shown as an exclamation point: \ev[011]{A}
-				\item[Included attribute] If the \textit{include} attribute of an event is false, the event is said to be excluded and it can not be executed.
-				The \textit{included} attribute is denoted by the outline of the event: \ev{A} when included and \ev[000]{A} when excluded.
 			\end{description}
 
 			\subsubsection{Relations}
 			\label{subsubsec:relations}
 
+			Relations are directed edges between events in the workflow.
+			Each relation is directed from an origin event, toward a target event.
 			There are five types of relations which define different types of relationships between events in a workflow.
 			The origin and the target of a relation can be the same event.
-			The five can be divided into two categories:
+			The relations can be divided into two categories:
 
 			\begin{description}
-				\item[Effects] are relations that change the state of the targeted event.
+				\item[Effects] are relations that change the state of the targeted event when the originating event is executed.
 				If an effect originating from an event, \texttt{A}, is targeting an event, \texttt{B}, then \texttt{A} is said to be the effecting event on the effected event \texttt{B}.
 				Effects are the \emph{response}, \emph{include} and \emph{exclude} relations.
 				\begin{description}
@@ -218,11 +222,16 @@ In order to attain a complete understanding of the problem at hand, there are th
 
 			\subsubsection{Enabledness}
 
-			Since the properties of DCR graphs described so far all affect whether or not a given event can be executed or not, we use the notion of enabledness to describe the sum of these properties.
-			An event which can be executed, meaning it is included and any milestones or conditions targeting it are rendered invalid by the state of the relevant events, it is said to be enabled.
-			If an event cannot be executed, due to the inverse of the aforementioned prerequisites, it is said to be disabled.
-			If an event changes from being enabled to disabled or from disabled to enabled, its enabledness is said to have changed.
-			We define an execution of a disabled event as $E(G,e_1) = G$, i.e. no events changes state nor enabledness, not even $e_1$ itself.
+			We use the notion of \textit{enabledness} to describe if an event is able to execute in a given graph's state or not.
+			An event is \textit{enabled} if it can be executed, and \textit{disabled} if it cannot.
+			An event's enabledness is strictly controlled by the state of its constraining events, and its included variable:
+			\begin{itemize}
+				\item If an event is excluded it is disabled.
+				\item If an event is the target of a milestone relation from an event that is pending and included, it is disabled.
+				\item If an event is the target of a conditions relation from an event that is included and not executed, it is disabled.
+			\end{itemize}
+			In all other cases, the event is enabled.
+			We define an execution of a disabled event as $E(G,e_1) = G$, i.e. no events in $G$ changes state nor enabledness, not even $e_1$ itself.
 
 			\subsubsection{Formalising \texorpdfstring{$G$}{}}
 			\label{subsubsec:formalising-g}
