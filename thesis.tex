@@ -1288,16 +1288,17 @@ while there are unmarked nodes do
 		This requires $O(e)$ messages, where $e$ is the number of event clusters.
 		\item Carving a consistent cut.
 		This is accomplished by creating a look-up table which maps an execution to a set of all occurrences of that execution in returned sequences.
-		For each of $m$ executions in each of $e$ returned sequences, the event which that execution pertains' returned sequence is checked for the presence of that execution.
-		If an execution is deleted this way, it could have cascading effects.
+		For each of $m$ executions in each of $e$ returned sequences, the executed event's sequence is checked for the presence of that execution.
+		If the execution is not present there, it is deleted from the other sequences, along with all following executions.
+		When an execution is deleted this way, it could have cascading effects.
 		But under the assumptions that look-ups in the aforementioned table, as well as checking whether or not a sequence contains a specific execution, is constant, we can at most do this operation once for each execution entry in all sequences.
-		For a graph with $e$ events and $m$ unique executions performed during the lifetime of the graph, this then has computational complexity of $O(e\cdot m)$.
+		For a graph with $e$ events and $m$ unique executions performed during the lifetime of the graph, this has computational complexity of $O(e\cdot m)$.
 		\item Creating a graph from execution relationships. As each relationship is represented with an edge, this has computational complexity of $O(n)$ where $n$ is the number of execution relationships.
 		\item Finding a topological ordering.
-		Using the DFS traversal algorithm, means visiting each node twice via its edges and therefore this operation has a computational complexity of $O(|r|+|e|)$, where $r$ is the number of relations in the graph and $e$ is the number of events in the graph.
+		Using the DFS traversal algorithm, means visiting each node twice via its edges and therefore this operation has a computational complexity of $O(c + h)$, where $c$ is the number of unique executions and $h$ is the number of happened-before relationships.
 	\end{enumerate}
 
-	In conclusion the global history can be collected in $O(e)$ messages and within $O(e\cdot m)$ computational complexity, as finding a consistent cut forms the lower bound of the algorithm.
+	In conclusion the global history can be collected in $O(e)$ messages and within $O(e \cdot m + c + h)$ computational complexity, which will be bounded by making the executions sequences into a consistent cut when $e \cdot m > c + h$, and bounded by the topological ordering when $c+h > e \cdot m$.
 
 	\subsection{Cluster Consensus}
 	\label{subsec:cluster-consensus}
