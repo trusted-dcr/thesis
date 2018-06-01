@@ -199,7 +199,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 
 			\begin{description}
 				\item[Effects] are relations that change the state of the targeted event when the originating event is executed.
-				If an effect originating from an event, \texttt{A}, is targeting an event, \texttt{B}, then \texttt{A} is said to be the effecting event on the effected event \texttt{B}.
+				If an effect originating from an event \texttt{A} is targeting an event \texttt{B}, then \texttt{A} is said to be the effecting event on the effected event \texttt{B}.
 				Effects are the \emph{response}, \emph{include} and \emph{exclude} relations.
 				\begin{description}
 					\item[Response relation] If there is a response relation from event \texttt{A} to event \texttt{B}, then the \textit{pending} attribute of \texttt{B} will be set to true every time \texttt{A} is executed.
@@ -209,8 +209,8 @@ In order to attain a complete understanding of the problem at hand, three subjec
 					\item[Exclude relation] If there is an exclude relation from event \texttt{A} to event \texttt{B}, then the \textit{included} attribute of \texttt{B} will be set to false every time \texttt{A} is executed.
 				The exclude relation is represented as: $\ev{A} \erel \ev{B}$
 				\end{description}
-				\item[Constraint] are relations that exclusively affect whether or not the targeted event can be executed.
-				If a constraint originating from an event, \texttt{A}, is targeting an event, \texttt{B}, then \texttt{A} is said to be the constraining event on the constrained event \texttt{B}.
+				\item[Constraints] are relations that exclusively affect whether or not the targeted event can be executed.
+				If a constraint originating from an event \texttt{A}, is targeting an event \texttt{B}, then \texttt{A} is said to be the constraining event on the constrained event \texttt{B}.
 				Constraints are the \emph{condition} and \emph{milestone} relations.
 				\begin{description}
 					\item[Condition relation] If there is a condition relation from event \texttt{A} to event \texttt{B}, then \texttt{B} can only be executed if the \textit{executed} attribute of \texttt{A} is true or the \textit{included} attribute of \texttt{A} is false.
@@ -227,11 +227,10 @@ In order to attain a complete understanding of the problem at hand, three subjec
 			An event's enabledness is strictly controlled by the state of its constraining events, and its included variable:
 			\begin{itemize}
 				\item If an event is excluded it is disabled.
-				\item If an event is the target of a milestone relation from an event that is pending and included, it is disabled.
+				\item If an event is the target of a milestone relation from an event that is included and pending, it is disabled.
 				\item If an event is the target of a conditions relation from an event that is included and not executed, it is disabled.
 			\end{itemize}
 			In all other cases, the event is enabled.
-			We define an execution of a disabled event as $E(G,e_1) = G$, i.e. no events in $G$ changes state nor enabledness, not even $e_1$ itself.
 
 			\subsubsection{Formalising \texorpdfstring{$G$}{}}
 			\label{subsubsec:formalising-g}
@@ -250,12 +249,12 @@ In order to attain a complete understanding of the problem at hand, three subjec
 
 			The notion of concurrency in DCR graphs, described in~\cite{debois_concurrency_2015}, is the property a pair of events have when the graph allows those events to be executed in either order with the same resulting graph state.
 
-			More formally, given a graph, $G$, and two events $e_1, e_2$ in $G$, we say that $e_1$ and $e_2$ are concurrent if $E(E(G, e_1),e_2)=E(E(G, e_2),e_1)$.
+			More formally, given a graph $G$ and two events $e_1$ and $e_2$ in $G$, we say that $e_1$ and $e_2$ are concurrent if $E(E(G, e_1),e_2)=E(E(G, e_2),e_1)$.
 
 			We define a \textit{run} as a series of consecutive executions.
 			For a run to be valid, each execution must be enabled at the point of execution in the sequence.
-            We say that two runs, $R_1$ and $R_2$, on a graph, $G$, are \textit{equivalent up to concurrency} when the results of performing $R_1$ on $G$ leads to $G'$ and performing $R_2$ on $G$ also leads to $G'$.
-            If there exist a run $R$ which, when applied to a graph state $G$ results in graph state $G'$, we say that $G'$ is \textit{reachable} from $G$ via $R$.
+			We say that two runs $R_1$ and $R_2$, containing the same set of executions, are \textit{equivalent up to concurrency} on a graph $G$ when the results of performing $R_1$ on $G$ leads to $G'$ and performing $R_2$ on $G$ also leads to $G'$.
+			If there exist a run $R$ which applied to a graph state $G$ results in graph state $G'$, we say that $G'$ is \textit{reachable} from $G$ via $R$.
 
 			We identify three concurrency relationships between events, and name these relationships \textit{independence relationships}, and say that the events in an independence relationship are \textit{independent}:
 			\begin{description}
@@ -263,14 +262,14 @@ In order to attain a complete understanding of the problem at hand, three subjec
 				That is, $e_1$ and $e_2$ are dynamically independent if $E(E(G, e_1),e_2)=E(E(G, e_2),e_1)$ for the current $G$.
 				Dynamic independence is essentially what we have defined as concurrency.
 
-				We say that an event, $e$, has a \textit{dynamic independence set}, $I_{dyn}(G,e)$, such that $e' \in I_{dyn}(G,e)$ iff. $e$ and $e'$ are dynamically independent in graph state $G$.
-				Likewise an event, $e$, has a \textit{dynamic dependence set}, $D_{dyn}(G,e) = E \setminus I_{dyn}(G,e)$.
+				We say that an event $e$ has a \textit{dynamic independence set} $I_{dyn}(G,e)$, such that $e' \in I_{dyn}(G,e)$ iff. $e$ and $e'$ are dynamically independent in graph state $G$.
+				Likewise an event $e$ has a \textit{dynamic dependence set} $D_{dyn}(G,e) = E \setminus I_{dyn}(G,e)$.
 
-				\item[Static independence] Two events are \textit{statically independent}, if they are dynamically independent, in every \textit{reachable} state of the graph from the initial graph state.
+				\item[Static independence] Two events are \textit{statically independent} if they are dynamically independent in every \textit{reachable} state of the graph from the initial graph state.
 				That is, $e_1$ and $e_2$ are statically independent in $G$, if they are dynamically independent in all states of $G$ that can be reached by a run.
 
-				We say that an event, $e$, has a \textit{static independence set}, $I_{stat}(e)$, such that $e' \in I_{stat}(e)$ iff. $e$ and $e'$ are statically independent.
-				Likewise an event, $e$, has a \textit{static dependence set}, $D_{stat}(e) = E \setminus I_{stat}(e)$.
+				We say that an event $e$ has a \textit{static independence set} $I_{stat}(e)$, such that $e' \in I_{stat}(e)$ iff. $e$ and $e'$ are statically independent.
+				Likewise an event $e$ has a \textit{static dependence set} $D_{stat}(e) = E \setminus I_{stat}(e)$.
 				Notice that $e$'s static dependence set is the set of events that are dependent with $e$ in \textit{some} state of $G$, not all.
 				The problem of finding all static independence sets is NP-hard in~\cite{debois_replication_2017-1} and an approximation will have to be used instead.
 			\end{description}
@@ -283,13 +282,13 @@ In order to attain a complete understanding of the problem at hand, three subjec
 				\item $e_1$ can exclude some $e$, if $e_2$ can include it, or vice versa.
 				\item $e_1$ can set $e_2$ to pending, unless $e_2$ sets itself to pending, or vice versa.
 			\end{itemize}
-			This approximation is complete, but not sound, which means that it contains all statically dependent event pairs, but does not guarantee that an event pair in the approximation is not statically independent.
-			We say that an event, $e$, has an \textit{approximate static dependence set}, $D_{appr}(e)$, such that $e' \in D_{appr}(e)$ iff. $e$ and $e'$ are approximately statically dependent, according to the above approximation.
-			Likewise an event, $e$, has an \textit{approximate static independence set}, $I_{appr}(e),  = E \setminus D_{appr}(e)$.
+			This approximation is complete, but not sound, meaning it contains all statically dependent event pairs, but does not guarantee that an event pair in the approximation is not statically independent.
+			We say that an event $e$ has an \textit{approximate static dependence set} $D_{appr}(e)$, such that $e' \in D_{appr}(e)$ iff. $e$ and $e'$ are approximately statically dependent, according to the above approximation.
+			Likewise an event $e$ has an \textit{approximate static independence set} $I_{appr}(e)  = E \setminus D_{appr}(e)$.
 			Notice that the an approximate static independence set is sound but incomplete.
 
-			All the independence- and dependence sets are reflexive: $e' \in S(e) \iff e \in S(e')$, where $S$ is any of the described (in-)dependency sets.
-			Notice that in any DCR graph it must hold that $\forall G. \forall e. |I_{dyn}(G,e)| \geq |I_{stat}(e)| \geq |I_{appr}(e)|$, which speaks to the desirability of the different concurrency levels; a system that supports concurrent execution of dynamically independent events allows for more concurrent executions than a one that supports execution of statically independent events, which in turn allows for more concurrent executions than one that supports execution of approximate statically independent events.
+			All the independence- and dependence sets are symmetric: $e' \in S(e) \iff e \in S(e')$, where $S$ is any of the described (in-)dependency sets.
+			Notice that in any DCR graph it must hold that $\forall G. \forall e\in G. |I_{dyn}(G,e)| \geq |I_{stat}(e)| \geq |I_{appr}(e)|$, which speaks to the desirability of the different concurrency levels; a system that supports concurrent execution of dynamically independent events allows for more concurrent executions than a one that supports execution of statically independent events, which in turn allows for more concurrent executions than one that supports execution of approximate statically independent events.
 			Figure~\ref{fig:concurrency-all} shows examples of independence in DCR graphs.
 
 		\begin{figure}[!ht]
@@ -547,7 +546,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 		Please note that it is rarely necessary to guarantee integrity for all components.
 		Instead the minimal necessary number of components, the TCB, should be identified and protected.
 		For the general case, however, every component is part of the TCB.
-		\item For each endpoint state machine in unreliable channels between processes, add a new state machine in the unprotected area of each of the processes (called a wrapper state machine), connect a new unreliable channel between these and add a reliable channel from the old endpoint state machines to the new. 
+		\item For each endpoint state machine in unreliable channels between processes, add a new state machine in the unprotected area of each of the processes (called a wrapper state machine), connect a new unreliable channel between these and add a reliable channel from the old endpoint state machines to the new.
 		This is equivalent to adding unprotected wrapper components for the enclaves, which will have access to the network, and thus can act as a middle-man for communicating with other processes.
 		\item Add reliable channels from all state machines in the integrity protected area of the process to the cryptographic secret state machine $SM_s$.
 		\item Add an Attestation state machines, $SM_A$, to each process and a Remote Attestation process, $P_{RA}$ to the protocol.
@@ -1251,7 +1250,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	Note that a reverse postorder DFS graph traversal is exactly a topological order, if the graph is a directed \textit{acyclic} graph~\cite[chapter 4, page 582]{sedgewick_algorithms_2011}.
 	In order to extend the algorithm to allow any order of vertices in cyclical components, the third case of the proof is replaced with the following:
 	\begin{itemize}
-		\item The marked neighbour has been visited in the \textit{same} DFS traversal, implying that the two vertices are part of a cycle. 
+		\item The marked neighbour has been visited in the \textit{same} DFS traversal, implying that the two vertices are part of a cycle.
 		But in this case, any ordering of the two vertices are acceptable, as it implies that the event executions, that the two vertices represent, happened concurrently.
 	\end{itemize}
 	Pseudo code of the DFS traversal algorithm can be seen in Listing~\ref{lst:dfs-traversal}.
