@@ -1335,7 +1335,7 @@ while there are unmarked nodes do
 
 	Every processor keeps an indexed log of commands and what term they were added in.
 	A processor keeps track of the current term and, upon receiving any request or response with a higher term, updates its term and becomes a follower.
-	A processor also keep track of the last known command it knows the leader deems to be committed.
+	A processor also keeps track of the last known command it knows the leader deems to be committed.
 	Log entries at or below the commit index are durable while log entries above the commit index may change following an election.
 
 	\subsubsection*{Election}
@@ -1347,12 +1347,12 @@ while there are unmarked nodes do
 	  \item the follower has not yet voted in the term,
 	  \item and the candidate's log is at least as up-to-date as the follower's log.
 	\end{enumerate*}
-	Specifically we say that the candidate broadcasts the message $\MSG{\REQ\ELECTION, t, last_t, last_i}$, where $t$ is the term the candidate is attempting to win, while $last_t$ and $last_i$ are the term and index of last entry in the candidate's log.
+	Specifically we say that the candidate broadcasts the message $\MSG{\REQ\ELECTION, t, last_t, last_i}$, where $t$ is the term the candidate is attempting to win, while $last_t$ and $last_i$ are the term and index of the most recent entry in the candidate's log.
 	For a candidate's log to be up-to-date with a follower's log, the follower's log must neither contain an entry $l$ with $l_{(term)} > last_t$ nor $l_{(term)} = last_t$ and $l_{(index)} > last_i$.
 	When a candidate receives a majority vote (including its own vote), it becomes the leader.
 	Like followers timing out after time period $\Delta$ of not hearing from the leader, a candidate times out after time period $\Delta$ of not winning the election.
 	This can happen when split votes occur or when the network is in a period of asynchrony.
-	Candidate time-outs work exactly like follower time-outs; the candidate starts an election for the next term.
+	Candidate timeouts work exactly like follower timeouts; the candidate starts an election for the next term.
 	To reduce the chance of split votes following leader crashes, in practice $\Delta$ is set to a random value between some $\Delta_{min}$ and $\Delta_{max}$ at each processor.
 
 	\subsubsection*{Leading}
@@ -1403,7 +1403,7 @@ while there are unmarked nodes do
 	  \label{fig:raft-properties}
 	\end{figure}
 
-	\subsubsection*{Time-out liveness vulnerability}
+	\subsubsection*{Timeout liveness vulnerability}
 
 	\begin{figure}[t]
 	  \centering
@@ -1417,12 +1417,12 @@ while there are unmarked nodes do
 	  \item dropping all heartbeat (empty append) messages from leaders when follower and
 	  \item dropping all messages to and from any processor when leader.
 	\end{enumerate*}
-	As a result of \textbf{(a)}, the malicious processor will time-out and start an election whenever the leader has nothing to append for time period $\Delta_{min}$ (resulting in a heartbeat instead of regular append).
+	As a result of \textbf{(a)}, the malicious processor will timeout and start an election whenever the leader has nothing to append for time period $\Delta_{min}$ (resulting in a heartbeat instead of regular append).
 	The malicious processor is likely to win this election as, as the leader has not actually crashed.
 	The correct processors will only contest such an election if the leader actually crashes or the network is sufficiently delayed.
 	The malicious processor must not drop non-empty append messages, as a candidate must be up to date from the viewpoint of a majority of processors.
 
-	As a result of \textbf{(b)}, immediately after becoming leader, the malicious processor will stop communicating with the rest of the network, causing correct processors to time-out and start yet another election.
+	As a result of \textbf{(b)}, immediately after becoming leader, the malicious processor will stop communicating with the rest of the network, causing correct processors to timeout and start yet another election.
 	When a new leader is elected, the process starts over from \textbf{(a)}.
 	In this situation, there is a window between \textbf{(b)} and \textbf{(a)} where a correct leader can append entries before the malicious processor becomes leader again.
 	Thus, liveness may not be completely lost, but the throughput of the algorithm is negatively affected.
@@ -1449,7 +1449,7 @@ while there are unmarked nodes do
 	\end{enumerate*}
 	The malicious processor will eventually become leader in an asynchronous setting following \textbf{(a)} and then prevent any commands to be committed following \textbf{(b)}.
 	The most intuitive solution is allowing the client to accuse the leader of being malicious, forcing the remaining processors to elect a new leader.
-	However, this solution opens the network up for a denial of service attack by a malicious client.
+	However, this solution opens the network up to a denial of service attack by a malicious client.
 	A second solution allows a client to broadcast a command to all processors when unable to contact the leader.
 	The processors will piggyback the broadcast command on their next message to the leader, forcing the leader to either drop all messages or appending the command.
 	We have chosen to implement neither of these solutions and instead disregard the problem as it cannot permanently prevent liveness.
@@ -1515,27 +1515,29 @@ while there are unmarked nodes do
 	  Send $\MSG{\REQ\COMMAND, tag_{exec}, e, \ENUM{EXEC}}$ to $L_{leaders}(e)$.
 	\end{itemize}
 	As a final note on leader recovery, we must ensure progress at some $p_l$ when attempting to execute $e$ even though leaders of $L_{leaders}(e)$ crash.
-	This requires $p_l$ to resend any $\REQ\COMMAND$ requests it does not receive a $\RSP\COMMAND$ response from for some set time period.
+	This requires $p_l$ to resend any $\REQ\COMMAND$ requests which it does not receive corresponding $\RSP\COMMAND$ response for indefinitely.
 
 	\subsubsection*{Termination Argument}
 
 	\begin{figure}[t]
   	\includegraphics[width=\textwidth]{figures/raft-2pc.pdf}
-	  \caption{State machine for $C_{leader}(e)$ during execution of $e$ with states start ($\bm{S}$), intermediate locked ($\bm{L}'$), locked ($\bm{L}$), abort ($\bm{A}$), and execute ($\bm{E}$). Similar to~\cite{skeen_nonblocking_1981} we show received and sent messages above and below the line subscripted with the origin or destination process. We also show appending and committing entries in $C(e)$ as messages.}
+	  \caption{State machine for $C_{leader}(e)$ during execution of $e$ with states start ($\bm{S}$), intermediate locked ($\bm{L}'$), locked ($\bm{L}$), abort ($\bm{A}$), and execute ($\bm{E}$). Similar to~\cite{skeen_nonblocking_1981} we show received and sent messages above and below the line subscripted with the origin or destination process. 
+	  We also show appending and committing entries in $C(e)$ as messages.}
 	  \label{fig:raft-2pc}
 	\end{figure}
 
 	This locking scheme is very similar to centralized two phase commit~\cite{skeen_nonblocking_1981}, where a leader safely advances a set of replicas to a commit or abort state.
 	As described in~\cite{skeen_nonblocking_1981}, two phase commit is a blocking protocol, meaning a leader or replica processor crash will halt the system until the crashed processor recovers.
 	This is still true for our application of the two phase commit protocol, but we have augmented each site with an event cluster.
-	Because of this a single processor crash cannot block the two phase commit.
+	Because of this, a single processor crash cannot block the two phase commit.
 	Blocking of an attempt to execute $e$ can occur at the earliest when a cluster in $\bigcup_{e' \in L(e)} C(e')$ experiences crashing of a majority of processors.
 
 	To show our proposed algorithm always terminates, when no involved cluster experiences a majority crash, we will examine the event of a cluster leader crashing during an execution attempt.
 	Specifically we will examine the $C(e)$ cluster when attempting to execute some event $e$, as the argument for termination at clusters $\bigcup_{e' \in L(e)} C(e')$ will follow naturally.
-	After having entered state $\bm{L}'$ of Figure~\ref{fig:raft-2pc}, $C_{leader}(e)$ will have begun committing a lock entry at its cluster. Because Leader Completeness only applies to committed entries, we need this extra state to ensure that a successor of $C_{leader}(e)$ will be aware of the lock.
+	After having entered state $\bm{L}'$ of Figure~\ref{fig:raft-2pc}, $C_{leader}(e)$ will have begun committing a lock entry at its cluster. 
+	Because Leader Completeness only applies to committed entries, we need this extra state to ensure that a successor of $C_{leader}(e)$ will be aware of the lock.
 	Was $C_{leader}(e)$ to append the lock entry locally while simultaneously commanding clusters $\bigcup_{e' \in L(e)} C(e')$ to append the lock entry, we risk that a successor of $C_{leader}(e)$ would be unaware of the lock commands by its predecessor resulting in a stuck state for $\bigcup_{e' \in L(e)} C(e')$.
-	If $C_{leader}(e)$ crashes at $\bm{L}'$, the lock entry will either exist in the successor's log, and we simply continue, or it will be lost, sending the successor back to state $\bm{S}$.
+	If $C_{leader}(e)$ crashes at $\bm{L}'$, the lock entry will either exist in the successor's log meaning that we simply continue, or it will be lost meaning that the successor goes to state $\bm{S}$.
 	This is fine as the client requesting the execution must be ready to resend commands, when leaders crash, as per the Raft algorithm design.
 
 	At state $L$ a crash of $C_{leader}(e)$ is safe, as Leader Completeness guarantees the lock to be known by the successor.
@@ -1544,9 +1546,19 @@ while there are unmarked nodes do
 	Notice when transitioning from $\bm{L}$ to $\bm{A}$ or $\bm{E}$, no intermediate state is needed and an entry can be appended to $C(e)$ simultaneously with sending commands to $\bigcup_{e' \in L(e)} C(e')$.
 	If $C_{leader}$ crashes at $\bm{A}$ or $\bm{E}$, a successor risks moving back to $\bm{L}'$, as the $\ENUM{ABORT}$ or $\ENUM{EXEC}$ entry may be lost completely and the $\ENUM{LOCK}$ entry may not yet be committed at the successor.
 	It is possible to prevent this by introducing intermediate states $\bm{A}'$ and $\bm{E}'$, but it is not necessary to guarantee termination.
-	Commands can be resent without resulting in duplicate entries as long as the tag remains the same.
+	Commands can be re-sent without resulting in duplicate entries as long as the tag remains the same.
 	Thus, if a successor of a leader in state $\bm{A}$ or $\bm{E}$ is in state $\bm{L}'$, it will simply redo the commands for $\bm{L'} \rightarrow \bm{L}$ followed by $\bm{L} \rightarrow \bm{A}$ or $\bm{L} \rightarrow \bm{E}$.
 	This is guaranteed to result in the same state as the predecessor, as two different command responses for the same tag are impossible by the properties of Raft~\ref{fig:raft-properties}.
+
+	\subsubsection*{Complexity}
+
+	The resulting protocol has the following properties when achieving consensus on an execution with regards to message complexity
+	When an execution is initiated in a cluster, that cluster must first achieve consensus on the decision to initiate an execution.
+	Then locking is performed in the cluster and when it has been committed, locking is attempted on the cluster of each other event to be locked.
+	Once all locks have been obtained, the locked processes are notified of the execution on which they must now achieve consensus.
+	This results in a message complexity of $O(m\cdot \|E_{aff}(G, e) \cup L(e)\|)$, where $m$ is the size of a cluster\footnote{This is assuming that each cluster has the same size. Otherwise the average cluster size should suffice.} and $G$ is the graph on which the event, $e$, is executed.
+	If any leader crashes or a faulty channel causes all messages to be lost, this complexity no longer holds, as leader crashes would require leader recovery which has a message complexity of $O(n)$ which can happen up to the fault tolerance of $f$ for each cluster.
+	Note that if a channel loses all messages put through it, indefinitely, the relaxed liveness guarantee of Raft means that termination would no longer be guaranteed in this case.
 
 	\section{Security analysis}
     \label{sec:security-analysis}
