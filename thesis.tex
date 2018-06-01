@@ -954,8 +954,9 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	The system still utilizes a single leader, which synchronises the requests.
 	When event $e$ is requested executed, the leader runs an SMR algorithm similar to the one described in the SMR approach, but only with the cluster for $e$, and the clusters of $E_{eff}(G,e)$ | to ensure that the clusters of $E_{eff}(G,e)$ has updated the state/enabledness of the events they are responsible for.
 	This ensures a lower message complexity than the SMR approach, given $n > m \cdot (|E_{eff}(G,e)|+1)$ where $n$ is the number of peers in the system.
-	Notice that $\forall e. n = m \cdot v \geq m \cdot (|E_{eff}(G,e)|+1))$ where $v$ is the number of events in the graph.
-	And for sufficiently loosely connected graphs where no event's execution affect all other events in the graph, $\forall e. n > m \cdot (|E_{eff}(G,e)|+1))$.
+	Since $n = m \cdot v$ and $\forall e \in G. v \geq (|E_{eff}(G,e)|+1))$ for all graph, $G$, it must hold that $m\cdot v \geq m \cdot (|E_{eff}(G,e)|+1))$. 
+	For a sufficiently loosely connected graph, $G$, where no event's execution affects all other events in the graph, it must hold $\forall e \in G. n > m \cdot (|E_{eff}(G,e)|+1))$.
+	
 	Another improvement is the fact that if more than half of a cluster crashes, only part of the availability is affected, since the statically independent clusters can continue operating normally.
 	However, $L$ must still synchronise all requests, and worse, cannot allow for concurrent request commits, since the peers would not necessarily be able to recreate the synchronisation between these.
 	The one exception is dynamically independent events, since the ordering of the execution of these does not matter.
@@ -1135,7 +1136,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 
 	We define a global history to be a DCR run.
 	Both as documentation of the process upon completion of the workflow and during the life cycle of the workflow, the global history is relevant, in the latter case because the global state can be derived from the global history.
-	In this section we conflate a cluster with the event which the cluster is responsible for, for brevity.
+	In this section we conflate a cluster with the event which the cluster is responsible for, for the sake of brevity.
 
 	For a global history to be collectible, each event must track more than just their own executions, as the only relationships between executions that can be established are those that are observed locally on a single execution.
 	Events must also track all executions that affect its state and enabledness.
