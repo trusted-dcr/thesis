@@ -954,9 +954,9 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	The system still utilizes a single leader, which synchronises the requests.
 	When event $e$ is requested executed, the leader runs an SMR algorithm similar to the one described in the SMR approach, but only with the cluster for $e$, and the clusters of $E_{eff}(G,e)$ | to ensure that the clusters of $E_{eff}(G,e)$ has updated the state/enabledness of the events they are responsible for.
 	This ensures a lower message complexity than the SMR approach, given $n > m \cdot (|E_{eff}(G,e)|+1)$ where $n$ is the number of peers in the system.
-	Since $n = m \cdot v$ and $\forall e \in G. v \geq (|E_{eff}(G,e)|+1))$ for any graph, $G$, it must hold that $m\cdot v \geq m \cdot (|E_{eff}(G,e)|+1))$. 
+	Since $n = m \cdot v$ and $\forall e \in G. v \geq (|E_{eff}(G,e)|+1))$ for any graph, $G$, it must hold that $m\cdot v \geq m \cdot (|E_{eff}(G,e)|+1))$.
 	For a sufficiently loosely connected graph, $G$, where no event's execution affects all other events in the graph, it must hold $\forall e \in G. n > m \cdot (|E_{eff}(G,e)|+1))$.
-	
+
 	Another improvement is the fact that if more than half of a cluster crashes, only part of the availability is affected, since the statically independent clusters can continue operating normally.
 	However, $L$ must still synchronise all requests, and worse, cannot allow for concurrent request commits, since the peers would not necessarily be able to recreate the synchronisation between these.
 	The one exception is dynamically independent events, since the ordering of the execution of these does not matter.
@@ -1004,23 +1004,23 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 
 	To avoid the high number of messages associated with a fully replicated system and the message bottleneck associated with a single-leader system, we propose a multi-leader, partial state system.
 	Each event is represented by an individual leader, who can initiate execution of that event at any given time.
-	Since events can affect each other and this system is in an asynchronous setting where messages can be delayed arbitrarily, having multiple leaders can potentially lead to situations where leaders disagree on which order events have been executed in, possibly resulting in disagreement on the state of the workflow.
+	Since events can affect each other and this system is in an asynchronous setting, where messages can be delayed arbitrarily, having multiple leaders can potentially lead to situations where leaders disagree on which order events have been executed in, possibly resulting in disagreement on the state of the workflow.
 	The semantics for discerning when ordering is needed and how that ordering is applied is described in Section~\ref{subsec:execution-ordering}.
 
-	Given a method of ordering event executions, ensuring that the system can sustain faults means that each event needs to not only be stored by a leader, but rather a number of peers, called a \textit{cluster}, one of which is the leader at any given time.
+	Given a method of ordering event executions, ensuring that the system can sustain faults means that each event needs to not only be stored by a leader, but rather a number of peers, called a \textit{cluster}, only one of which is the leader at any given time.
 	Clusters being responsible for events rather than single peers means that executions and locks need to be synchronized for each individual cluster.
 	Due to the fact that these clusters can be seen as completely individual networks of peers, any consensus algorithm can be used to solve the problem of synchronizing executions and locks as executions and locks are simply SMR requests on that cluster.
 
 	Choosing a consensus algorithm to manage the clusters is, however, still an important decision, as the wrong choice could form significant bottlenecks in the system.
-	For this implementation we have chosen Raft~\cite{ongaro_search_2014}, as the basis for the cluster consensus algorithm, modified by the transformation we described earlier in Section~\ref{sec:transforming-byzantine-faults} to reduce byzantine faults to crash-stop failures.
-	The reason for choosing Raft is that it is widely used commercially, relatively simple and able to achieve consensus in very few messages.
+	For this implementation we have chosen Raft~\cite{ongaro_search_2014} as the basis for the cluster consensus algorithm, modified by the transformation we described earlier in Section~\ref{sec:transforming-byzantine-faults} to reduce byzantine faults to crash-stop failures.
+	The reason for choosing Raft is that it is widely used commercially, relatively simple, and able to achieve consensus in very few messages.
 	Additionally Raft only handles crash faults and is therefore an ideal candidate for the transformation of byzantine faults to crashes.
 	The consensus algorithm applied in the clusters is described in Section~\ref{subsec:cluster-consensus}.
 
-	With a method of ordering events between clusters, and a method for achieving consensus on a state change in a cluster, peers can progress the graph, in the sense that events can be executed safely.
+	With a method of ordering executions between clusters, and a method for achieving consensus on a state change in a cluster, peers can progress the graph, in the sense that events can be executed safely.
 	But since each peer only knows the state of the event its cluster stores, what has transpired in the graph is implicitly distributed.
 	Since the algorithm does at this point guarantees that any event can only execute, when the semantics and the state of the graph permits it, collecting the global history is only interesting from a documentation perspective.
-	Suppose that a peer is a member of a cluster of an event which is not affected by any successful executions, that peer will have no way of knowing if anything in the graph has been executed at all.
+	Suppose that a peer is a member of a cluster of an event which is not affected by any successful executions. Such a peer will have no way of knowing if anything in the graph has been executed at all.
 	Additionally, it is useful to know the entire history of the graph, when evaluating whether or not the graph has served its purpose.
 	For these reasons, we present the \textit{CheapShot} algorithm for collecting the global history of a DCR graph in Section~\ref{subsec:global-history-collection}.
 
