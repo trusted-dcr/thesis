@@ -1565,7 +1565,7 @@ while there are unmarked nodes do
 	When an execution is initiated in a cluster, that cluster must first achieve consensus on the decision to initiate an execution.
 	Then locking is performed in the cluster and when it has been committed, locking is attempted on the cluster of each other event to be locked.
 	Once all locks have been obtained, the locked processes are notified of the execution on which they must now achieve consensus.
-	This results in a message complexity of $O(m\cdot \|E_{aff}(G, e) \cup L(e)\|)$, where $m$ is the size of a cluster\footnote{This is assuming that each cluster has the same size. Otherwise the average cluster size should suffice.} and $G$ is the graph on which the event, $e$, is executed.
+	This results in a message complexity of $O(m\cdot |E_{aff}(G, e) \cup L(e)|)$, where $m$ is the size of a cluster\footnote{This is assuming that each cluster has the same size. Otherwise the average cluster size should suffice.} and $G$ is the graph on which the event, $e$, is executed.
 	If any leader crashes or a faulty channel causes all messages to be lost, this complexity no longer holds, as leader crashes would require leader recovery which has a message complexity of $O(n)$ which can happen up to the fault tolerance of $f$ for each cluster.
 	Note that if a channel loses all messages put through it, indefinitely, the relaxed liveness guarantee of Raft means that termination would no longer be guaranteed in this case.
 
@@ -1684,7 +1684,7 @@ while there are unmarked nodes do
 
 	The considerations of \textbf{(b)} are apparent in the untrusted \texttt{send\_append\_req} function.
 	Here the structure \texttt{append\_req\_t} contains a pointer to a range of entries.
-	Inside of the enclave, such a pointer would map to protected memory, which is inaccessible to the untrusted function definition.
+	Inside the enclave, such a pointer would map to protected memory, which is inaccessible to the untrusted function definition.
 	Therefore the pointer is extracted from the structure and given as a parameter tagged with \texttt{[in, count=size]}.
 	The \texttt{in}-part causes the interface to create a scratch space in unprotected memory, where the entries are copied to, allowing the untrusted function access~\cite{intel_sgx_developer_reference}.
 
@@ -1751,9 +1751,9 @@ enclave {
 
 	\section{Distributed Smart Contract Engine}
 
-	The system described in this thesis, which solves the problem of a partial state DCR engine in a byzantine setting, can be converted to support a variety of programs, much like Ethereum.
-	The classic Ethereum example is the Decentralized Autonomous Organization (DAO), which is was a decentralized investment fund, where an Ethereum peer could invest some money and be paid in kind if the investment made by the DAO earned money.
-	What the DAO actually invested in was decided by the peers who voted, weighted by how much money they had placed into the DAO.
+	The system described in this thesis, which solves the problem of a partial state DCR engine in a byzantine setting, can be converted to support a variety of programs, much like Ethereum~\cite{_ethereum_2018}.
+	The classic Ethereum example is the Decentralized Autonomous Organization (DAO), which is a decentralized investment fund, where an Ethereum peer could invest some money and be paid in kind if the investment made by the DAO profited.
+	What the DAO actually invested in was decided by the peers who voted, weighted by how much Ether\footnote{Ether is the cryptocurrency associated with the Ethereum blockchain} they had placed into the DAO.
 
 	If a system like the DAO were to be implemented into a general version of the DCR engine described in this thesis, a transformation of the state is required.
 	We start this transformation by redefining events to contain an arbitrary amount of data, rather than the DCR state of its executed, included and pending attributes.
@@ -1770,11 +1770,11 @@ enclave {
 	  \label{fig:dao-simple}
 	\end{figure}
 
-	We can now define implement the DAO in our transformed system, as shown in Figure~\ref{fig:dao-simple}.
+	We can now define the DAO in our transformed system, as shown in Figure~\ref{fig:dao-simple}.
 	The figure shows five events, one of which is executable by the coordinator of the DAO and the rest of which are executable by a peer, $p_1$.
 	We distribute the weight of votes by selling \textit{tickets} at a set price.
 	The coordinator maintains a state consisting of the current sum of money placed in the DAO, the number of votes for investment option 1 and the number of votes for option 2.
-	$p_1$ has can execute the following events:
+	$p_1$ can execute the following events:
 	\begin{description}
 		\item[State] which is the event containing the state of $p_1$. This event has no effect on execution.
 		\item[Buy ticket] which on execution subtracts the fee of a ticket from the state of $p_1$, adds a ticket to the state of $p_1$ and adds the fee to the state of the coordinator.
@@ -1793,7 +1793,7 @@ enclave {
 
 	Due to the way the DCR engine is defined, all events and relations must be created simultaneously with the creation of the graph.
 	This is limiting, in that events can only interact with each other in very specific predefined ways, such as the separate events for voting for option$_1$ and option$_2$ respectively.
-	We could however improve the simplicity of the solution by introducing the concept of parametrised effects.
+	We could, however, improve the simplicity of the solution by introducing the concept of parametrised effects.
 
 	\begin{figure}[t]
   	\includegraphics[width=\textwidth]{figures/dcr-graphs/dao-parametrised.pdf}
