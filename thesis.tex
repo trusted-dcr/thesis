@@ -842,8 +842,8 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 
 	With a better understanding of the prerequisite information, we now present a more thorough definition of the problem.
 
-	We define our system as having $n$ peers $\{p_1, p_2 \dots p_n\}$, and a DCR graph $G$, which consists of $v$ events $E = \{e_1, e_2, \dots, e_v\}$ and a set of relations between events, $R$.
-	Each peer is said to be \textit{responsible} for one or more events, where being responsible for an event, $e$, means that requests for executions of $e$ and requests for the state of $e$ can be handled by that peer.
+	We define our system as having $n$ peers $\{p_1, p_2 \dots p_n\}$ and a DCR graph $G$, which consists of $v$ events $E = \{e_1, e_2, \dots, e_v\}$ and a set of relations between events, $R$.
+	Each peer is said to be \textit{responsible} for one or more events, where being responsible for an event $e$ means that requests for executions of $e$ and requests for the state of $e$ can be handled by that peer.
 	Furthermore the system must have the following properties:
 	\begin{description}
 		\item[Safety] all peers responsible for $e$ execute the requests on $e$ in the same order.
@@ -858,9 +858,9 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
         \item[Byzantine fault tolerant] Byzantine behaviour is detectable, through the guarantees provided by Intel SGX, and treated as crashes.
     \end{description}
 
-	 Additionally, any peer should be able to collect the run, $R$, which is compatible with all prior collected runs, meaning that a run collected at logical time $t$, must be prefixed by a run equivalent up to concurrency, to a run collected at time $t-1$.
+	 Additionally, any peer should be able to collect the run, $R$, which is compatible with all prior collected runs, meaning that a run collected at logical time $t$ must be prefixed by a run which is equivalent up to concurrency to a run collected at time $t-1$.
      Note that from this, it follows that two runs collected at time $t$, are not required to be identical, but are required to be equivalent up to concurrency, as defined in~\ref{subsubsec:concurrency}.
-     Since the peers responsible for each event can always be required to store executions which it has \textit{observed} and include it alongside the state of the event, we assume that collecting a run will always be possible, as long as maintaining the state of the graph is and therefore disregard it at this point in the analysis, and return to it in Section~\ref{subsec:global-history-collection}.
+     Since the peers responsible for each event can always be required to store executions which it has \textit{observed} and include it alongside the state of the event, we assume that collecting a run will always be possible, as long as maintaining the state of the graph is and therefore disregard it at this point in the analysis, returning to it in Section~\ref{subsec:global-history-collection}.
 
 	\begin{landscape}
 		\begin{table}
@@ -900,9 +900,9 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 
 	\paragraph{Central server approach}
 	The first approach is a simple central server.
-    An example of the simultaneous execution of two events, $A$ and $B$, are shown in Figure~\ref{fig:central-server-approach}.
-	There is a single leader, $L$, each of the other peers replicate some subset of $E$ and can redirect requests to the leader.
-	When the leader receives a request, it is queued in the order they are received, and applied to $G$ in that order.
+    An example of the simultaneous execution of two events, $A$ and $B$, is shown in Figure~\ref{fig:central-server-approach}.
+	There exists a single leader $L$. Each of the other peers replicate some subset of $E$ and can redirect requests to the leader.
+	When the leader receives a request, it is queued in the order they are received and applied to $G$ in that order.
 	After the execution of an event $e$, each of the peers replicating $e$ or an event in $E_{eff}(G,e)$ are informed by $L$ of that execution, with a counter value that enables ordering of the execution of the events.
 	This ensures safety, since each of the peers will apply the executions in the same order as $L$.
 	Since every request is managed by a single leader, we are automatically given DCR linearisability, since the executions are totally ordered.
@@ -928,7 +928,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	There are several protocols that solve the issue of SMR, for instance in~\cite{bracha_asynchronous_1985,lamport_part-time_1998,lamport_lower_2006,ongaro_search_2014}, but as they are largely interchangeable with regards to performance\footnote{In the categories specified in the Table~\ref{tab:approach-comparison}.}, any solution that utilizes a leader, $L$, to achieve an optimal crash fault tolerance of $f = \lfloor \frac{(n-1)}{2} \rfloor$ is enough.
 
 	In this approach, every peer must replicate all events, as all executions must be committed to at least $f+1$ replicas.
-	This ensures that if a leader dies, a new leader can be chosen (using $O(n)$ messages), which gives us the aforementioned fault tolerance.
+	This ensures that if a leader fails, a new leader can be chosen (using $O(n)$ messages), which gives us the aforementioned fault tolerance.
 	However, now $L$ must synchronise all requests, to ensure that they are applied in the same order by all replicas, which translates to no concurrency in executions.
 	Some SMR protocols (e.g.~\cite{castro_practical_1999}) allow for concurrent request commits, under the constraint that requests that are committed must not be applied to the underlying state machine before any uncommitted request that happened-before~\cite{lamport_time_1978} on $L$.
 	In order to allow for the concurrent execution of dynamically independent events, this constraint could be relaxed to allow for applying the execution of $e$ when the request has committed, if the peer is aware of which events is in the previous uncommitted execution requests, and none of these events are in $D_{dyn}(e)$.
@@ -975,9 +975,9 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	\paragraph{Complete distribution approach}
 	The next approach is heavily inspired by~\cite{hildebrandt_safe_2011}.
     An example showing the execution of an event is shown in Figure~\ref{fig:complete-distribution-approach}.
-	In it $n = v$, and each peer is only responsible for a single event.
+	Here $n = v$ and each peer is only responsible for a single event.
 	There is no leader, and an execution is done through synchronisation between peers.
-	If event $e$ is to be executed, the responsible peer will use a synchronisation technique (e.g. 2 phase locking~\cite{skeen_nonblocking_1981}) with all the peers responsible for the events in $E_{eff}(G,e)$, who will update their state accordingly.
+	If event $e$ is to be executed, the responsible peer will use a synchronisation technique (e.g. two phase locking~\cite{skeen_nonblocking_1981}) with all the peers responsible for the events in $E_{eff}(G,e)$, who will update their state accordingly.
 	This guarantees DCR linearisability.
 	The fault tolerance of this approach is quite poor, as any peer crashing will result in a data loss, and effect availability, even though it has the same property as the partial state, single leader approach of not effecting the events in $I_{stat}(e)$.
 
@@ -993,10 +993,10 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
     \FloatBarrier
 
 	\paragraph{Partial state, multi-leader approach}
-	The last is our chosen approach, and we will go into detail with it from Section~\ref{subsec:algorithm}.
-    An example showing the execution of an event is shown in Figure~\ref{fig:partial-state-multi-leader-approach}.
-	It is built upon the partial state, single leader approach, except that the common leader is replaced with inter-cluster synchronisation using locks.
-	This has the benefit that even if a leader dies, the recovery has message complexity $O(m)$ (instead of $O(n^2)$ in the partial state, single leader approach and $O(n)$ in the SMR approach), and the number of concurrent client requests are not bounded by the processing speed of a single process.
+	The last is our chosen approach, and we will go into greater detail from Section~\ref{subsec:algorithm} onwards.
+	Figure~\ref{fig:partial-state-multi-leader-approach} shows an example of event execution.
+	It builds upon the partial state, single leader approach, except that the common leader is replaced with inter-cluster synchronisation using locks.
+	This has the benefit that even if a leader dies, the recovery has message complexity $O(m)$ (instead of $O(n^2)$ in the partial state, single leader approach and $O(n)$ in the SMR approach), and the number of concurrent client requests is not bounded by the processing speed of a single process.
 	From here on in, we will primarily concern ourselves with the details of the partial state, multi-leader approach.
 
 	\subsection{Algorithm}
@@ -1531,7 +1531,7 @@ while there are unmarked nodes do
 
 	\begin{figure}[t]
   	\includegraphics[width=\textwidth]{figures/raft-2pc.pdf}
-	  \caption{State machine for $C_{leader}(e)$ during execution of $e$ with states start ($\bm{S}$), intermediate locked ($\bm{L}'$), locked ($\bm{L}$), abort ($\bm{A}$), and execute ($\bm{E}$). Similar to~\cite{skeen_nonblocking_1981} we show received and sent messages above and below the line subscripted with the origin or destination process. 
+	  \caption{State machine for $C_{leader}(e)$ during execution of $e$ with states start ($\bm{S}$), intermediate locked ($\bm{L}'$), locked ($\bm{L}$), abort ($\bm{A}$), and execute ($\bm{E}$). Similar to~\cite{skeen_nonblocking_1981} we show received and sent messages above and below the line subscripted with the origin or destination process.
 	  We also show appending and committing entries in $C(e)$ as messages.}
 	  \label{fig:raft-2pc}
 	\end{figure}
@@ -1544,7 +1544,7 @@ while there are unmarked nodes do
 
 	To show our proposed algorithm always terminates, when no involved cluster experiences a majority crash, we will examine the event of a cluster leader crashing during an execution attempt.
 	Specifically we will examine the $C(e)$ cluster when attempting to execute some event $e$, as the argument for termination at clusters $\bigcup_{e' \in L(e)} C(e')$ will follow naturally.
-	After having entered state $\bm{L}'$ of Figure~\ref{fig:raft-2pc}, $C_{leader}(e)$ will have begun committing a lock entry at its cluster. 
+	After having entered state $\bm{L}'$ of Figure~\ref{fig:raft-2pc}, $C_{leader}(e)$ will have begun committing a lock entry at its cluster.
 	Because Leader Completeness only applies to committed entries, we need this extra state to ensure that a successor of $C_{leader}(e)$ will be aware of the lock.
 	Was $C_{leader}(e)$ to append the lock entry locally while simultaneously commanding clusters $\bigcup_{e' \in L(e)} C(e')$ to append the lock entry, we risk that a successor of $C_{leader}(e)$ would be unaware of the lock commands by its predecessor resulting in a stuck state for $\bigcup_{e' \in L(e)} C(e')$.
 	If $C_{leader}(e)$ crashes at $\bm{L}'$, the lock entry will either exist in the successor's log meaning that we simply continue, or it will be lost meaning that the successor goes to state $\bm{S}$.
