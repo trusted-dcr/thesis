@@ -1033,11 +1033,11 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 		\item[In-neighbourhood] denoted $N_{in}(e)$, defined as the set of events where event $e'$ is in $N_{in}(e)$ iff there is a relation in $G$ that originates from $e'$ and targets $e$.
 	\end{description}
 
-	As discussed in Section~\ref{sec:analysis}, the execution of non-independent events must be synchronised.
+	As discussed in Section~\ref{sec:analysis}, the execution of dependent events must be synchronised.
 	The need for ordering executions is applicable in cases where two or more executions would have incompatible effects on at least one event.
 	As ordering must necessarily be detrimental to the concurrency of a DCR graph and must also require some amount of communication between events, minimizing the situations where ordering is required is a priority.
 	Recall the definitions from Section~\ref{subsubsec:concurrency}, where the dependencies in DCR graphs are explained, and realize that dynamic independence so far describes the cases where ordering is not needed.
-	This means that the cases where ordering is needed would seem to be defined by \textit{dynamic dependence}, meaning cases where for two events, $e_1$ and $e_2$, it holds that $E(E(G, e_1),e_2) \neq E(E(G, e_2),e_1)$.
+	This means that the cases where ordering is needed would seem to be defined by \textit{dynamic dependence}, meaning cases where for two events $e_1$ and $e_2$, it holds that $E(E(G, e_1),e_2) \neq E(E(G, e_2),e_1)$.
 	There is however a small caveat to this, illustrated by the following example:
 
 	Consider a graph consisting of two events with a condition between them: $\ev{A} \crel \ev{B}$
@@ -1054,9 +1054,9 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	\end{figure}
 
 	If \texttt{A} has effects originating from it, the need for synchronization arises as shown in Figure~\ref{fig:race-condition}.
-	In the graph events \texttt{A} and \texttt{B} both modify the same event state attributes and a race condition is present as a result.
-	In order to prevent the race condition from having adverse effect, synchronization is needed between the two executing events, \texttt{A} and \texttt{B}.
-	This means that events with effects which target events within $N_{out}(E)$ need to ensure synchronisation on the targeted events of $e$'s execution.
+	In the graph events \texttt{A} and \texttt{B}, both modify the same event state attributes and a race condition is present as a result.
+	In order to prevent the race condition from having adverse effects, synchronization is needed between the two executing events, \texttt{A} and \texttt{B}.
+	This means that events with effects, which target events within $N_{out}(e)$, need to ensure synchronisation on the targeted events of $e$'s execution.
 
 	Since effects can modify events which in turn have constraints originating from it, there are situations where locking in the neighbourhood of the executed event is no longer sufficient.
 
@@ -1067,16 +1067,15 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 		\label{fig:second-degree-effect}
 	\end{figure}
 
-	In the graph shown in Figure~\ref{fig:second-degree-effect} it is shown that the set of events requiring ordering of an execution has to include either a subset of $N_{out}(N_{out}(e))$, $N_{in}(e) \cup N_{out}(e)$ or $N_{in}(N_{in}(e))$.
+	In the graph shown in Figure~\ref{fig:second-degree-effect}, it is shown that the set of events requiring ordering of an execution has to include either a subset of $N_{out}(N_{out}(e))$, $N_{in}(e) \cup N_{out}(e)$ or $N_{in}(N_{in}(e))$.
 	Otherwise, the graph could end in a state where only \texttt{A} and \texttt{B} have been executed, which should be impossible due to the execution of either including a condition on the other.
 	As ordering within the set of $N_{in}(N_{in}(e))$ is not enough on its own, due to the case shown in Figure~\ref{fig:race-condition}, we regard this option as worse than any of the other two.
 
 	We now show that the cases shown in Figure~\ref{fig:race-condition} and in Figure~\ref{fig:second-degree-effect} cover all situations where ordering is needed.
-	According to the semantics of DCR relations (see Section~\ref{subsec:dcr}), the enabledness of an event, $e$, can only be changed by state changes in $N_{in}(e) \cup e$, and the state of the event can only be affected by an execution in $N_{in}(e) \cup e$.
-	Consider an event $e$.
-	Executing $e$ can then change the state and enabledness of any event in $N_{out}(e) \cup e$.
-	Changes of the enabledness of an event in $N_{out}(e)$ cannot propagate\footnote{Unless the enabledness change of the event is a result of a state change of the event, e.g. if the event is excluded}, since no relation relies on the enabledness of the originating event.
-	Changes of the state of an event in $N_{out}(e)$, \textit{can} propagate, since the constraining relations relies on the state of the originating event.
+	According to the semantics of DCR relations (see Section~\ref{subsec:dcr}), the enabledness of an event $e$ can only be changed by state changes in $N_{in}(e) \cup e$, and the state of the event can only be affected by an execution in $N_{in}(e) \cup e$.
+	Executing an event $e$ can change the state and enabledness of any event in $N_{out}(e) \cup e$.
+	Changes to the enabledness of an event in $N_{out}(e)$ cannot propagate\footnote{Unless the enabledness change of the event is a result of a state change of the event, e.g. if the event is excluded.}, since no relation relies on the enabledness of the originating event.
+	Changes of the state of an event in $N_{out}(e)$ \textit{can} propagate, since the constraining relations relies on the state of the originating event.
 	But since only the constraining relations rely on the state of the originating event, the state change can only propagate enabledness changes, which in turn cannot propagate.
 
 	Summarized we have the following cases where ordering must occur:
@@ -1095,11 +1094,11 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 		\label{fig:second-degree-no-effect}
 	\end{figure}
 
-	In the graph shown in Figure~\ref{fig:second-degree-no-effect} an execution of \texttt{A} no longer has an effect on the enabledness of \texttt{B}, as \texttt{C} is included and therefore has the same state before and after the execution of \texttt{A}.
-	An argument can be made here for the $N_{out}(N_{out}(e)) \cup N_{out}(e) \cup e$ ordering scheme over $N_{in}(e) \cup N_{out}(e) \cup e$, as it allows for optimizations in that ordering is not needed on \texttt{B}, meaning that the former ordering scheme would be more efficient than the latter.
-	This optimization is, however, only possible when the state of \texttt{C} is known and this is not a trivial problem.
+	In the graph shown in Figure~\ref{fig:second-degree-no-effect}, an execution of \texttt{A} no longer has an effect on the enabledness of \texttt{B}, as \texttt{C} is included and therefore has the same state before and after the execution of \texttt{A}.
+	An argument can be made here for the $N_{out}(N_{out}(e)) \cup N_{out}(e) \cup e$ ordering scheme over $N_{in}(e) \cup N_{out}(e) \cup e$, as it allows for optimisations in that ordering is not needed on \texttt{B}, meaning that the former ordering scheme would be more efficient than the latter.
+	This optimisation is, however, only possible when the state of \texttt{C} is known and this is not a trivial problem.
 	The solution of simply notifying \texttt{A} of \texttt{C}'s state when changed, is insufficient as the notification might not arrive before \texttt{A} performs ordering based on a previous state.
-	A different solution could be to evaluate the need for ordering in steps, meaning that in the described example, \texttt{A} would inform \texttt{B} that it is executing and that ordering is required and \texttt{B} then evaluates whether or not ordering on \texttt{C} is needed, based on the state of \texttt{B}.
+	A different solution could be to evaluate the need for ordering in steps, meaning that in the described example, \texttt{A} would inform \texttt{B} that it is executing and that ordering is required. \texttt{B} then evaluates whether or not ordering on \texttt{C} is needed, based on the state of \texttt{B}.
 	This two-step solution has the disadvantage of potentially taking twice as long, assuming that transporting a message between \texttt{A} and \texttt{C} takes the same amount of time as between \texttt{A} and \texttt{B}.
 
 	There are additionally three cases where the ordering scheme described so far is not maximally concurrent:
@@ -1109,7 +1108,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
         As the execution of \texttt{A} and \texttt{C} have exactly the same effects on \texttt{B}, the synchronisation of these two executions is inconsequential, as they are dynamically independent.
 		\item $\ev{A} \irel \ev{B}, \ev{C} \erel \ev{B}$ When \texttt{A} is executing, it needs to ensure synchronisation on \texttt{B}.
         If \texttt{C} attempts to execute, it is clear that it must ensure synchronisation on \texttt{B} as well, however, \texttt{B} should be allowed to execute at any time, as it is dynamically independent with \texttt{A}.
-        This is because the effect which the execution \texttt{A} has on \texttt{B} is not incompatible with the effects of an execution of \texttt{B} and the execution of \texttt{A} does not change the enabledness of \texttt{B}.
+        This is because the effect, which the execution \texttt{A} has on \texttt{B}, is not incompatible with the effects of an execution of \texttt{B}, and the execution of \texttt{A} does not change the enabledness of \texttt{B}.
 		\item $\ev{A} \irel \ev[100]{B}, \ev[100]{B} \crel \ev{C}$ When \texttt{A} is executing, it will need to ensure synchronisation on both \texttt{B} and \texttt{C} due to the constraint originating from \texttt{B} and targeting \texttt{C}.
         This is not needed, as the condition relation is invalidated by the fact that \texttt{B} is executed.
 	\end{itemize}
