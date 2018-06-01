@@ -386,39 +386,38 @@ In order to attain a complete understanding of the problem at hand, three subjec
 
 		In short, the major innovation in Intel SGX is the option of running hardware secured software, which enables tamper-proof messages, where the sender can be verified as being a correct process.
 
-		In~\cite{liu_scalable_2016} SGX has been utilized to implement a new Byzantine fault tolerance (BFT) consensus algorithm, called \textit{FastBFT}.
+		As an example of SGX's usefulness in relation to consensus algorithms, SGX has been utilized to implement a new Byzantine fault tolerance (BFT) consensus algorithm, called \textit{FastBFT}~\cite{liu_scalable_2016}.
 		This is accomplished by using the \textit{strawman design} where a request is sent to a node, the \textit{primary}, who prepares a vote by distributing parts of a secret to all nodes.
 		The secret can be reconstructed given enough parts and then compared to the hash of the secret which is common knowledge.
-		This means that consensus can be achieved in only $O(n)$ messages, rather than the $O(n^2)$ messages achieved by other algorithms.
 		The reason that Intel SGX is needed for this algorithm is that the primary, who distributes the secrets, can fake being any node as he has all parts of the secret.
 		A Trusted Execution Environment (TEE) such as Intel SGX, means that these secrets can be computed and distributed without the primary every having access to them.
 		A further issue with the strawman design, is that the primary can change the orders of requests, thereby equivocating which request is being voted on.
 		This is once again solved by Intel SGX, by numbering requests with a trusted counter that can only be incremented.
-		This application of Intel SGX means that faults in a distributed network, $f$, can now be tolerated up to $f = \lfloor\frac{n-1}{2}\rfloor$.
+		This application of Intel SGX means that the byzantine faults in the algorithm, $f$, can now be tolerated up to $f = \lfloor\frac{n-1}{2}\rfloor$, given that the SGX component does not exhibit byzantine faults, but at most crash faults.
 
 			\subsubsection{Enclave}
 			\label{subsec:enclave}
 
 			An enclave is a software module which, as its name suggests, is isolated completely from the rest of the system.
-			The strong guarantees of enclave, confidentiality and integrity, build on the following two hardware details:
+			The strong guarantees of enclaves, confidentiality and integrity, build on the following two hardware details:
 			\begin{description}
 				\item [Processor Reserved Memory (PRM)] is a sequential block of memory reserved for SGX, only accessible through enclave CPU instructions.
 				\item [Enclave mode] is a mode under which a process gains access to the PRM.
 			\end{description}
-			An enclaves memory is located solely in PRM, preventing access by other processes and enclaves running on the system.
+			An enclave's memory is located solely in PRM, preventing access by other processes and enclaves running on the system.
 			The PRM is protected from non-enclave processes by enclave mode.
 			When a process is not in enclave mode and tries to access the PRM, the memory access is denied by the processor~\cite{costan_intel_2016}.
 			The PRM of an enclave process is protected from accesses by other processes in enclave mode by the SGX Enclave Control Structure (SECS).
-			The SECS holds meta-data about the enclave processes, and among this is a virtual--physical memory mapping called the Enclave Page Cache (EPC).
+			The SECS holds meta-data about the enclave processes, and among this is a virtual-to-physical memory mapping called the Enclave Page Cache (EPC).
 			Through the EPC an enclave's access to physical PRM is restricted to what has been allocated for the enclave-process~\cite{costan_intel_2016}.
-			All enclave data is encrypted while stored in memory, and is decrypted when loaded out of memory.
+			All enclave data is encrypted while stored in memory, and is decrypted when loaded out of memory, and as such prevents anyone from reading the enclave data by bypassing the processor.
 
 			While SGX provides powerful guarantees through its enclave concept, it does not guarantee software correctness and will not protect against flawed software.
-			Instead SGX encourages developers to isolate a minimal piece of their software, the Trusted Computing Base (TCB), in a trusted enclave environment, and keep the remainder as traditional system processes~\cite{intel_sgx_guide}.
+			Instead SGX encourages developers to isolate a minimal piece of their software, the Trusted Computing Base (TCB), in a trusted enclave environment, and keep the remainder outside the enclave~\cite{intel_sgx_guide}.
 			By minimizing the size of the TCB, and thus the amount of code one must trust, common security principles dictate that the chance of security flaws decreases~\cite{intel_sgx_guide}.
 
 			In order for an enclave to be useful, communication with untrusted code is typically required.
-			Communication with other enclaves and untrusted code is enabled through \textit{enclave calls} (ECALL) and \textit{out calls} (OCALL) respectively.
+			Calls to trusted enclave code from untrusted code, or other enclaves, is enabled through \textit{enclave calls} (ECALLs) and calls to untrusted code from enclave code is enabled through \textit{out calls} (OCALLs).
 			This interface must be defined at compile-time, specifying an API of ECALLs for the enclave as well as any untrusted services needed as OCALLs, in an \textit{EDL}-file~\cite{intel_sgx_guide}.
 
 			When built, an enclave module is a plain binary on the untrusted file system.
@@ -426,7 +425,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 			An enclave must include an \textit{Enclave Signature} containing \textbf{(1)} a hash of the code and initialization data of the enclave, \textbf{(2)} the author's public key and \textbf{(3)} an enclave version/product number.
 			During enclave initialization a hardware check is performed, ensuring that the Enclave Signature matches the enclave binary loaded from the file system.
 			This signature identifies the enclave during the attestation process as well, so if an adversary was to tamper with an existing enclave binary, the contents would no longer match, and would not be allowed to be loaded by SGX.
-			If the adversary was to create their own enclave, replacing the existing, the signature would no longer match and the replacement would then be rejected during the attestation process.
+			If the adversary was to create their own enclave, replacing the existing, the signature would no longer match and the replacement would be rejected during the attestation process with other, correct, enclaves.
 
 			Another powerful tool of an SGX enclave is the ability to read from, and write data to, an untrusted storage medium while ensuring confidentiality of its contents.
 			Such capabilities are needed as the PRM is volatile and will not persist after shutdown.
@@ -454,10 +453,10 @@ In order to attain a complete understanding of the problem at hand, three subjec
 			These two situations are handled by two different processes, aptly named local and remote attestation.
 
 			Local attestation builds on a secret fused into the CPU.
-			An enclave can use an SGX instruction to generate a \textit{report} uniquely identifying the enclave, the enclave signature among them.
+			An enclave can use an SGX instruction to generate a \textit{report} uniquely identifying the enclave, as it also contain the enclave signature.
 			This report is MACed with a key derived from the fused secret and enclave identifier.
-			It is not possible to fake such a MAC'ed report, as the MAC'ing happens in hardware components that ensure that the report corresponds to the caller enclave.
-			The fused secret is not directly accessible by software components, but can only be used by certain hardware instructions that protect against malicious use~\cite{costan_intel_2016}.
+			It is not possible to use the create such a report for another enclave, as the report instruction is only available to software components that ensure that the report corresponds to the caller enclave.
+			The fused secret is not directly accessible by software components, but can only be used by certain hardware instructions that protects against malicious use~\cite{costan_intel_2016}.
 			An attestation challenger will ask for a MAC'ed report from the client enclave, and after receiving it derive the same key to verify the MAC.
 			Because a report can only be created by the enclave it describes, the challenger can be certain of which enclave the client is running if the MAC is valid.
 			To prevent replays the MAC'ed report is allowed to contain a block of arbitrary data, in which the challenger can require a nonce~\cite{costan_intel_2016}.
