@@ -522,7 +522,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 
 	A distributed protocol can experience a number of different errors.
 	Apart from the channel faults already described, we will model crashes and byzantine faults, as these are the ones we are concerned about in this transformation.
-	We model a crash fault in the state machine by adding an empty input transition ($\epsilon$) from every state to an error-state, which cannot transition to any state (see $s_{error}$ in Figure~\ref{fig:simple-nfa}).
+	We model a crash fault in the state machine by adding an empty input transition ($\varepsilon$) from every state to an error-state, which cannot transition to any state (see $s_{error}$ in Figure~\ref{fig:simple-nfa}).
 	As the state machine will not be able to transition to another state, and thus cannot output anything from this state, this serves to model a component crashing in a distributed protocol.
 	We model a byzantine fault by exchanging a process with a new process.
 	This potentially includes the removal of state machines, the addition of state machines or the exchange of old state machine with new state machines with new current states and new channels (we will refer to this last case as \textit{corrupted} state machines).
@@ -1559,7 +1559,7 @@ while there are unmarked nodes do
 	Thus, if a successor of a leader in state $\bm{A}$ or $\bm{E}$ is in state $\bm{L}'$, it will simply redo the commands for $\bm{L'} \rightarrow \bm{L}$ followed by $\bm{L} \rightarrow \bm{A}$ or $\bm{L} \rightarrow \bm{E}$.
 	This is guaranteed to result in the same state as the predecessor, as two different command responses for the same tag are impossible by the properties of Raft~\ref{fig:raft-properties}.
 
-	\subsubsection*{Complexity}
+	\subsection{Complexity}
 
 	The resulting protocol has the following properties when achieving consensus on an execution with regards to message complexity
 	When an execution is initiated in a cluster, that cluster must first achieve consensus on the decision to initiate an execution.
@@ -1567,7 +1567,10 @@ while there are unmarked nodes do
 	Once all locks have been obtained, the locked processes are notified of the execution on which they must now achieve consensus.
 	This results in a message complexity of $O(m\cdot |E_{aff}(G, e) \cup L(e)|)$, where $m$ is the size of a cluster\footnote{This is assuming that each cluster has the same size. Otherwise the average cluster size should suffice.} and $G$ is the graph on which the event, $e$, is executed.
 	If any leader crashes or a faulty channel causes all messages to be lost, this complexity no longer holds, as leader crashes would require leader recovery which has a message complexity of $O(n)$ which can happen up to the fault tolerance of $f$ for each cluster.
-	Note that if a channel loses all messages put through it, indefinitely, the relaxed liveness guarantee of Raft means that termination would no longer be guaranteed in this case.
+	If a channel loses all messages put through it, indefinitely, the relaxed liveness guarantee of Raft means that termination would no longer be guaranteed in this case.
+
+	Not that the message complexity of this solution is superior to that of SMR solutions only in graphs where the complexity of relations are low, such that the execution of an event does not affect and/or lock the entire graph.
+	If this does not hold, both of the solutions have the same upper bound for messages required for achieving consensus on an execution.
 
 	\section{Security analysis}
     \label{sec:security-analysis}
