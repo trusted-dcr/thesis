@@ -89,7 +89,7 @@
 	\begin{abstract}
 		In this thesis we present a solution to the problem of decentralized distributed workflow execution.
 		The presented solution utilises partial state replication of dynamic condition response (DCR) graphs to achieve execution of events with complexity less than the number of peers in the system.
-		We also explore the security and optimization options provided by recent advances in trusted execution environments (TEEs), specifically Intel Secure Guard Extensions (SGX), in order to achieve byzantine fault tolerance in the context of this problem.
+		We also explore the security and optimisation options provided by recent advances in trusted execution environments (TEEs), specifically Intel Secure Guard Extensions (SGX), in order to achieve byzantine fault tolerance in the context of this problem.
 		The design and implementation of this system contains several new contributions: a general transformation of crash fault tolerant distributed protocols to byzantine fault tolerant protocols using SGX, an SGX implementation of the Raft consensus algorithm, an efficient method of collecting the state of a DCR graph called \textit{CheapShot}, and an analysis of the synchronisation of executions in DCR graphs using a minimal locking scheme.
 		Lastly we describe a generalisation of the implemented DCR graph system to a structure supporting arbitrary smart contracts.
 	\end{abstract}
@@ -148,7 +148,7 @@
 	In order to achieve fault tolerance, the system must distribute the DCR graphs on several peers, so that if one peer fails, other peers can take over correct execution of the DCR graph.
 	The trivial method of ensuring fault tolerance, is to make all peers responsible for the entire state of the system, but means that changes in the graph would then have to be synchronized with all peers.
 	For a solution to this problem to be scalable in large networks, a message complexity below $O(n)$ is desirable, where $n$ is the number of peers.
-	Alternatively, the DCR graph would have to be split into parts distributed among peers, but this introduces further issues, as a partial state solution would need intermittent synchronization, when several actions might affect the same parts of the state.
+	Alternatively, the DCR graph would have to be split into parts distributed among peers, but this introduces further issues, as a partial state solution would need intermittent synchronisation, when several actions might affect the same parts of the state.
 	As DCR graphs are primarily used in industry where the documentation of workflows is important, it is essential that any user is able to collect the entire state of a workflow at any given time.
 	Assuming a partial state solution, collecting this state is further complicated in that a coherent state would have to be pieced together from each part of the graph.
 
@@ -176,7 +176,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	Depending on the relations, an event $e$, in a graph $G$, can be \textit{executed}, which will change the state of events in $G$ according to the rules defined by $e$'s outgoing relations.
 	We denote this execution $E(G,e)=G'$.
 
-			\subsubsection{Event State}
+			\subsubsection*{Event state}
 
 			The events in a DCR graph have three binary attributes: \textit{executed}, \textit{included} and \textit{pending}.
 			This is an event: \ev{A}
@@ -194,8 +194,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 				The \textit{pending} attribute is shown as an exclamation point: \ev[011]{A}
 			\end{description}
 
-			\subsubsection{Relations}
-			\label{subsubsec:relations}
+			\subsubsection*{Relations}
 
 			Relations are directed edges between events in the workflow.
 			Each relation is directed from an origin event, toward a target event.
@@ -226,7 +225,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 				\end{description}
 			\end{description}
 
-			\subsubsection{Enabledness}
+			\subsubsection*{Enabledness}
 
 			We use the notion of \textit{enabledness} to describe whether an event is executable in the state of a given graph or not.
 			An event is \textit{enabled} if it can be executed, and \textit{disabled} if it cannot.
@@ -238,17 +237,21 @@ In order to attain a complete understanding of the problem at hand, three subjec
 			\end{itemize}
 			In all other cases, the event is enabled.
 
-			\subsubsection{Formalising \texorpdfstring{$G$}{}}
-			\label{subsubsec:formalising-g}
+			\subsubsection*{Execution rights}
+
+			For DCR graphs to have a meaningful application, each event is typically assigned a number of actors who are allowed to execute that event.
+			Rights to execute can also be assigned based on role.
+
+			\subsubsection*{Formalising \texorpdfstring{$G$}{}}
 
 			After the previous definitions, we can now formalise the concept of a DCR graph $G$:
 			$G = (E,R)$, where
 			\begin{itemize}
 				\item $E$ is the set of all events in the workflow,
-				\item $R = \{r_1, r_2, \dots\}$ is the set of relations in the workflow, where each relation, $r$, has the form $r=(e_{from}, e_{to}, Type)$ and $e_{from}$ is the event $r$ is originating from, $e_{to}$ is the event $r$ is targeting, and $Type$ is one of the relation types described in Section~\ref{subsubsec:relations}.
+				\item $R = \{r_1, r_2, \dots\}$ is the set of relations in the workflow, where each relation, $r$, has the form $r=(e_{from}, e_{to}, Type)$ and $e_{from}$ is the event $r$ is originating from, $e_{to}$ is the event $r$ is targeting, and $Type$ is one of the relation types.
 			\end{itemize}
 
-			If, in a given state of $G$, an event $e'$ changes state or enabledness when event $e$ is executed, we say that $e'$ is in $e$'s \textit{effecting event set}, denoted $E_{eff}(G,e)$.
+			If, in a given state of $G$, an event $e'$ changes state or enabledness when event $e$ is executed, we say that $e'$ is in $e$'s \textit{effecting event set}, denoted $E_{aff}(G,e)$.
 
 			\subsubsection{Concurrency}
 			\label{subsubsec:concurrency}
@@ -297,20 +300,15 @@ In order to attain a complete understanding of the problem at hand, three subjec
 			Notice that in any DCR graph it must hold that $\forall G. \forall e\in G. |I_{dyn}(G,e)| \geq |I_{stat}(e)| \geq |I_{appr}(e)|$, which speaks to the desirability of the different concurrency levels; a system that supports concurrent execution of dynamically independent events allows for more concurrent executions than a one that supports execution of statically independent events, which in turn allows for more concurrent executions than one that supports execution of approximate statically independent events.
 			Figure~\ref{fig:concurrency-all} shows examples of independence in DCR graphs.
 
-		\begin{figure}[!ht]
-			\center
-			\includegraphics[scale=0.6]{figures/dcr-graphs/concurrency-all.pdf}
-			\caption{From top to bottom:
-			(1) An example of a DCR graph where \ev{A} and \ev{B} are not concurrent.
-			(2) An example of a DCR graph where \ev{A} and \ev{B} are statically independent.
-			(3) An example of a DCR graph where \ev{A} and \ev{B} are dynamically, but not statically independent.
-			(4) An example of a DCR graph where \ev{A} and \ev{B} are statically independent, but the approximation will contain them as a dependent pair\label{fig:concurrency-all}.}
-		\end{figure}
-
-			\subsubsection{Execution rights}
-
-			For DCR graphs to have a meaningful application, each event is typically assigned a number of actors who are allowed to execute that event.
-			Rights to execute can also be assigned based on role.
+			\begin{figure}[ht]
+				\center
+				\includegraphics[scale=0.6]{figures/dcr-graphs/concurrency-all.pdf}
+				\caption{From top to bottom:
+				(1) An example of a DCR graph where \ev{A} and \ev{B} are not concurrent.
+				(2) An example of a DCR graph where \ev{A} and \ev{B} are statically independent.
+				(3) An example of a DCR graph where \ev{A} and \ev{B} are dynamically, but not statically independent.
+				(4) An example of a DCR graph where \ev{A} and \ev{B} are statically independent, but the approximation will contain them as a dependent pair\label{fig:concurrency-all}.}
+			\end{figure}
 
 		\subsection{Consensus}
 		\label{subsec:consensus}
@@ -342,7 +340,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 		The proof essentially boils down to showing that that non-termination is possible in all consensus protocol systems with asynchronous communication channels and at least one faulty process.
 		In order to circumvent this impossibility, the guarantees of a fault-tolerant system that utilizes a consensus protocol must be relaxed, for instance by guaranteeing termination only when no faults are present, as is the case in the Paxos protocol~\cite{lamport_part-time_1998}.
 
-		\subsubsection{State Machine Replication}
+		\subsubsection{State machine replication}
 
 		One problem that relates directly to consensus, is \textit{State Machine Replication}~\cite{schneider_implementing_1990} (SMR).
 		SMR is the problem of replicating the state of a system on several nodes, called \textit{replicas}.
@@ -426,9 +424,9 @@ In order to attain a complete understanding of the problem at hand, three subjec
 			This interface must be defined at compile-time, specifying an API of ECALLs for the enclave as well as any untrusted services needed as OCALLs, in an \textit{EDL}-file~\cite{intel_sgx_guide}.
 
 			When built, an enclave module is a plain binary on the untrusted file system.
-			As an enclave under such circumstances would be vulnerable to tampering before initialization, SGX enforces a strict signature policy.
-			An enclave must include an \textit{Enclave Signature} containing \textbf{(1)} a hash of the code and initialization data of the enclave, \textbf{(2)} the author's public key and \textbf{(3)} an enclave version/product number.
-			During enclave initialization a hardware check is performed, ensuring that the Enclave Signature matches the enclave binary loaded from the file system.
+			As an enclave under such circumstances would be vulnerable to tampering before initialisation, SGX enforces a strict signature policy.
+			An enclave must include an \textit{Enclave Signature} containing \textbf{(1)} a hash of the code and initialisation data of the enclave, \textbf{(2)} the author's public key and \textbf{(3)} an enclave version/product number.
+			During enclave initialisation a hardware check is performed, ensuring that the Enclave Signature matches the enclave binary loaded from the file system.
 			This signature identifies the enclave during the attestation process as well, so if an adversary was to tamper with an existing enclave binary, the contents would no longer match, and would not be allowed to be loaded by SGX.
 			If the adversary was to create their own enclave, replacing the existing, the signature would no longer match and the replacement would be rejected during the attestation process with other, correct, enclaves.
 
@@ -490,11 +488,12 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	Thereby a crash-fault tolerant distributed protocol with unreliable channels, which exhibits undocumented behaviour under byzantine-faults (from here on in \textit{crash-resistant protocol}), can be transformed into a byzantine-fault tolerant protocol using Intel SGX and cryptography.
 	We assume that processes exhibiting byzantine faults will not be able to utilize the cryptographic secrets of a correct process.
 
-	\begin{figure}[!ht]
+	\begin{figure}
 		\center
 		\includegraphics[scale=0.6]{figures/state-machines/simple-NFA.pdf}
 		\caption{A simple example of our finite state machine model\label{fig:simple-nfa}}
 	\end{figure}
+	\FloatBarrier
 
 	To show the transformation, we will model an arbitrary distributed protocol as consisting of \textit{finite state machines}, \textit{channels} and \textit{processes}.
 	A finite state machine consists of a current state, $s_{current}$, a finite set of $n$ distinct states, $S=\{s_1, s_2, \dots, s_n\}$, and a finite set of $m$ distinct state-transitions, $T$.
@@ -511,11 +510,12 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	The state machines inside the process can be connected with reliable channels.
 	State machines can be connected to state machines in other processes only with unreliable channels.
 
-	\begin{figure}[ht]
+	\begin{figure}
 		\center
 		\includegraphics[scale=0.6]{figures/state-machines/Distributed-protocol-model.pdf}
 		\caption{A simple example of distributed protocol model.\label{fig:simple-model}}
 	\end{figure}
+	\FloatBarrier
 
 	Figure~\ref{fig:simple-model} is a model of a simple distributed protocol, consisting of the processes $P_0$ and $P_1$, each of which have three state machines $SM_0 - SM_5$.
 	Each state machine is connected to other state machines on the same process with reliable channels $c_0$--$c_3$, and $SM_1$ on $P_0$ is connected to $SM_3$ on $P_1$ by the unreliable channel $c_4$.
@@ -533,8 +533,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	We assume that any byzantine fault can replicate $SM_{s}$, but cannot replicate the secrets contained in $SM_s$, under a corruption of $SM_s$.
 	This models that faulty processes cannot access the cryptographic secrets of a correct process, which is a reasonable assumption by the integrity and confidentiality guarantees given by Intel SGX, if the secrets are stored in an enclave (see Section~\ref{subsec:enclave}).
 	State machines running in the integrity protected area of the process can be uniquely identified by $SM_{s}$, but cannot have channels to state machines running on other processes.
-	This models the integrity protection in Intel SGX and abilities of the Quoting
-Enclave (QE), as well as an enclave's inability to access peripheral hardware such as network cards.
+	This models the integrity protection in Intel SGX and abilities of the Quoting Enclave (QE), as well as an enclave's inability to access peripheral hardware such as network cards.
 
 	To model the Remote Attestation verification, we introduce a Remote Attestation process, $P_{RA}$ and an Attestation state machine, $P_A$, which will communicate with $P_{RA}$ to verify and provision $SM_s$ with a symmetric secret key.
 	We will not go into detail with, or model, the Remote Attestation protocol in this section, as the specifics of it are inconsequential with regards to this transformation.
@@ -546,7 +545,21 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	Both of these solutions require a handshake protocol during channel establishment, in which $SM_s$ on each process must MAC their $id_p$ with the Remote Attestation provisioned secret for verification by the other process.
 	We will not describe this handshake protocol.
 
-	The transformation of a crash-resistant protocol to a byzantine-fault-tolerant protocol consists of four steps on the process-level:
+	\FloatBarrier
+	\begin{figure}
+		\center
+		\includegraphics[scale=0.40]{figures/state-machines/distributed-protocol-model-transformation0.pdf}
+		\includegraphics[scale=0.40]{figures/state-machines/distributed-protocol-model-transformation1.pdf}
+		\includegraphics[scale=0.40]{figures/state-machines/distributed-protocol-model-transformation2.pdf}
+		\includegraphics[scale=0.40]{figures/state-machines/distributed-protocol-model-transformation3.pdf}
+		\includegraphics[scale=0.40]{figures/state-machines/distributed-protocol-model-transformation4.pdf}
+		\caption{Transformation of Figure~\ref{fig:simple-model} from a crash-resistant protocol to a byzantine fault-tolerant protocol.}
+		\label{fig:tranformation-model}
+	\end{figure}
+	\FloatBarrier
+
+	The transformation of a crash-resistant protocol to a byzantine-fault-tolerant protocol consists of four steps on the process-level, as shown in Figure~\ref{fig:tranformation-model}.
+	The steps are as follows:
 	\begin{enumerate}
 		\item Add all the state machines to the integrity protected area of the process.
 		This is equivalent to making the distributed components in the crash-resistant protocol into enclaves.
@@ -559,31 +572,18 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 		\item Add an Attestation state machine $SM_A$ to each process and a Remote Attestation process $P_{RA}$ to the protocol.
 	\end{enumerate}
 
-	\begin{figure}[ht!]
+	\FloatBarrier
+	\begin{figure}[ht]
 		\center
-		\includegraphics[scale=0.40]{figures/state-machines/distributed-protocol-model-transformation0.pdf}
-	\end{figure}
-	\begin{figure}[ht!]
-		\center
-		\includegraphics[scale=0.40]{figures/state-machines/distributed-protocol-model-transformation1.pdf}
-	\end{figure}
-	\begin{figure}[ht!]
-		\center
-		\includegraphics[scale=0.40]{figures/state-machines/distributed-protocol-model-transformation2.pdf}
-	\end{figure}
-	\begin{figure}[ht!]
-		\center
-		\includegraphics[scale=0.40]{figures/state-machines/distributed-protocol-model-transformation3.pdf}
-	\end{figure}
-	\begin{figure}[ht!]
-		\center
-		\includegraphics[scale=0.40]{figures/state-machines/distributed-protocol-model-transformation4.pdf}
-		\caption{Transformation of Figure~\ref{fig:simple-model} from a crash-resistant protocol to a byzantine fault-tolerant protocol.}
-		\label{fig:tranformation-model}
+		\makebox[\textwidth][c]{\includegraphics[scale=0.6]{figures/state-machines/NFA-transformation.pdf}}
+		\caption{Transformation of Figure~\ref{fig:simple-nfa} from state machine in a crash-resistant protocol to integrity protected state machine in a byzantine fault-tolerant protocol, if all channels are to other processes.}
+		\label{fig:nfa-transformation}
 	\end{figure}
 	\FloatBarrier
 
-	The transformation of the state machines consists of the following:
+	The transformation of the state machines consists of five steps.
+	An application of this, on the example from Figure~\ref{fig:simple-nfa}, can be seen in Figure~\ref{fig:nfa-transformation}.
+	The five steps are as follows:
 	\begin{enumerate}
 		\item Before a process runs the protocol, a pre-compute step must be added where each process's $SM_s$ is provisioned with the same cryptographic secret.
 		This is handled by the $SM_s$ and $SM_A$, which will contact $P_{RA}$ and be attested and securely provisioned.
@@ -607,7 +607,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	Each input message in the transitions is transformed to exactly one new state, three new state transitions and one MAC-verification sub-routine on $SM_s$.
 	Each output-set is transformed to exactly one new state, two new state transitions and $n$ MAC sub-routines on $SM_s$ where $n$ is the size of the output set.
 
-	\begin{table}[ht!]
+	\begin{table}[ht]
 	\centering
 	\makebox[\textwidth][c]{\begin{tabular}{r|l}
 	\textbf{Msgs.}     & \textbf{Origin} \\ \hline
@@ -623,18 +623,10 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	\caption{Number of messages after the transformation.}
 	\label{tab:number-of-messages-transformed}
 	\end{table}
+	\FloatBarrier
 
 	Under the assumption that $SM_s$ sends no additional messages during the MAC and MAC-verification sub-routines, and no failures occur, $m$ messages in the original state machine will become $7m$ messages after the transformation (see table~\ref{tab:number-of-messages-transformed}).
 	If we only count the messages sent between processes, there is no change in the number of messages sent.
-
-	\FloatBarrier
-	\begin{figure}[ht!]
-		\center
-		\makebox[\textwidth][c]{\includegraphics[scale=0.6]{figures/state-machines/NFA-transformation.pdf}}
-		\caption{Transformation of Figure~\ref{fig:simple-nfa} from state machine in a crash-resistant protocol to integrity protected state machine in a byzantine fault-tolerant protocol, if all channels are to other processes.}
-		\label{fig:nfa-transformation}
-	\end{figure}
-	\FloatBarrier
 
 	These transformations gives us the following guarantees, relevant if a process experiences a byzantine fault.
 	Recall that we model a byzantine fault as a process being exchanged with a new process, potentially with removed, added and/or corrupted state machines.
@@ -669,7 +661,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	This concludes the argument that Intel SGX and cryptography can change the behaviour of correct process under byzantine faults to behaviour equivalent to that of crash faults, and thereby, using the above transformation, make a crash-resistant protocol into a byzantine fault tolerant protocol.
 	As we will apply this transformation to our solution, we will from here on in only consider a fault model of crashing processes.
 
-		\subsection{Example: Central Server Mutual Exclusion}
+		\subsection{Example: central server mutual exclusion}
 
 		We will now show a practical example of how the transformation in Section~\ref{sec:transforming-byzantine-faults} can be applied.
 		The protocol that we will transform is the central server protocol for mutual exclusion (CSME).
@@ -703,8 +695,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 		First we need to model the protocol as finite state machines, channels and processes.
 		We model two different state machines: a client state machine, and a server state machine.
 
-		\FloatBarrier
-		\begin{figure}[ht!]
+		\begin{figure}[ht]
 			\center
 			\includegraphics[scale=0.6]{figures/state-machines/CSME-client-NFA.pdf}
 			\caption{Client state machine from the central server protocol for mutual exclusion. Note that the channel $c_s$ represents the unreliable channel to the server, and is different across client instances.}
@@ -716,8 +707,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 		It can either not have requested access to the critical section ($s_0$), wait for the token from the server ($s_1$), or have the token and be in the critical section ($s_2$).
 		Naturally it can also crash ($s_{error}$).
 
-		\FloatBarrier
-		\begin{figure}[ht!]
+		\begin{figure}[ht]
 			\center
 			\includegraphics[width=\textwidth]{figures/state-machines/CSME-server-NFA.pdf}
 			\caption{Server state machine from the central server protocol for mutual exclusion. Note that this server state machine can only handle two client processes.}
@@ -737,8 +727,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 			\item[$s_{error}$] where the state machine has crashed.
 		\end{description}
 
-		\FloatBarrier
-		\begin{figure}[ht!]
+		\begin{figure}[ht]
 			\center
 			\includegraphics[scale=0.6]{figures/state-machines/CSME-protocol.pdf}
 			\caption{Processes and channels in the central server protocol for mutual exclusion, with one server and two clients.}
@@ -752,8 +741,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 		We start the transformation by transforming the state machines to have their messages MAC'ed by $SM_s$, and to have $SM_s$ verify the messages they receive.
 		This is done by applying the state machine replication transformation described in Section~\ref{sec:transforming-byzantine-faults}.
 
-		\FloatBarrier
-		\begin{figure}[ht!]
+		\begin{figure}[ht]
 			\center
 			\includegraphics[width=\textwidth]{figures/state-machines/CSME-client-NFA-transformed.pdf}
 			\caption{Client state machine in CSME, after it has been transformed to handle byzantine faults.}
@@ -770,8 +758,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 		If the MAC is correct, the state machine will transition to $s_2$, which is in the critical section, and is equivalent to $s_2$ in the untransformed state machine.
 		Before exiting the critical section, the exit message is sent to $SM_s$ for MAC'ing, and when the appropriate MAC is received from $SM_s$, the exit message is sent to the wrapper state machine for redirection to the server process.
 
-		\FloatBarrier
-		\begin{figure}[ht!]
+		\begin{figure}[ht]
 			\center
 			\makebox[\textwidth][c]{\includegraphics[width=\textwidth]{figures/state-machines/CSME-server-NFA-transformed.pdf}}
 			\caption{Server state machine in the central server protocol for mutual exclusion, after it has been transformed to handle byzantine errors. Note that $s_{error}$ has been omitted for improved readability.}
@@ -793,8 +780,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 			\item[$s_4$] is equivalent to $s_3$, except with the clients reversed (client $2$ has the token, client $1$ has requested it, when client $2$ releases the token).
 		\end{description}
 
-		\FloatBarrier
-		\begin{figure}[ht!]
+		\begin{figure}[ht]
 			\center
 			\includegraphics[scale=0.6]{figures/state-machines/CSME-protocol-transformed.pdf}
 			\caption{Processes and channels in the central server protocol for mutual exclusion, after they have been transformed to handle byzantine errors.}
@@ -811,8 +797,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 
 		Having transformed the CSME protocol, the correct processes will exhibit the same behaviour when other processes suffer byzantine faults, as the correct processes do in the untransformed protocol when other processes suffer crash faults.
 
-		\FloatBarrier
-		\begin{figure}[ht!]
+		\begin{figure}[ht]
 			\center
 			\includegraphics[scale=0.6]{figures/state-machines/CSME-protocol-transformed-byzantine.pdf}
 			\caption{Processes and channels in the transformed central server protocol for mutual exclusion, with a byzantine fault on the server process.}
@@ -825,8 +810,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 		We model this byzantine fault as $P_0$ being exchanged with $P_{byz}$.
 		$P_{byz}$ (see Figure~\ref{fig:CSME-protocol-transformed-byzantine}) is exactly equal to $P_0$, except that $SM_0$ has been exchanged with $SM_{byz}$ (see Figure~\ref{fig:CSME-server-NFA-transformed-byzantine}), which serves a token to any request by the clients.
 
-		\FloatBarrier
-		\begin{figure}[ht!]
+		\begin{figure}[ht]
 			\center
 			\includegraphics[scale=0.6]{figures/state-machines/CSME-server-NFA-transformed-byzantine.pdf}
 			\caption{The byzantine fault state machine $SM_{byz}$ on the server process.\label{fig:CSME-server-NFA-transformed-byzantine}}
@@ -885,8 +869,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	We consider several possible approaches to solving this problem, the performance of which can be seen in Table~\ref{tab:approach-comparison}.
 	The following is a short summary of each approach starting at the most intuitive, followed by iterative improvements of it:
 
-    \FloatBarrier
-    \begin{figure}[ht!]
+    \begin{figure}[ht]
         \center
         \includegraphics[scale=0.7]{figures/dcr-graphs/central-server-approach}
         \caption{The central server approach.
@@ -903,7 +886,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
     An example of the simultaneous execution of two events, $A$ and $B$, is shown in Figure~\ref{fig:central-server-approach}.
 	There exists a single leader $L$. Each of the other peers replicate some subset of $E$ and can redirect requests to the leader.
 	When the leader receives a request, it is queued in the order they are received and applied to $G$ in that order.
-	After the execution of an event $e$, each of the peers replicating $e$ or an event in $E_{eff}(G,e)$ are informed by $L$ of that execution, with a counter value that enables ordering of the execution of the events.
+	After the execution of an event $e$, each of the peers replicating $e$ or an event in $E_{aff}(G,e)$ are informed by $L$ of that execution, with a counter value that enables ordering of the execution of the events.
 	This ensures safety, since each of the peers will apply the executions in the same order as $L$.
 	Since every request is managed by a single leader, we are automatically given DCR linearisability, since the executions are totally ordered.
 	However, this solution does not ensure concurrency, since $L$ needs to apply each previous execution before the next.
@@ -911,8 +894,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	When an execution request is received of an event that is dynamically dependent on one of the currently executing events, it is queued, and so is all other requests that are not in the approximate static independence set of all the currently executing and queued events.
 	Furthermore, there is no fault tolerance because under a leader crash, there is no guarantee that the remaining peers can recreate the most recent state.
 
-    \FloatBarrier
-    \begin{figure}[ht!]
+    \begin{figure}[ht]
         \center
         \includegraphics[scale=0.7]{figures/dcr-graphs/smr-approach.pdf}
         \caption{The SMR approach.
@@ -935,8 +917,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	Because the peer needs to know the previous uncommitted requests, this results in worse concurrency than dynamic independence.
 	Furthermore, the solution still needs $O(n)$ messages to execute a single event, no matter how the graph is constructed.
 
-    \FloatBarrier
-    \begin{figure}[ht!]
+    \begin{figure}[ht]
         \center
         \includegraphics[scale=0.7]{figures/dcr-graphs/partial-state-single-leader-approach.pdf}
         \caption{The partial state, single leader approach.
@@ -952,18 +933,17 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	The basic idea is to distribute the event responsibility out to a subset of peers, which will then only be responsible for that event.
 	We name these subsets \textit{clusters} and denote the size of these clusters $m$.
 	The system still utilizes a single leader, which synchronises the requests.
-	When event $e$ is requested executed, the leader runs an SMR algorithm similar to the one described in the SMR approach, but only with the cluster for $e$, and the clusters of $E_{eff}(G,e)$ | to ensure that the clusters of $E_{eff}(G,e)$ has updated the state/enabledness of the events they are responsible for.
-	This ensures a lower message complexity than the SMR approach, given $n > m \cdot (|E_{eff}(G,e)|+1)$ where $n$ is the number of peers in the system.
-	Since $n = m \cdot v$ and $\forall e \in G. v \geq (|E_{eff}(G,e)|+1))$ for any graph, $G$, it must hold that $m\cdot v \geq m \cdot (|E_{eff}(G,e)|+1))$.
-	For a sufficiently loosely connected graph, $G$, where no event's execution affects all other events in the graph, it must hold $\forall e \in G. n > m \cdot (|E_{eff}(G,e)|+1))$.
+	When event $e$ is requested executed, the leader runs an SMR algorithm similar to the one described in the SMR approach, but only with the cluster for $e$, and the clusters of $E_{aff}(G,e)$ | to ensure that the clusters of $E_{aff}(G,e)$ has updated the state/enabledness of the events they are responsible for.
+	This ensures a lower message complexity than the SMR approach, given $n > m \cdot (|E_{aff}(G,e)|+1)$ where $n$ is the number of peers in the system.
+	Since $n = m \cdot v$ and $\forall e \in G. v \geq (|E_{aff}(G,e)|+1))$ for any graph, $G$, it must hold that $m\cdot v \geq m \cdot (|E_{aff}(G,e)|+1))$.
+	For a sufficiently loosely connected graph, $G$, where no event's execution affects all other events in the graph, it must hold $\forall e \in G. n > m \cdot (|E_{aff}(G,e)|+1))$.
 
 	Another improvement is the fact that if more than half of a cluster crashes, only part of the availability is affected, since the statically independent clusters can continue operating normally.
 	However, $L$ must still synchronise all requests, and worse, cannot allow for concurrent request commits, since the peers would not necessarily be able to recreate the synchronisation between these.
 	The one exception is dynamically independent events, since the ordering of the execution of these does not matter.
 	Under leader crashes, all clusters need to synchronise their logs, which would require $O(n^2)$ messages.
 
-    \FloatBarrier
-    \begin{figure}[ht!]
+    \begin{figure}[ht]
         \center
         \includegraphics[scale=0.7]{figures/dcr-graphs/complete-distribution-approach.pdf}
         \caption{The complete distribution approach.
@@ -977,12 +957,11 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
     An example showing the execution of an event is shown in Figure~\ref{fig:complete-distribution-approach}.
 	Here $n = v$ and each peer is only responsible for a single event.
 	There is no leader, and an execution is done through synchronisation between peers.
-	If event $e$ is to be executed, the responsible peer will use a synchronisation technique (e.g. two phase locking~\cite{skeen_nonblocking_1981}) with all the peers responsible for the events in $E_{eff}(G,e)$, who will update their state accordingly.
+	If event $e$ is to be executed, the responsible peer will use a synchronisation technique (e.g. two phase locking~\cite{skeen_nonblocking_1981}) with all the peers responsible for the events in $E_{aff}(G,e)$, who will update their state accordingly.
 	This guarantees DCR linearisability.
 	The fault tolerance of this approach is quite poor, as any peer crashing will result in a data loss, and effect availability, even though it has the same property as the partial state, single leader approach of not effecting the events in $I_{stat}(e)$.
 
-    \FloatBarrier
-    \begin{figure}[ht!]
+    \begin{figure}[ht]
         \center
         \includegraphics[scale=0.6]{figures/dcr-graphs/partial-state-multi-leader-approach.pdf}
         \caption{The partial state, multi leader approach.
@@ -1024,7 +1003,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	Additionally, it is useful to know the entire history of the graph, when evaluating whether or not the graph has served its purpose.
 	For these reasons, we present the \textit{CheapShot} algorithm for collecting the global history of a DCR graph in Section~\ref{subsec:global-history-collection}.
 
-	\subsection{Execution Ordering}
+	\subsection{Execution ordering}
 	\label{subsec:execution-ordering}
 
 	For this section, we apply terms used in directed graphs and define variations of neighbourhoods with regards to DCR graphs as:
@@ -1046,26 +1025,28 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	This is unnecessary as it is impossible for event \texttt{B} to execute before event \texttt{A} has been either executed or excluded.
 	Both of the constraints share this property and since constraints furthermore do not modify states, there is no need for \texttt{A} to ensure ordering of its execution on \texttt{B} or indeed for any event to ensure ordering of its execution on events which it is targeting only with a constraint.
 
-	\begin{figure}[ht!]
+	\begin{figure}[ht]
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/race-condition.pdf}
 		\caption{Graph illustrating the need for ordering effects in $N_{out}(e)$.}
 		\label{fig:race-condition}
 	\end{figure}
+	\FloatBarrier
 
-	If \texttt{A} has effects originating from it, the need for synchronization arises as shown in Figure~\ref{fig:race-condition}.
+	If \texttt{A} has effects originating from it, the need for synchronisation arises as shown in Figure~\ref{fig:race-condition}.
 	In the graph events \texttt{A} and \texttt{B}, both modify the same event state attributes and a race condition is present as a result.
-	In order to prevent the race condition from having adverse effects, synchronization is needed between the two executing events, \texttt{A} and \texttt{B}.
+	In order to prevent the race condition from having adverse effects, synchronisation is needed between the two executing events, \texttt{A} and \texttt{B}.
 	This means that events with effects, which target events within $N_{out}(e)$, need to ensure synchronisation on the targeted events of $e$'s execution.
 
 	Since effects can modify events which in turn have constraints originating from it, there are situations where locking in the neighbourhood of the executed event is no longer sufficient.
 
-	\begin{figure}[ht!]
+	\begin{figure}[ht]
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/second-degree-effect.pdf}
 		\caption{Graph illustrating that ordering only within $N_{out}(e) \cup e$ is insufficient.}
 		\label{fig:second-degree-effect}
 	\end{figure}
+	\FloatBarrier
 
 	In the graph shown in Figure~\ref{fig:second-degree-effect}, it is shown that the set of events requiring ordering of an execution has to include either a subset of $N_{out}(N_{out}(e))$, $N_{in}(e) \cup N_{out}(e)$ or $N_{in}(N_{in}(e))$.
 	Otherwise, the graph could end in a state where only \texttt{A} and \texttt{B} have been executed, which should be impossible due to the execution of either including a condition on the other.
@@ -1087,12 +1068,13 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	\end{description}
 	Both of these cases can be covered by ordering in $N_{out}(N_{out}(e)) \cup N_{out}(e) \cup e$ or $N_{in}(e) \cup N_{out}(e) \cup e$.
 
-	\begin{figure}[ht!]
+	\begin{figure}[ht]
 		\center
 		\includegraphics[scale=0.5]{figures/dcr-graphs/second-degree-no-effect.pdf}
 		\caption{Graph illustrating the advantage of locking in $N_{out}(N_{out}(e)) \cup N_{out}(e) \cup e$ rather than $N_{in}(e) \cup N_{out}(e) \cup e$.}
 		\label{fig:second-degree-no-effect}
 	\end{figure}
+	\FloatBarrier
 
 	In the graph shown in Figure~\ref{fig:second-degree-no-effect}, an execution of \texttt{A} no longer has an effect on the enabledness of \texttt{B}, as \texttt{C} is included and therefore has the same state before and after the execution of \texttt{A}.
 	An argument can be made here for the $N_{out}(N_{out}(e)) \cup N_{out}(e) \cup e$ ordering scheme over $N_{in}(e) \cup N_{out}(e) \cup e$, as it allows for optimisations in that ordering is not needed on \texttt{B}, meaning that the former ordering scheme would be more efficient than the latter.
@@ -1113,7 +1095,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
         This is not needed, as the condition relation is invalidated by the fact that \texttt{B} is executed.
 	\end{itemize}
 
-    \subsubsection{Synchronisation Method}
+    \subsubsection{Synchronisation method}
     \label{subsubsec:synchronisation-method}
 
 	Now that the cases where ordering is needed have been exhaustively described, as shown in~\cite{debois_concurrency_2015}, the actual method for synchronisation executions must be chosen.
@@ -1187,7 +1169,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	In the above example, this would mean that the execution of \texttt{B} in the history of \texttt{C} would be deleted, along with the execution of \texttt{C} as the execution of \texttt{B} happened-before the execution of \texttt{A}.
 	The reason for this procedure is that if these executions are not omitted, a consistent cut is no longer guaranteed.
 
-	\begin{figure}[ht!]
+	\begin{figure}[ht]
 		\center
 		\includegraphics[scale=0.6]{figures/dcr-graphs/global-history-collection-consistent-cut.pdf}
 		\caption{Global history collection consistent cut. Note that execution process of locking and then committing is illustrated as a single message, for brevity. The green and blue executions illustrate two possibilities which could have preceded \texttt{D}'s perceived execution sequence of $\{\texttt{C}, \texttt{D}\}$. The red, dotted line shows an inconsistent cut and the black, dotted line shows the found consistent cut.}
@@ -1219,12 +1201,13 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 
 	Now that a consistent cut is guaranteed, a valid execution sequence then has to be interpolated.
 
-	\begin{figure}[ht!]
+	\begin{figure}[ht]
 		\center
 		\includegraphics[scale=0.6]{figures/dcr-graphs/global-history-collection-example.pdf}
 		\caption{Example graph illustrating global history collection. The sequences within a DCR event represent the execution sequence of that event.}
 		\label{fig:global-history-collection-example}
 	\end{figure}
+	\FloatBarrier
 
 	From the graph shown in Figure~\ref{fig:global-history-collection-example}, the shown sequences are returned by each respective event and form a consistent cut.
 	Note that each execution of an event is uniquely identifiable by a tag, which is also the case in the algorithm described in this thesis, as it is needed by the cluster consensus part described in Section~\ref{subsec:cluster-consensus}.
@@ -1237,7 +1220,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	If each sequence is formulated as a series of execution relationships they can easily be aggregated in order to define the rules which a valid execution sequence must adhere to for this specific DCR graph and its state.
 	For the example in Figure~\ref{fig:global-history-collection-example} where a union of the execution relationships result in the following set of relationships: $\{A_1 \rightarrow D_1, A_1 \rightarrow B_1, B_1 \rightarrow E_1, E_1 \rightarrow E_2, E_1 \rightarrow F_1, F_1 \rightarrow F_2, F_1 \rightarrow E_2, E_2 \rightarrow F_2, F_2 \rightarrow C_1\}$
 
-	\begin{figure}[ht!]
+	\begin{figure}[ht]
 		\center
 		\includegraphics[scale=0.6]{figures/dcr-graphs/execution-sequence-graph-example.pdf}
 		\caption{Initial graph made from sequence rule aggregation.}
@@ -1250,19 +1233,6 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	This is still valid, as cycles in the happened-before relationships of executions, entails that the executions happened concurrently, because the locking rules would ensure an ordering if they were not independent.
 	And since the locking rules from Section~\ref{subsec:execution-ordering}, only allow concurrent executions when the events are dynamically independent, any linearisation of the concurrent executions must result in the same state of the graph.
 	Topological ordering behaviour with regards to cyclical graphs is, however, undefined and as cycles in the graphs created from execution relationships define concurrent executions, any ordering of executions in a cycle is valid.
-
-	A topological ordering of event executions is obtained by performing a Depth-First Search (DFS), and returning its reverse postorder graph traversal.
-	The DFS traversal is started at an arbitrary vertex.
-	The vertex is marked as visited, and the DFS is continued in an unmarked neighbour.
-	When a vertex is reached that has no unmarked neighbours, that vertex is prepended to the resulting linearisation.
-	When the DFS has been run, we choose another unmarked arbitrary vertex and run the DFS from that vertex.
-	Note that a reverse postorder DFS graph traversal is exactly a topological order, if the graph is a directed \textit{acyclic} graph~\cite[chapter 4, page 582]{sedgewick_algorithms_2011}.
-	In order to extend the algorithm to allow any order of vertices in cyclical components, the third case of the proof is replaced with the following:
-	\begin{itemize}
-		\item The marked neighbour has been visited in the \textit{same} DFS traversal, implying that the two vertices are part of a cycle.
-		But in this case, any ordering of the two vertices are acceptable, as it implies that the event executions, that the two vertices represent, happened concurrently.
-	\end{itemize}
-	Pseudo code of the DFS traversal algorithm can be seen in Listing~\ref{lst:dfs-traversal}.
 \begin{snippet}
 \begin{mdframed}[backgroundcolor=Papyrus]
 	\begin{lstlisting}[style=pseudo, keywords={}]
@@ -1279,8 +1249,23 @@ while there are unmarked nodes do
     add n to head of L
 	\end{lstlisting}
 \end{mdframed}
-\caption{Reversed postorder DFS traversal algorithm. Adapted from~\cite{_topological_2018} \label{lst:dfs-traversal}.}
+\caption{Reversed postorder DFS traversal algorithm. Adapted from~\cite{_topological_2018}.}
+\label{lst:dfs-traversal}
 \end{snippet}
+\FloatBarrier
+
+	A topological ordering of event executions is obtained by performing a Depth-First Search (DFS), and returning its reverse postorder graph traversal.
+	Pseudo code of the DFS traversal algorithm can be seen in Listing~\ref{lst:dfs-traversal}.
+	The DFS traversal is started at an arbitrary vertex.
+	The vertex is marked as visited, and the DFS is continued in an unmarked neighbour.
+	When a vertex is reached that has no unmarked neighbours, that vertex is prepended to the resulting linearisation.
+	When the DFS has been run, we choose another unmarked arbitrary vertex and run the DFS from that vertex.
+	Note that a reverse postorder DFS graph traversal is exactly a topological order, if the graph is a directed \textit{acyclic} graph~\cite[chapter 4, page 582]{sedgewick_algorithms_2011}.
+	In order to extend the algorithm to allow any order of vertices in cyclical components, the third case of the proof is replaced with the following:
+	\begin{itemize}
+		\item The marked neighbour has been visited in the \textit{same} DFS traversal, implying that the two vertices are part of a cycle.
+		But in this case, any ordering of the two vertices are acceptable, as it implies that the event executions, that the two vertices represent, happened concurrently.
+	\end{itemize}
 
 	There are four different steps to the process of collecting the execution history of a graph.
 	\begin{enumerate}
@@ -1300,10 +1285,10 @@ while there are unmarked nodes do
 
 	In conclusion the global history can be collected in $O(e)$ messages and within $O(e \cdot m + c + h)$ computational complexity, which will be bounded by making the executions sequences into a consistent cut when $e \cdot m > c + h$, and bounded by the topological ordering when $c+h > e \cdot m$.
 
-	\subsection{Cluster Consensus}
+	\subsection{Cluster consensus}
 	\label{subsec:cluster-consensus}
 
-	\begin{table}[ht!]
+	\begin{table}[ht]
     	\centering
         	\makebox[\textwidth][c]{\begin{tabular}{l p{1.7cm} p{1.5cm} l p{1.7cm}}
             \toprule
@@ -1320,6 +1305,7 @@ while there are unmarked nodes do
     	\caption{Comparison of different consensus algorithms}
     	\label{tab:comparison-consensus-algorithms}
 	\end{table}
+	\FloatBarrier
 
     Recall that the consensus algorithm applied in each cluster can be regarded separately from the rest of the algorithm, as locking a cluster or executing an event is simply requests SMR requests between the clusters.
 	Each cluster therefore requires a SMR/consensus algorithm to achieve consensus on the state of their shared event.
@@ -1336,6 +1322,7 @@ while there are unmarked nodes do
 	Raft~\cite{ongaro_search_2014} is similar to multi-Paxos in that it establishes consensus between processes over a continuous stream of commands.
 	Like Paxos, Raft uses a leader to order commands and tolerates $f = \lfloor \frac{n - 1}{2} \rfloor$ (crash) faults.
 	The implementation of the Raft algorithm differs heavily from that of multi-Paxos, but the guarantees provided are identical.
+	Pseudocode for our implementation and message definitions can be found in Appendix~\ref{app:raft-pseudocode}.
 
 	In Raft, a processor is either a leader, a follower, or a candidate.
 	To circumvent FLP, Raft operates under partial synchrony~\cite{dwork_consensus_1988} and only keeps a leader for a single term.
@@ -1415,18 +1402,22 @@ while there are unmarked nodes do
 
 	\subsubsection*{Timeout liveness vulnerability}
 
-	\begin{figure}[t]
+	As previously discussed, Raft in its basic structure is vulnerable to disruption of liveness even after a byzantine transformation via SGX.
+
+	\begin{figure}[ht]
 	  \centering
 	  \includegraphics[width=\textwidth]{figures/raft-liveness-vuln.pdf}
 	  \caption{Denial of service attack from malicious processor $M$ against correct processors $C_1$ and $C_2$. $M$ can repeat the above to continue the attack.}
+	  \label{fig:raft-liveness-vuln}
 	\end{figure}
-
-	As previously discussed, Raft in its basic structure is vulnerable to disruption of liveness even after a byzantine transformation via SGX.
+	\FloatBarrier
+	
 	A malicious processor may exploit this weakness by
 	\begin{enumerate*}[label=\textbf{(\alph*)}]
 	  \item dropping all heartbeat (empty append) messages from leaders when follower and
 	  \item dropping all messages to and from any processor when leader.
 	\end{enumerate*}
+	This attack is shown in Figure~\ref{fig:raft-liveness-vuln}.
 	As a result of \textbf{(a)}, the malicious processor will timeout and start an election whenever the leader has nothing to append for time period $\Delta_{min}$ (resulting in a heartbeat instead of regular append).
 	The malicious processor is likely to win this election as, as the leader has not actually crashed.
 	The correct processors will only contest such an election if the leader actually crashes or the network is sufficiently delayed.
@@ -1529,18 +1520,19 @@ while there are unmarked nodes do
 
 	\subsubsection*{Termination Argument}
 
-	\begin{figure}[t]
-  	\includegraphics[width=\textwidth]{figures/raft-2pc.pdf}
-	  \caption{State machine for $C_{leader}(e)$ during execution of $e$ with states start ($\bm{S}$), intermediate locked ($\bm{L}'$), locked ($\bm{L}$), abort ($\bm{A}$), and execute ($\bm{E}$). Similar to~\cite{skeen_nonblocking_1981} we show received and sent messages above and below the line subscripted with the origin or destination process.
-	  We also show appending and committing entries in $C(e)$ as messages.}
-	  \label{fig:raft-2pc}
-	\end{figure}
-
 	This locking scheme is very similar to centralized two phase commit~\cite{skeen_nonblocking_1981}, where a leader safely advances a set of replicas to a commit or abort state.
 	As described in~\cite{skeen_nonblocking_1981}, two phase commit is a blocking protocol, meaning a leader or replica processor crash will halt the system until the crashed processor recovers.
 	This is still true for our application of the two phase commit protocol, but we have augmented each site with an event cluster.
 	Because of this, a single processor crash cannot block the two phase commit.
 	Blocking of an attempt to execute $e$ can occur at the earliest when a cluster in $\bigcup_{e' \in L(e)} C(e')$ experiences crashing of a majority of processors.
+
+	\begin{figure}[ht]
+  	\includegraphics[width=\textwidth]{figures/raft-2pc.pdf}
+	  \caption{State machine for $C_{leader}(e)$ during execution of $e$ with states start ($\bm{S}$), intermediate locked ($\bm{L}'$), locked ($\bm{L}$), abort ($\bm{A}$), and execute ($\bm{E}$). Similar to~\cite{skeen_nonblocking_1981} we show received and sent messages above and below the line subscripted with the origin or destination process. 
+	  We also show appending and committing entries in $C(e)$ as messages.}
+	  \label{fig:raft-2pc}
+	\end{figure}
+	\FloatBarrier
 
 	To show our proposed algorithm always terminates, when no involved cluster experiences a majority crash, we will examine the event of a cluster leader crashing during an execution attempt.
 	Specifically we will examine the $C(e)$ cluster when attempting to execute some event $e$, as the argument for termination at clusters $\bigcup_{e' \in L(e)} C(e')$ will follow naturally.
@@ -1643,20 +1635,21 @@ while there are unmarked nodes do
         This due to the underlying SMR protocol (Raft), which solves the consensus problem in an asynchronous system with crashes, and thus must have a sequence of message omissions that violate liveness.
         However, by the guarantees of the Raft algorithm, the system is not vulnerable to any safety attacks.
 
-	\section{Secure DCR Implementation}
+	\section{Trusted DCR implementation}
 
-	\begin{figure}[t]
+	As a proof-of-concept, we have implemented the system discussed in Section~\ref{subsec:protocol}.
+	The system consists of an implementation of the Raft~\cite{ongaro_search_2014} algorithm augmented with our protocol for DCR execution.
+	Further, this implementation is hardened against Byzantine faults via the transformation described in Section~\ref{sec:transforming-byzantine-faults}.
+	The implementation in its entirety can be found at \url{https://github.com/trusted-dcr}.
+
+	\begin{figure}[ht]
 		\centering
 		\includegraphics[width=\textwidth]{figures/dcr-graphs/network-stack.pdf}
 		\caption{Figure showing the components of the trusted DCR implementation.
 		The rectangles are the components themselves and the lines are the channels which are used for communication between the connected components. }
 		\label{fig:network-stack}
 	\end{figure}
-
-	As a proof-of-concept, we have implemented the system discussed in Section~\ref{subsec:protocol}.
-	The system consists of an implementation of the Raft~\cite{ongaro_search_2014} algorithm augmented with our protocol for DCR execution.
-	Further, this implementation is hardened against Byzantine faults via the transformation described in Section~\ref{sec:transforming-byzantine-faults}.
-	The implementation in its entirety can be found at \url{https://github.com/trusted-dcr}.
+	\FloatBarrier
 
 	Figure~\ref{fig:network-stack} shows an overview of the system.
 	An SGX enclave drives the major parts of the system.
@@ -1665,13 +1658,13 @@ while there are unmarked nodes do
 	To provide inter-peer communication, the enclave instead contacts a daemon using O/ECALLs.
 	This call interface is defined in the Enclave Definition Language (EDL)~\cite{intel_sgx_guide} layer.
 
-	\subsection{SGX Enclave}
+	\subsection*{SGX enclave}
 
 	The enclave protects the classical Raft algorithm against Byzantine faults as described in Section~\ref{sec:transforming-byzantine-faults}.
 	All Raft messages are augmented with a message authentication code (MAC) using a key shared between all peers.
 	The shared key is obtained through attestation and is confidential to the enclaves (meaning that it can never leave protected memory).\footnote{The implementation does not currently use SGX attestation for key distribution, but instead relies on an unsafe hard-coded shared key.}
 
-	\subsection{EDL}
+	\subsection*{EDL}
 
 	Using our EDL definitions, the SGX SDK generates a secure call interface between the trusted enclave and the untrusted daemon.
 	Specifically, the call interface
@@ -1680,20 +1673,6 @@ while there are unmarked nodes do
 		\item prevents leaking protected memory through pointers by first copying structures to a zeroed scratch space, and
 		\item prevents concurrent calls to the enclave unless explicitly allowed.
 	\end{enumerate*}
-
-	An excerpt of the enclave--daemon interface definition can be seen in Listing~\ref{listing:edl}.
-	The trusted part defines ECALLs, allowing untrusted code to call enclave functions.
-	The untrusted part defines OCALLs, allowing the enclave to call untrusted functions outside the enclave.
-	Listing~\ref{listing:edl} shows trusted functions for the enclave to receive network messages from the daemon and untrusted functions for the enclave to send network messages to the daemon.
-
-	The considerations of \textbf{(b)} are apparent in the untrusted \texttt{send\_append\_req} function.
-	Here the structure \texttt{append\_req\_t} contains a pointer to a range of entries.
-	Inside the enclave, such a pointer would map to protected memory, which is inaccessible to the untrusted function definition.
-	Therefore the pointer is extracted from the structure and given as a parameter tagged with \texttt{[in, count=size]}.
-	The \texttt{in}-part causes the interface to create a scratch space in unprotected memory, where the entries are copied to, allowing the untrusted function access~\cite{intel_sgx_developer_reference}.
-
-	While the enclave can be written in \cpp, EDL is a superset of plain C.
-	This means a lot of work goes into converting from \cpp types, like vectors and maps, to types consumable by the EDL layer.
 
 	\begin{snippet}
 		\begin{mdframed}[backgroundcolor=Papyrus]
@@ -1722,8 +1701,23 @@ enclave {
 		\caption{Excerpt from the \texttt{enclave.edl} file.}
 		\label{listing:edl}
 	\end{snippet}
+	\FloatBarrier
 
-	\subsection{Daemon}
+	An excerpt of the enclave--daemon interface definition can be seen in Listing~\ref{listing:edl}.
+	The trusted part defines ECALLs, allowing untrusted code to call enclave functions.
+	The untrusted part defines OCALLs, allowing the enclave to call untrusted functions outside the enclave.
+	Listing~\ref{listing:edl} shows trusted functions for the enclave to receive network messages from the daemon and untrusted functions for the enclave to send network messages to the daemon.
+
+	The considerations of \textbf{(b)} are apparent in the untrusted \texttt{send\_append\_req} function.
+	Here the structure \texttt{append\_req\_t} contains a pointer to a range of entries.
+	Inside the enclave, such a pointer would map to protected memory, which is inaccessible to the untrusted function definition.
+	Therefore the pointer is extracted from the structure and given as a parameter tagged with \texttt{[in, count=size]}.
+	The \texttt{in}-part causes the interface to create a scratch space in unprotected memory, where the entries are copied to, allowing the untrusted function access~\cite{intel_sgx_developer_reference}.
+
+	While the enclave can be written in \cpp, EDL is a superset of plain C.
+	This means a lot of work goes into converting from \cpp types, like vectors and maps, to types consumable by the EDL layer.
+
+	\subsection*{Daemon}
 
 	As the enclave cannot communicate directly with the network stack of the system, a daemon is needed for inter-peer communication.
 	The daemon implements OCALLs for sending messages, parametrised by the ID of the target peer.
@@ -1742,7 +1736,7 @@ enclave {
 	During attestation, peers must agree on this configuration.
 	Otherwise a malicious actor would be able operate in the network with a less restrictive configuration\footnote{The configuration should map client public keys with events if authentication is needed for execution. This functionality does not currently exist in the implementation.}.
 
-	\subsection{Client}
+	\subsection*{Client}
 
 	Finally a simple command line interface has been implemented as a client.
 	This client is capable of communicating with the daemon to configure the enclave, initialise it, perform executions and fetch the global execution history.
@@ -1753,7 +1747,7 @@ enclave {
 	When completed, the results are communicated back to the daemon and later the client via OCALLs and gRPC\footnote{In the current implementation, the client is not notified when and if the execution succeeds.}.
 	When fetching the global execution history, the client will create a consistent cut from the logs retrieved by the daemon and validated by the local enclave, as described in Section~\ref{subsec:global-history-collection}.
 
-	\section{Distributed Smart Contract Engine}
+	\section{Distributed smart contract engine}
 
 	The system described in this thesis, which solves the problem of a partial state DCR engine in a byzantine setting, can be converted to support a variety of programs, much like Ethereum~\cite{_ethereum_2018}.
 	The classic Ethereum example is the Decentralized Autonomous Organization (DAO), which is a decentralized investment fund, where an Ethereum peer could invest some money and be paid in kind if the investment made by the DAO profited.
@@ -1767,12 +1761,13 @@ enclave {
 		\item[Constraints] specifies whether or not the target event is executable, based on a set of criteria on the originating event.
 	\end{description}
 
-	\begin{figure}[t]
+	\begin{figure}[ht]
   	\includegraphics[width=\textwidth]{figures/dcr-graphs/dao-simple.pdf}
 	  \caption{The simple implementation of the DAO.
 	  The lines ending in arrowheads are effects and the lines ending in circles are conditions. }
 	  \label{fig:dao-simple}
 	\end{figure}
+	\FloatBarrier
 
 	We can now define the DAO in our transformed system, as shown in Figure~\ref{fig:dao-simple}.
 	The figure shows five events, one of which is executable by the coordinator of the DAO and the rest of which are executable by a peer, $p_1$.
@@ -1799,11 +1794,12 @@ enclave {
 	This is limiting, in that events can only interact with each other in very specific predefined ways, such as the separate events for voting for option$_1$ and option$_2$ respectively.
 	We could, however, improve the simplicity of the solution by introducing the concept of parametrised effects.
 
-	\begin{figure}[t]
+	\begin{figure}[ht]
   	\includegraphics[width=\textwidth]{figures/dcr-graphs/dao-parametrised.pdf}
 	  \caption{The parametrised implementation of the DAO.}
 	  \label{fig:dao-parametrised}
 	\end{figure}
+	\FloatBarrier
 
 	In Figure~\ref{fig:dao-parametrised} the DAO is shown implemented with parametrised effects.
 	When an event is executed, it is supplied with the required variables.
@@ -1868,8 +1864,8 @@ enclave {
 	\subsection{Scalability and fault tolerance}
 
     One of the central aspects of our system, is the separation of state, i.e. each cluster stores a different state and keeps it updated.
-   	This allows for high scalability, in that we can execute events in $O(m \cdot E_{eff}(G,e) + 1)$ messages, where $m$ is size of the clusters.
-   	It will trivially be true that $n \geq m \cdot E_{eff}(G,e) + 1$, and for some graphs $n > m \cdot E_{eff}(G,e) + 1$, as described in Section~\ref{subsubsec:concurrency} and~\ref{sec:analysis}.
+   	This allows for high scalability, in that we can execute events in $O(m \cdot E_{aff}(G,e) + 1)$ messages, where $m$ is size of the clusters.
+   	It will trivially be true that $n \geq m \cdot E_{aff}(G,e) + 1$, and for some graphs $n > m \cdot E_{aff}(G,e) + 1$, as described in Section~\ref{subsubsec:concurrency} and~\ref{sec:analysis}.
 
     An argument could be made that reducing $n$ in an SMR approach can achieve the exact same message complexity and fault tolerance, since the relationship between scalability and fault tolerance is highly interdependent in these approaches.
     To show this relationship, lets look at an example with $3$ statically independent events and $15$ peers in the network.
@@ -1924,6 +1920,7 @@ enclave {
 
 	\appendix
 	\section{Raft Pseudocode}
+	\label{app:raft-pseudocode}
 	\begin{mdframed}[backgroundcolor=Papyrus]
 	\begin{lstlisting}[style=pseudo, caption={All message types.}]
 $\MSG{\REQ\COMMAND, tag, event, type}$
