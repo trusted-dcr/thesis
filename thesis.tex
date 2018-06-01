@@ -1302,7 +1302,7 @@ while there are unmarked nodes do
         	Raft~\cite{ongaro_search_2014}               	& $f = \lfloor \frac{n-1}{2} \rfloor$ & $2(f+1)$                & $2(f+1)$                     & Crash                         \\
             \bottomrule
         	\end{tabular}}
-    	\caption{Comparison of different consensus algorithms}
+    	\caption{Comparison of different consensus algorithms.}
     	\label{tab:comparison-consensus-algorithms}
 	\end{table}
 	\FloatBarrier
@@ -1411,7 +1411,7 @@ while there are unmarked nodes do
 	  \label{fig:raft-liveness-vuln}
 	\end{figure}
 	\FloatBarrier
-	
+
 	A malicious processor may exploit this weakness by
 	\begin{enumerate*}[label=\textbf{(\alph*)}]
 	  \item dropping all heartbeat (empty append) messages from leaders when follower and
@@ -1528,7 +1528,7 @@ while there are unmarked nodes do
 
 	\begin{figure}[ht]
   	\includegraphics[width=\textwidth]{figures/raft-2pc.pdf}
-	  \caption{State machine for $C_{leader}(e)$ during execution of $e$ with states start ($\bm{S}$), intermediate locked ($\bm{L}'$), locked ($\bm{L}$), abort ($\bm{A}$), and execute ($\bm{E}$). Similar to~\cite{skeen_nonblocking_1981} we show received and sent messages above and below the line subscripted with the origin or destination process. 
+	  \caption{State machine for $C_{leader}(e)$ during execution of $e$ with states start ($\bm{S}$), intermediate locked ($\bm{L}'$), locked ($\bm{L}$), abort ($\bm{A}$), and execute ($\bm{E}$). Similar to~\cite{skeen_nonblocking_1981} we show received and sent messages above and below the line subscripted with the origin or destination process.
 	  We also show appending and committing entries in $C(e)$ as messages.}
 	  \label{fig:raft-2pc}
 	\end{figure}
