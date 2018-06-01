@@ -3,6 +3,7 @@
 \usepackage{textcomp}
 \usepackage{tikz}
 \usepackage{amsmath}
+\usepackage{pdfpages}
 \usepackage[hyphens]{url}
 \usepackage{hyperref}
 \usepackage[utf8]{inputenc}
@@ -62,6 +63,11 @@
 \sloppy
 
 \begin{titlepage}
+
+	\includepdf{itu-frontpage.pdf}
+
+	\pagebreak
+
 	\centering {\huge Trusted DCR: Decentralised workflow management in a byzantine setting}
 
 	\vspace{1.5cm}
@@ -1740,6 +1746,66 @@ enclave {
 	When completed, the results are communicated back to the daemon and later the client via OCALLs and gRPC\footnote{In the current implementation, the client is not notified when and if the execution succeeds.}.
 	When fetching the global execution history, the client will create a consistent cut from the logs retrieved by the daemon and validated by the local enclave, as described in Section~\ref{subsec:global-history-collection}.
 
+	\section{Distributed Smart Contract Engine}
+
+	The system described in this thesis, which solves the problem of a partial state DCR engine in a byzantine setting, can be converted to support a variety of programs, much like Ethereum.
+	The classic Ethereum example is the Decentralized Autonomous Organization (DAO), which is was a decentralized investment fund, where an Ethereum peer could invest some money and be paid in kind if the investment made by the DAO earned money.
+	What the DAO actually invested in was decided by the peers who voted, weighted by how much money they had placed into the DAO.
+
+	If a system like the DAO were to be implemented into a general version of the DCR engine described in this thesis, a transformation of the state is required.
+	We start this transformation by redefining events to contain an arbitrary amount of data, rather than the DCR state of its executed, included and pending attributes.
+	Since the state of an event can now be arbitrary, a more generalised version of effects and constraints are required.
+	\begin{description}
+		\item[Effects] applies the specified modification to the state of target event.
+		\item[Constraints] specifies whether or not the target event is executable, based on a set of criteria on the originating event.
+	\end{description}
+
+	\begin{figure}[t]
+  	\includegraphics[width=\textwidth]{figures/dcr-graphs/dao-simple.pdf}
+	  \caption{The simple implementation of the DAO.
+	  The lines ending in arrowheads are effects and the lines ending in circles are conditions. }
+	  \label{fig:dao-simple}
+	\end{figure}
+
+	We can now define implement the DAO in our transformed system, as shown in Figure~\ref{fig:dao-simple}.
+	The figure shows five events, one of which is executable by the coordinator of the DAO and the rest of which are executable by a peer, $p_1$.
+	We distribute the weight of votes by selling \textit{tickets} at a set price.
+	The coordinator maintains a state consisting of the current sum of money placed in the DAO, the number of votes for investment option 1 and the number of votes for option 2.
+	$p_1$ has can execute the following events:
+	\begin{description}
+		\item[State] which is the event containing the state of $p_1$. This event has no effect on execution.
+		\item[Buy ticket] which on execution subtracts the fee of a ticket from the state of $p_1$, adds a ticket to the state of $p_1$ and adds the fee to the state of the coordinator.
+		Note that this event can only be executed if $p_1$ has enough money.
+		\item[Vote option$_\textbf{1}$] which on execution adds a ticket to the vote tally of option$_1$ kept by the coordinator and removes a ticket from the state of $p_1$.
+		This event can only be executed when $p_1$ has a ticket to spend.
+		\item[Vote option$_\textbf{2}$] which on execution adds a ticket to the vote tally of option$_2$ kept by the coordinator and removes a ticket from the state of $p_1$.
+		This event can only be executed when $p_1$ has a ticket to spend.
+	\end{description}
+	Note that the state of $p_1$ could be stored in each event belonging to $p_1$, but as this would require the events of $p_1$ to subtract tickets and money from all occurrences of the state of $p_1$, the state is kept separately in order to reduce the complexity of the example.
+	This subsystem of events belonging to $p_1$ can be duplicated for each respective peer which participates in the DAO.
+	Note that performing the investment itself is illustrated in the example, but could easily be accomplished by having events deciding for option$_1$ and option$_2$.
+	Option$_1$ would only be executable if every peer has spent their tickets and option$_1$ has more votes than option$_2$.
+	The inverse would be true for Option$_2$.
+	Additional state would be needed in order to return the correct amount of money back to the investors, but that should be trivial given the functionality displayed in this example.
+
+	Due to the way the DCR engine is defined, all events and relations must be created simultaneously with the creation of the graph.
+	This is limiting, in that events can only interact with each other in very specific predefined ways, such as the separate events for voting for option$_1$ and option$_2$ respectively.
+	We could however improve the simplicity of the solution by introducing the concept of parametrised effects.
+
+	\begin{figure}[t]
+  	\includegraphics[width=\textwidth]{figures/dcr-graphs/dao-parametrised.pdf}
+	  \caption{The parametrised implementation of the DAO.}
+	  \label{fig:dao-parametrised}
+	\end{figure}
+
+	In Figure~\ref{fig:dao-parametrised} the DAO is shown implemented with parametrised effects.
+	When an event is executed, it is supplied with the required variables.
+	For example, when the \textit{Vote} event is executed, it is supplied with the option to be voted for, \textit{opt}, and how many tickets to assign in that vote, \textit{t}.
+	An even more condensed parametrised version of this example could be created, by representing all of the events executable by $p_1$ as a single event and denoting what the execution of that event should do using parameters.
+
+	The execution ordering semantics described in Section~\ref{subsec:execution-ordering}, largely still apply to this transformation, with the exception that an event does not have to lock itself when executing.
+	This is because executing an event does not necessarily affect the event itself, unless an explicit effect is defined targeting it.
+
 	\section{Discussion}
 
 	We will now provide some perspective on the contributions of this thesis in relation to other solutions and the considerations of the solution presented here.
@@ -1832,66 +1898,6 @@ enclave {
 	There is, however, significant advantages associated with the Ethereum solution, in that the fault tolerance is not based on the users of the DCR engine, but rather the users of Ethereum, which is currently of considerable size.
 	The sheer size of the Ethereum network therefore makes it incredibly resilient to attacks and practically guarantees availability, as each Ethereum node holds the state of the network.
 	A main concern with the trusted DCR project was scalability and as joining the Ethereum network entails storing the state of all smart contracts, the DCR engine running on Ethereum should only be used in cases where scalability is of absolutely no concern.
-
-	\section{Distributed Smart Contract Engine}
-
-	The system described in this thesis, which solves the problem of a partial state DCR engine in a byzantine setting, can be converted to support a variety of programs, much like Ethereum.
-	The classic Ethereum example is the Decentralized Autonomous Organization (DAO), which is was a decentralized investment fund, where an Ethereum peer could invest some money and be paid in kind if the investment made by the DAO earned money.
-	What the DAO actually invested in was decided by the peers who voted, weighted by how much money they had placed into the DAO.
-
-	If a system like the DAO were to be implemented into a general version of the DCR engine described in this thesis, a transformation of the state is required.
-	We start this transformation by redefining events to contain an arbitrary amount of data, rather than the DCR state of its executed, included and pending attributes.
-	Since the state of an event can now be arbitrary, a more generalised version of effects and constraints are required.
-	\begin{description}
-		\item[Effects] applies the specified modification to the state of target event.
-		\item[Constraints] specifies whether or not the target event is executable, based on a set of criteria on the originating event.
-	\end{description}
-
-	\begin{figure}[t]
-  	\includegraphics[width=\textwidth]{figures/dcr-graphs/dao-simple.pdf}
-	  \caption{The simple implementation of the DAO.
-	  The lines ending in arrowheads are effects and the lines ending in circles are conditions. }
-	  \label{fig:dao-simple}
-	\end{figure}
-
-	We can now define implement the DAO in our transformed system, as shown in Figure~\ref{fig:dao-simple}.
-	The figure shows five events, one of which is executable by the coordinator of the DAO and the rest of which are executable by a peer, $p_1$.
-	We distribute the weight of votes by selling \textit{tickets} at a set price.
-	The coordinator maintains a state consisting of the current sum of money placed in the DAO, the number of votes for investment option 1 and the number of votes for option 2.
-	$p_1$ has can execute the following events:
-	\begin{description}
-		\item[State] which is the event containing the state of $p_1$. This event has no effect on execution.
-		\item[Buy ticket] which on execution subtracts the fee of a ticket from the state of $p_1$, adds a ticket to the state of $p_1$ and adds the fee to the state of the coordinator.
-		Note that this event can only be executed if $p_1$ has enough money.
-		\item[Vote option$_\textbf{1}$] which on execution adds a ticket to the vote tally of option$_1$ kept by the coordinator and removes a ticket from the state of $p_1$.
-		This event can only be executed when $p_1$ has a ticket to spend.
-		\item[Vote option$_\textbf{2}$] which on execution adds a ticket to the vote tally of option$_2$ kept by the coordinator and removes a ticket from the state of $p_1$.
-		This event can only be executed when $p_1$ has a ticket to spend.
-	\end{description}
-	Note that the state of $p_1$ could be stored in each event belonging to $p_1$, but as this would require the events of $p_1$ to subtract tickets and money from all occurrences of the state of $p_1$, the state is kept separately in order to reduce the complexity of the example.
-	This subsystem of events belonging to $p_1$ can be duplicated for each respective peer which participates in the DAO.
-	Note that performing the investment itself is illustrated in the example, but could easily be accomplished by having events deciding for option$_1$ and option$_2$.
-	Option$_1$ would only be executable if every peer has spent their tickets and option$_1$ has more votes than option$_2$.
-	The inverse would be true for Option$_2$.
-	Additional state would be needed in order to return the correct amount of money back to the investors, but that should be trivial given the functionality displayed in this example.
-
-	Due to the way the DCR engine is defined, all events and relations must be created simultaneously with the creation of the graph.
-	This is limiting, in that events can only interact with each other in very specific predefined ways, such as the separate events for voting for option$_1$ and option$_2$ respectively.
-	We could however improve the simplicity of the solution by introducing the concept of parametrised effects.
-
-	\begin{figure}[t]
-  	\includegraphics[width=\textwidth]{figures/dcr-graphs/dao-parametrised.pdf}
-	  \caption{The parametrised implementation of the DAO.}
-	  \label{fig:dao-parametrised}
-	\end{figure}
-
-	In Figure~\ref{fig:dao-parametrised} the DAO is shown implemented with parametrised effects.
-	When an event is executed, it is supplied with the required variables.
-	For example, when the \textit{Vote} event is executed, it is supplied with the option to be voted for, \textit{opt}, and how many tickets to assign in that vote, \textit{t}.
-	An even more condensed parametrised version of this example could be created, by representing all of the events executable by $p_1$ as a single event and denoting what the execution of that event should do using parameters.
-
-	The execution ordering semantics described in Section~\ref{subsec:execution-ordering}, largely still apply to this transformation, with the exception that an event does not have to lock itself when executing.
-	This is because executing an event does not necessarily affect the event itself, unless an explicit effect is defined targeting it.
 
 	\section{Conclusion}
 
