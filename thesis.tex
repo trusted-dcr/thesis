@@ -1320,7 +1320,7 @@ while there are unmarked nodes do
     	\label{tab:comparison-consensus-algorithms}
 	\end{table}
 
-    Recall that the consensus algorithm applied in each cluster can be regarded separately from the rest of the algorithm, as locking a cluster or executing an event reduces to the problem of consensus.
+    Recall that the consensus algorithm applied in each cluster can be regarded separately from the rest of the algorithm, as locking a cluster or executing an event is simply requests SMR requests between the clusters.
 	Each cluster therefore requires a SMR/consensus algorithm to achieve consensus on the state of their shared event.
 	Table~\ref{tab:comparison-consensus-algorithms} shows a comparison between some classical SMR/consensus algorithms.
 	Notice that each of the crash tolerant algorithms can be made into byzantine resistant algorithms using the transformation from Section~\ref{sec:transforming-byzantine-faults}\footnote{MinBFT and FastBFT already uses TEE elements, which is why they can offer better fault tolerance than $3f+1$ under byzantine errors.}.
@@ -1913,7 +1913,7 @@ enclave {
 	Lastly we have also demonstrated that the designed partial state algorithm is not limited to running DCR graphs.
 
 	Specifically with regards to DCR, this thesis presents the first byzantine fault tolerant state-distributed DCR engine accompanied by an in-depth analysis of the necessity for execution ordering in DCR.
-	Beyond that, the presented solution to the PSMR problem goes beyond any existing solution in terms of the combination of a low number of messages required for updating the state, $O(m)$ and the high fault tolerance of $f = \lfloor\frac{n-1}{2}\rfloor$.
+	Beyond that, the presented solution to the PSMR problem goes beyond any existing solution in terms of the combination of a low number of messages required for updating the state of $e$, $O(m \cdot |E_{aff}(G,e) \cup L(e)|)$ and the high fault tolerance of $f = \lfloor\frac{n-1}{2}\rfloor$.
 
 	\newpage
 	\bibliography{bibliography}{}
