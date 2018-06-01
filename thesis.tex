@@ -480,8 +480,8 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	\section{Transforming byzantine faults to crashes}
 	\label{sec:transforming-byzantine-faults}
 
-	We conjecture that the correct use of Intel SGX can transform all byzantine faults in a distributed system with unreliable channels, such that correct processes in the protocol treat faulty processes as equivalent to processes crashing and losing messages.
-	Thereby a crash-fault tolerant distributed protocol with unreliable channels which exhibits undocumented behaviour under byzantine-faults (from here on in "crash-resistant protocol") can be transformed into a byzantine-fault-tolerant protocol using Intel SGX and cryptography.
+	We conjecture that the correct use of Intel SGX can transform all byzantine faults in a distributed system with unreliable channels, such that correct processes in the protocol treat faulty processes as if they were crashed or the messages from them lost.
+	Thereby a crash-fault tolerant distributed protocol with unreliable channels which exhibits undocumented behaviour under byzantine-faults (from here on in \textit{crash-resistant protocol}) can be transformed into a byzantine-fault tolerant protocol using Intel SGX and cryptography.
 	We assume that processes exhibiting byzantine faults will not be able to utilize the cryptographic secrets of a correct process.
 
 	\begin{figure}[!ht]
@@ -493,7 +493,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	To show the transformation, we will model an arbitrary distributed protocol as consisting of \textit{finite state machines}, \textit{channels} and \textit{processes}.
 	A finite state machine consists of a current state, $s_{current}$, a finite set of $n$ distinct states, $S=\{s_1, s_2, \dots, s_n\}$, and a finite set of $m$ distinct state-transitions, $T$.
 	A finite state machine can only be in one state at any time, and transitions to another state by accepting a bit-vector as input, and optionally outputs another bit-vector.
-	A transition has the form $(s_{from}, i, o, s_{to})$, where $i$ is an input consisting of a pair of a bit-vector and the channel the bit-vector was received on, and $o$ is the output consisting of a set of bit-vector/channel pair, each representing that bit-vector being sent on the appertaining channel.
+	A transition has the form $(s_{from}, i, o, s_{to})$, where $i$ is an input consisting of a pair of a bit-vector and the channel the bit-vector was received on, and $o$ is the output consisting of a set of bit-vector/channel pairs, each representing that bit-vector being sent on the appertaining channel.
 	For example, the finite state machine in Figure~\ref{fig:simple-nfa} will transition from the starting state $s_0$ to $s_2$ on input $"010"$ from channel $c_0$, and will during the transition output $"101"$ to channel $c_1$ and $"100"$ to $c_2$.
 
 	A channel is bi-directional and can either be reliable or unreliable.
@@ -516,22 +516,22 @@ In order to attain a complete understanding of the problem at hand, three subjec
 
 	A distributed protocol can experience a number of different errors.
 	Apart from the channel faults already described, we will model crashes and byzantine faults, as these are the ones we are concerned about in this transformation.
-	We model a crash fault in the state machine by adding an empty input transition ("$\epsilon$") from every state to an error-state, which cannot transition to any state (see $s_{error}$ in Figure~\ref{fig:simple-nfa}).
+	We model a crash fault in the state machine by adding an empty input transition ($\epsilon$) from every state to an error-state, which cannot transition to any state (see $s_{error}$ in Figure~\ref{fig:simple-nfa}).
 	As the state machine will not be able to transition to another state, and thus cannot output anything from this state, this serves to model a component crashing in a distributed protocol.
 	We model a byzantine fault by exchanging a process with a new process.
 	This potentially includes the removal of state machines, the addition of state machines or the exchange of old state machine with new state machines with new current states and new channels (we will refer to this last case as \textit{corrupted} state machines).
 	This models a process exhibiting arbitrary behaviour.
 
 	To transform a crash-resistant distributed protocol into a byzantine-fault-tolerant protocol, we utilize the verification in Remote Attestation (see Section~\ref{subsec:attestation}) and the integrity guarantees provided by Intel SGX.
-	To model the integrity guarantees, we introduce the notion of a cryptographic secret state machine $SM_{s}$, and an integrity protected area of the process.
-	We assume that any byzantine fault can replicate $SM_{s}$, but cannot replicate the secrets contained in $SM_s$ if $SM_s$ is changed.
-	This models that faulty processes cannot access the cryptographic secrets of a correct process, which is a reasonable assumption by the integrity and confidentiality guarantees given by Intel SGX, given that the secrets are stored in an enclave (see Section~\ref{subsec:enclave}).
+	To model the integrity and confidentiality guarantees, we introduce the notion of a cryptographic secret state machine $SM_{s}$, and an integrity protected area of the process.
+	We assume that any byzantine fault can replicate $SM_{s}$, but cannot replicate the secrets contained in $SM_s$, under a corruption of $SM_s$.
+	This models that faulty processes cannot access the cryptographic secrets of a correct process, which is a reasonable assumption by the integrity and confidentiality guarantees given by Intel SGX, if the secrets are stored in an enclave (see Section~\ref{subsec:enclave}).
 	State machines running in the integrity protected area of the process can be uniquely identified by $SM_{s}$, but cannot have channels to state machines running on other processes.
 	This models the integrity protection in Intel SGX and abilities of the QE, as well as an enclave's inability to access peripheral hardware such as network cards.
 
 	To model the Remote Attestation verification, we introduce a Remote Attestation process, $P_{RA}$ and an Attestation state machine, $P_A$, which will communicate with $P_{RA}$ to verify and provision $SM_s$ with a symmetric secret key.
 	We will not go into detail with, or model, the Remote Attestation protocol in this section, as the specifics of it are inconsequential with regards to this transformation.
-	For more information on the Remote Attestation protocol, see Section~\ref{subsec:attestation}, \textit{Intel SGX explained}~\cite{costan_intel_2016} and/or \textit{Intel SGX Developer guide}~\cite{intel_sgx_guide}.
+	For more information on the Remote Attestation protocol, see Section~\ref{subsec:attestation},~\cite{costan_intel_2016} and/or~\cite{intel_sgx_developer_reference}.
 
 	We will also assume that each process has a unique identifier, $id_p$, that $SM_s$ knows $id_p$, and that each untransformed state machine includes both this $id_p$ and the $id_p$ of the intended receiver in its outgoing messages.
 	In the case of broadcast messages, the $id_p$ of the receiving processes can be omitted.
