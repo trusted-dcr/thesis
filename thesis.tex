@@ -1146,7 +1146,7 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	In addition to locking, events in which enabledness is affected by an execution must therefore also be informed about that execution.
 
 	It is assumed that informing events is attempted until the informed event responds.
-	Under this assumption, an arbitrary amount of time can pass before an event is actually notified, but as this does not allow executions to happen which violate the semantics of DCR; it is reduced to a question of fairness, which will not be discussed in this thesis\footnote{Fairness in the sense that two events which enabledness is affected by an execution will not necessarily be notified of that execution at the same time, thereby allowing one event to execute before the other.}.
+	Under this assumption, an arbitrary amount of time can pass before an event is actually notified, but as this does not allow executions to happen which violate the semantics of DCR; it is reduced to a question of fairness, which will not be discussed in this thesis\footnote{Fairness in the sense that two events for which enabledness is affected by an execution will not necessarily be notified of that execution at the same time, thereby allowing one event to execute before the other.}.
 
 	A way to represent the state of a continuous system in an asynchronous setting is by finding a consistent cut~\cite{lamport_time_1978}, which is defined by the happened-before relations:
 
@@ -1163,12 +1163,12 @@ Enclave (QE), as well as an enclave's inability to access peripheral hardware su
 	\end{itemize}
 
 	One way to achieve a consistent cut, is to implement Chandra and Lamport's Snapshot algorithm~\cite{chandy_distributed_1985}.
-	This would require incorporation of the snapshot algorithm into the consensus algorithm applied it each individual cluster, significantly increasing its complexity.
-	Additionally, the snapshot algorithm requires flooding of the entire network, which results in $O(r)$  messages, where $r$ is the number of relations in the DCR graph.
+	This would require incorporation of the snapshot algorithm into the consensus algorithm, significantly increasing its complexity.
+	Additionally, the snapshot algorithm requires flooding of the entire network, which results in $O(|R|)$  messages, where $R$ is the set of relations in the DCR graph.
 	Instead, we present an alternative solution, where the client requiring the global history requests the execution log from each event cluster.
-	The algorithm we present for collecting the global history, does so without locking or pausing the network and in $O(e)$ messages, where $e$ is the number of events in the DCR graph.
-	As a consistent cut only makes sense in connected graphs, it holds that $v = e-1$ in the case where $v$ is minimal, but as each event can have one of each relation type to each event in the graph, $v$ can maximally be $v = 5\cdot e^2$, meaning that the message complexity of the proposed solution is significantly better than that of Chandra and Lamport's Snapshot algorithm, since the proposed solution would always require $O(e)$ messages.
-	There is, however, considerations in that each event will then have their individual perceived sequence of executions, which might be dissimilar due to arbitrary message delays.
+	The algorithm we present for collecting the global history, does so without locking or pausing the network and in $O(|E|)$ messages, where $E$ is the set of events in the DCR graph.
+
+	As a consistent cut only makes sense in connected graphs, it holds that $|R| = |E|-1$ in the case where $|R|$ is minimal, but as each event can have one of each relation type to each event in the graph, $|R|$ can maximally be $5\cdot |E|^2$, meaning that the message complexity of the proposed solution is significantly better than that of Chandra and Lamport's Snapshot algorithm, since the proposed solution would always require $O(|E|)$ messages.
 	After receiving an answer from each cluster, the client is able to merge the local executions sequences into a consistent cut, using the following algorithm.
 
 	Given the observed executions of each event in the DCR graph, it is always possible to reduce the cut until consistency is at some point attained.
