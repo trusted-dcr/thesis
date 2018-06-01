@@ -1007,16 +1007,18 @@ In order to attain a complete understanding of the problem at hand, three subjec
 
 	Given a method of ordering event executions, ensuring that the system can sustain faults means that each event needs to not only be stored by a leader, but rather a number of peers, called a \textit{cluster}, one of which is the leader at any given time.
 	Clusters being responsible for events rather than single peers means that executions and locks need to be synchronized for each individual cluster.
-	Due to the fact that these clusters can be seen as completely individual networks of peers, any consensus algorithm can be used to solve the problem of synchronizing executions and locks as it is completely detached from the locking mechanism and reduces to the problem of consensus.
-	Choosing a consensus algorithm to manage the clusters is however still an important decision, as the wrong choice could form significant bottlenecks in the system.
+	Due to the fact that these clusters can be seen as completely individual networks of peers, any consensus algorithm can be used to solve the problem of synchronizing executions and locks as executions and locks are simply SMR requests on that cluster.
+
+	Choosing a consensus algorithm to manage the clusters is, however, still an important decision, as the wrong choice could form significant bottlenecks in the system.
 	For this implementation we have chosen Raft~\cite{ongaro_search_2014}, as the basis for the cluster consensus algorithm, modified by the transformation we described earlier in Section~\ref{sec:transforming-byzantine-faults} to reduce byzantine faults to crash-stop failures.
 	The reason for choosing Raft is that it is widely used commercially, relatively simple and able to achieve consensus in very few messages.
 	Additionally Raft only handles crash faults and is therefore an ideal candidate for the transformation of byzantine faults to crashes.
 	The consensus algorithm applied in the clusters is described in Section~\ref{subsec:cluster-consensus}.
 
-	With the two parts described above, peers can now progress the graph, in the sense that events can be executed safely, but since each peer only knows the state of events which clusters it belongs to, what has transpired in the graph is implicitly distributed.
+	With a method of ordering events between clusters, and a method for achieving consensus on a state change in a cluster, peers can progress the graph, in the sense that events can be executed safely.
+	But since each peer only knows the state of the event its cluster stores, what has transpired in the graph is implicitly distributed.
 	Since the algorithm does at this point guarantees that any event can only execute, when the semantics and the state of the graph permits it, collecting the global history is only interesting from a documentation perspective.
-	Suppose that a node which is only a member of clusters of events which are never executed, that node will have no way of knowing if anything in the graph is being executed at all.
+	Suppose that a peer is a member of a cluster of an event which is not affected by any successful executions, that peer will have no way of knowing if anything in the graph has been executed at all.
 	Additionally, it is useful to know the entire history of the graph, when evaluating whether or not the graph has served its purpose.
 	For these reasons, we present the \textit{CheapShot} algorithm for collecting the global history of a DCR graph in Section~\ref{subsec:global-history-collection}.
 
