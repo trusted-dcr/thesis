@@ -835,8 +835,8 @@ In order to attain a complete understanding of the problem at hand, three subjec
 
 	With a better understanding of the prerequisite information, we now present a more thorough definition of the problem.
 
-	We define our system as having $n$ peers $\{p_1, p_2 \dots p_n\}$, and a DCR graph $G$, which consists of $v$ events $E = \{e_1, e_2, \dots, e_v\}$.
-	Each peer is said to be responsible for one or more events, where being responsible for an event, $e$, means that requests for executions of $e$ and requests for the state of $e$ can be handled by that peer.
+	We define our system as having $n$ peers $\{p_1, p_2 \dots p_n\}$, and a DCR graph $G$, which consists of $v$ events $E = \{e_1, e_2, \dots, e_v\}$ and a set of relations between events, $R$.
+	Each peer is said to be \textit{responsible} for one or more events, where being responsible for an event, $e$, means that requests for executions of $e$ and requests for the state of $e$ can be handled by that peer.
 	Furthermore the system must have the following properties:
 	\begin{description}
 		\item[Safety] all peers responsible for $e$ execute the requests on $e$ in the same order.
@@ -844,16 +844,16 @@ In order to attain a complete understanding of the problem at hand, three subjec
 		\item[DCR linearisability] At any time before and after event executions, the states of $e_1, e_2, \dots, e_v$ must be the result of at least one run $R_G$ of $G$. Recall that $R_G$ only contains all successful executions.
 	\end{description}
 
-    Recall that we wish to create a system in which:
+    Recall that we wish to create a system which is:
     \begin{description}
         \item[Concurrent] Simultaneous execution of concurrent events, as defined in Section~\ref{subsubsec:concurrency}, is performed without requiring that those executions are synchronised in the system.
         \item[Scalable] Achieving consensus is done in less than $O(n)$ messages, where $n$ is the number of peers in the graph, while supporting the distribution of the state of the DCR graph among the participants.
         \item[Byzantine fault tolerant] Byzantine behaviour is detectable, through the guarantees provided by Intel SGX, and treated as crashes.
     \end{description}
 
-	 Additionally, any peer should be able to collect the run, $R$, which is compatible with all prior collected runs, meaning that a run collected at logical time $t$, must be prefixed by the run collected at time $t-1$\footnote{Up to concurrency, as defined in~\ref{subsubsec:concurrency}.}.
-     Note that from this, it follows that two runs collected at time $t$, are not required to be identical, but are required to be \textit{equivalent}, meaning that they result in the same graph state.
-     Since the peers responsible for each event can always be required to store executions which it has \textit{observed} and include it alongside the state of the event, we assume that collecting a run will always be possible, as long as maintaining the state of the graph is and therefore disregard it at this point in the analysis.
+	 Additionally, any peer should be able to collect the run, $R$, which is compatible with all prior collected runs, meaning that a run collected at logical time $t$, must be prefixed by a run equivalent up to concurrency, to a run collected at time $t-1$.
+     Note that from this, it follows that two runs collected at time $t$, are not required to be identical, but are required to be equivalent up to concurrency, as defined in~\ref{subsubsec:concurrency}.
+     Since the peers responsible for each event can always be required to store executions which it has \textit{observed} and include it alongside the state of the event, we assume that collecting a run will always be possible, as long as maintaining the state of the graph is and therefore disregard it at this point in the analysis, and return to it in Section~\ref{subsec:global-history-collection}.
 
 	\begin{landscape}
 		\begin{table}
@@ -870,13 +870,13 @@ In order to attain a complete understanding of the problem at hand, three subjec
 		\bottomrule
 		\end{tabular}}
 
-		\caption[caption]{Comparison of different approaches to solving the problem. $^*$ denotes partially. \textbf{FT: Availability} is the fault tolerance of the availability guarantee. \textbf{FT: Safety} is the fault tolerance of the safety guarantee. \textbf{FT: Data integrity} is the fault tolerance of data integrity. \textbf{Crash recovery} is the number of messages required to recover from a crashing process. \textbf{Minimum complexity for executing $e$} is the minimum number of messages needed for the execution of an event. \textbf{Concurrency} is the supported level of DCR concurrency. \textbf{Request Bottleneck} is how many processes' can handle execution requests at one time.}
+		\caption[caption]{Comparison of different approaches to solving the problem. $^*$ denotes partial availability loss. \textbf{FT: Availability} is the fault tolerance of the availability guarantee. \textbf{FT: Safety} is the fault tolerance of the safety guarantee. \textbf{FT: Data integrity} is the fault tolerance of data integrity. \textbf{Crash recovery} is the number of messages required to recover from a crashing process. \textbf{Minimum complexity for executing $e$} is the minimum number of messages needed for the execution of an event. \textbf{Concurrency} is the supported level of DCR concurrency. \textbf{Request Bottleneck} is how many processes' can handle execution requests at one time.}
 		\label{tab:approach-comparison}
 		\end{table}
 	\end{landscape}
 
 	We consider several possible approaches to solving this problem, the performance of which can be seen in Table~\ref{tab:approach-comparison}.
-	The following is a short summary of each approach starting at the most intuitive and followed by iterative improvements on it:
+	The following is a short summary of each approach starting at the most intuitive, followed by iterative improvements of it:
 
     \FloatBarrier
     \begin{figure}[ht!]
@@ -884,7 +884,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
         \includegraphics[scale=0.7]{figures/dcr-graphs/central-server-approach}
         \caption{The central server approach.
         The messages are ordered by the leader, $L$, such that the execution of $A$ is applied before the execution of $B$.
-        Note that the executions are numbered in the order which they are sent and received.
+        Note that the executions are numbered in the logical order which they are sent.
         Peer $p_1$ is responsible for event $A$ along with $p_2$.
         Peer $p_3$ is responsible for event $B$ along with $p_3$.}
         \label{fig:central-server-approach}
@@ -895,8 +895,8 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	The first approach is a simple central server.
     An example of the simultaneous execution of two events, $A$ and $B$, are shown in Figure~\ref{fig:central-server-approach}.
 	There is a single leader, $L$, each of the other peers replicate some subset of $E$ and can redirect requests to the leader.
-	When the leader receives a request, it is queued in the order they are received in, and applied to $G$ in that order.
-	After the execution of an event $e$, each of the peers replicating $e$ or an event in $E_{eff}(G,e)$ are informed by $L$ of that execution, with a monotonic counter value that enables ordering of the execution of the events.
+	When the leader receives a request, it is queued in the order they are received, and applied to $G$ in that order.
+	After the execution of an event $e$, each of the peers replicating $e$ or an event in $E_{eff}(G,e)$ are informed by $L$ of that execution, with a counter value that enables ordering of the execution of the events.
 	This ensures safety, since each of the peers will apply the executions in the same order as $L$.
 	Since every request is managed by a single leader, we are automatically given DCR linearisability, since the executions are totally ordered.
 	However, this solution does not ensure concurrency, since $L$ needs to apply each previous execution before the next.
@@ -918,7 +918,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	The next approach tries to improve on the fault tolerance of the central server approach.
     An example of the simultaneous execution of two events, $A$ and $B$, is shown in Figure~\ref{fig:smr-approach}.
 	This is a classic SMR/consensus solution with crash fault tolerance.
-	There are several protocols that solve the issue of SMR, for instance in~\cite{bracha_asynchronous_1985,lamport_part-time_1998,lamport_lower_2006,ongaro_search_2014}, but as they are largely interchangeable with regards to performance\footnote{With regards to the categories specified in the Table~\ref{tab:approach-comparison}.}, we assume the existence of a solution that utilizes a leader, $L$, to achieve an optimal crash fault tolerance of $f = \lfloor \frac{(n-1)}{2} \rfloor$ is enough.
+	There are several protocols that solve the issue of SMR, for instance in~\cite{bracha_asynchronous_1985,lamport_part-time_1998,lamport_lower_2006,ongaro_search_2014}, but as they are largely interchangeable with regards to performance\footnote{In the categories specified in the Table~\ref{tab:approach-comparison}.}, any solution that utilizes a leader, $L$, to achieve an optimal crash fault tolerance of $f = \lfloor \frac{(n-1)}{2} \rfloor$ is enough.
 
 	In this approach, every peer must replicate all events, as all executions must be committed to at least $f+1$ replicas.
 	This ensures that if a leader dies, a new leader can be chosen (using $O(n)$ messages), which gives us the aforementioned fault tolerance.
@@ -969,9 +969,9 @@ In order to attain a complete understanding of the problem at hand, three subjec
     An example showing the execution of an event is shown in Figure~\ref{fig:complete-distribution-approach}.
 	In it $n = v$, and each peer is only responsible for a single event.
 	There is no leader, and an execution is done through synchronisation between peers.
-	If event $e$ is to be executed, the responsible peer will use a synchronisation technique (e.g. 2 phase locking) with all the peers responsible for the events in $E_{eff}(G,e)$, who will update their state accordingly.
+	If event $e$ is to be executed, the responsible peer will use a synchronisation technique (e.g. 2 phase locking~\cite{skeen_nonblocking_1981}) with all the peers responsible for the events in $E_{eff}(G,e)$, who will update their state accordingly.
 	This guarantees DCR linearisability.
-	The fault tolerance of this approach is quite bad, as any peer crashing will result in a data loss, and effect availability, even though it has the same property as the partial state, single leader approach of not effecting the events in $I_{stat}\{e\}$.
+	The fault tolerance of this approach is quite poor, as any peer crashing will result in a data loss, and effect availability, even though it has the same property as the partial state, single leader approach of not effecting the events in $I_{stat}(e)$.
 
     \FloatBarrier
     \begin{figure}[ht!]
