@@ -315,18 +315,18 @@ In order to attain a complete understanding of the problem at hand, three subjec
 		Consider a simple graph: $\ev{A} \crel \ev{B}$, and let a subset of peers, $ps_1$, store the state of $\ev{A}$, and a subset of peers, $ps_2$, store the state of $\ev{B}$.
 		If agreement on the state of $\ev{A}$ is not guaranteed, then $ps_2$ might, in the belief that $\ev{A}$ is executed, execute $\ev{B}$ even though $ps_1$ has never executed $\ev{A}$.
 
-		A consensus protocol is formally a protocol with $n$ processes ($p_0, p_1, \dots, p_{n-1}$), where each process $p_i$ begins in an undecided state, and proposes a single value $v_i$ from a set of values $D$. The processes then communicate their values to each other, and each process sets a decision variable $d_i$ and enters a decided state.
+		A consensus protocol is formally a protocol with $n$ processes ($p_1, p_2, \dots, p_{n}$), where each process $p_i$ begins in an undecided state, and proposes a single value $v_i$ from a set of values $D$. The processes then communicate their values to each other, and each process sets a decision value $d_i$ and enters a decided state.
 		For the protocol to solve the consensus problem, the following requirements should hold for every execution:
 		\begin{description}
-			\item[Termination] every process eventually sets its decision variable.
-			\item[Agreement] the decision variable of all correct processes are the same.
+			\item[Termination] every process eventually sets its decision value.
+			\item[Agreement] the decision value of all correct processes are the same.
 			\item[Validity] if a correct process decides $d$, then some correct process has proposed a value $v$, where $v = d$.
 		\end{description}
 
 		We show that distributed DCR reduces to consensus, under the assumptions that the correct graph has been distributed to all peers, and that the initial state is agreed upon:
 		\begin{itemize}
 			\item Let $D$ be the set of enabled events.
-			\item Let $v_i$ be an identifier an event.
+			\item Let $v_i$ uniquely identify an event.
 			\item A correct process will only propose $v_i$ if the event identified by $v_i$ is enabled.
 			\item We can now use a consensus sub-process to decide on a $v$, which will then be executed.
 			\item Each process recalculates $D$ to reflect the new global state, and repeats the protocol until the workflow has been completed.
@@ -340,7 +340,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 
 		One problem that relates directly to consensus, is \textit{State Machine Replication}~\cite{schneider_implementing_1990} (SMR).
 		SMR is the problem of replicating the state of a system on several nodes, called \textit{replicas}.
-		On each Replica, an instance of the same state machine is running, and must take requests and pass them on to the state machine.
+		On each replica, an instance of the same state machine is running, and must take requests and pass them on to the state machine.
 		In SMR systems, \textit{clients} send requests to the replicas who must then guarantee:
 		\begin{description}
 			\item[Safety] all non-faulty replicas execute the requests in the same order.
@@ -354,7 +354,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 		A version of SMR deals with byzantine faults, rather than crash failures.
 		These systems are knowns as \textit{byzantine fault tolerant} (BFT) systems~\cite{castro_practical_1999,correia_byzantine_2011,veronese_efficient_2013,liu_scalable_2016}.
 		These systems deal with arbitrary faults, meaning arbitrary behaviour of faulty processes and channels, including modified messages, new messages and changes in local state.
-		It has been shown that $2f+1$\footnote{Reads as $n=2f+1$, where $n$ is the number of processes, and $f$ is the number of recoverable faults} processes are necessary and sufficient to solve SMR with relaxed liveness if faulty processes only exhibit crashes~\cite{bracha_asynchronous_1985}.
+		It has been shown that $2f+1$\footnote{Reads as $n=2f+1$, where $n$ is the number of processes, and $f$ is the number of recoverable faults.} processes are necessary and sufficient to solve SMR with relaxed liveness if faulty processes only exhibit crashes~\cite{bracha_asynchronous_1985}.
 		Similarly it has been shown that $3f+1$ processes are necessary and sufficient to solve SMR with relaxed liveness if faulty processes can exhibit byzantine faults~\cite{bracha_asynchronous_1985,pease_reaching_1980}.
 		However, recent advances have been made in BFT-algorithms, which increase fault tolerance from $3f+1$ to $2f+1$ by utilizing TEE features~\cite{liu_scalable_2016,kapitza_cheapbft_2012,veronese_efficient_2013}.
 
