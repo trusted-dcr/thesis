@@ -371,7 +371,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 		\label{subsec:intel-sgx}
 
 		Intel SGX is a TEE technology which includes a set of CPU instructions, that allow user-level code to run in protected areas of memory, so called \textit{enclaves}.
-		Only processes running in enclaves are allowed to access the SGX instructions.
+		Only processes running in enclaves are allowed to use SGX instructions.
 		Intel guarantees that any code run within an enclave, and any data loaded into an enclave, is protected from access by any process running outside of that enclave~\cite{intel_sgx}.
 		More specifically, the guarantees encompass \textit{confidentiality}, as only the process running in the enclave can read the contents of the enclave, and \textit{integrity}, as only the process running in the enclave can modify the contents of the enclave.
 		These guarantees of the enclave comes at the expense of direct access to system calls, and by extension drives, network cards and all hardware components other than the processor it runs on.
@@ -388,8 +388,8 @@ In order to attain a complete understanding of the problem at hand, three subjec
 		As an example of SGX's usefulness in relation to consensus algorithms, SGX has been utilized to implement a new Byzantine fault tolerance (BFT) consensus algorithm, called \textit{FastBFT}~\cite{liu_scalable_2016}.
 		This is accomplished by using the \textit{strawman design} where a request is sent to a node, the \textit{primary}, who prepares a vote by distributing parts of a secret to all nodes.
 		The secret can be reconstructed given enough parts and then compared to the hash of the secret which is common knowledge.
-		The reason that Intel SGX is needed for this algorithm is that the primary, who distributes the secrets, can fake being any node as he has all parts of the secret.
-		A Trusted Execution Environment (TEE) such as Intel SGX, means that these secrets can be computed and distributed without the primary every having access to them.
+		The reason that Intel SGX is needed for this algorithm is that the primary, who distributes the secrets, can fake being any node as it has all parts of the secret.
+		A Trusted Execution Environment (TEE) such as Intel SGX, means that these secrets can be computed and distributed without the primary ever having access to them.
 		A further issue with the strawman design, is that the primary can change the orders of requests, thereby equivocating which request is being voted on.
 		This is once again solved by Intel SGX, by numbering requests with a trusted counter that can only be incremented.
 		This application of Intel SGX means that the byzantine faults in the algorithm, $f$, can now be tolerated up to $f = \lfloor\frac{n-1}{2}\rfloor$, given that the SGX component does not exhibit byzantine faults, but at most crash faults.
