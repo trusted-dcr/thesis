@@ -948,7 +948,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	When event $e$ is requested executed, the leader runs an SMR algorithm similar to the one described in the SMR approach, but only with the cluster for $e$, and the clusters of $E_{eff}(G,e)$ | to ensure that the clusters of $E_{eff}(G,e)$ has updated the state/enabledness of the events they are responsible for.
 	This ensures a lower message complexity than the SMR approach, given $n > m \cdot (|E_{eff}(G,e)|+1)$ where $n$ is the number of peers in the system.
 	Notice that $\forall e. n = m \cdot v \geq m \cdot (|E_{eff}(G,e)|+1))$ where $v$ is the number of events in the graph.
-	And for graphs where $\nexists e. N(N(e)) = E$, i.e. no events has all events within the neighbourhood of its neighbourhood, $\forall e. n > m \cdot (|E_{eff}(G,e)|+1))$, since no event can then affect state or enabledness of all other events as described in Section~\ref{subsubsec:concurrency}.
+	And for sufficiently loosely connected graphs where no event's execution affect all other events in the graph, $\forall e. n > m \cdot (|E_{eff}(G,e)|+1))$.
 	Another improvement is the fact that if more than half of a cluster crashes, only part of the availability is affected, since the statically independent clusters can continue operating normally.
 	However, $L$ must still synchronise all requests, and worse, cannot allow for concurrent request commits, since the peers would not necessarily be able to recreate the synchronisation between these.
 	The one exception is dynamically independent events, since the ordering of the execution of these does not matter.
