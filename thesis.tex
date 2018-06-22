@@ -59,14 +59,22 @@
   xleftmargin=-.1cm
 }
 
+% - forklar låsning af egen event og hvornår
+% - at vi ikke låser på conditions
+% - manglende states i netværks tilstandsgrafen
+% - mærkeligt static & dynamic concurrency eksempel
+% - adversary model mangler udbygning (meget stærkere)
+% - løsnings table
+% - konklusion
+
 \begin{document}
 \sloppy
 
 \begin{titlepage}
 
-	\includepdf{itu-frontpage.pdf}
+	% \includepdf{itu-frontpage.pdf}
 
-	\pagebreak
+	% \pagebreak
 
 	\centering {\huge Trusted DCR: Decentralised workflow management in a byzantine setting}
 
@@ -108,9 +116,9 @@
 	As part of this collaboration a trusted means of coordination is key.
 	One way to coordinate in such a setting is by using Dynamic Condition Response (DCR) graphs~\cite{hildebrandt_declarative_2011}, which are workflows declaratively formulated as directed graphs.
 	DCR graphs formulate processes in terms of events and relations between those events.
-	The relations specify the order in which events can transpire, and what paths can be taken in the workflow.
+	Relations specify the order in which events can transpire, and what paths can be taken in a workflow.
 
-	DCR graphs provide a concise and simple way of describing workflows, as the effects of the execution of an event is explicitly defined by its relations.
+	DCR graphs provide a concise and simple way of describing workflows, as the effects of the execution of an event is declaratively defined by its relations.
 	This means that an event execution cannot have cascading effects.
 	This property of limited effects on execution means that DCR graphs allow for highly localized states and, depending on how a specific DCR graph is constructed, it can therefore allow for a very high degree of concurrency in a distributed setting.
 	Central servers would be an easy way to enable a distribution of a workflow execution, but would introduce a single point of failure as well as require trust and most likely payment, due to a third party being involved in managing the process.
@@ -120,15 +128,15 @@
 	This set of challenges is the problem we will present and solve during this thesis.
 
 	The issue of making DCR graphs distributed and maintaining a consistent state across peers is closely related to that of distributed replications of state machines, especially when peers can exhibit faulty behaviour.
-	However, the ability for DCR graphs to allow a high degree of concurrency would be impeded by existing solutions to the distributed state machine replication (SMR) problem, due to the large number of messages required and the low degree of concurrency provided by the strict synchronisation of these algorithms.
-	To improve on this strict synchronisation, different parts of the state can be distributed to different peers, thus allowing for synchronisation only between the parts of the state which affect each other.
+	Existing solutions to the distributed state machine replication (SMR) problem provide a low degree of concurrency, however, and require a significant number of messages, which means that applying such a solution to the problem of distributed DCR graphs would impede the conccurency and efficiency of DCR.
+	One way to improve on the SMR solution in this instance could be to distribute the graph among the peers, thus allowing for synchronisation only between the parts of the state which affect each other.
 	This is refereed to as the \textit{partial state machine replication} (PSMR) problem.
 
 	Solutions to the PSMR problem are widely sought, as there are a number of applications of SMR solutions where the scalability of state is problematic.
 	An example of this is the blockchain based distributed smart contract engine, Ethereum~\cite{_ethereum_2018}.
 	We will therefore analyse the effects of applying our solution to the PSMR problem to an algorithm for running distributed smart contracts.
 
-	Recent technological advances in the field of \textit{Trusted Execution Environments} (TEEs), specifically \textit{Intel Software Guard Extensions} (SGX)~\cite{costan_intel_2016}, have already made waves within state replication solutions~\cite{kapitza_cheapbft_2012,veronese_efficient_2013,liu_scalable_2016} and could potentially be leveraged to provide a solution to the described problem, efficiency in terms of required messages and a high degree of concurrency.
+	Recent technological advances in the field of \textit{Trusted Execution Environments} (TEEs), specifically \textit{Intel Software Guard Extensions} (SGX)~\cite{costan_intel_2016}, have already made waves within state replication solutions~\cite{kapitza_cheapbft_2012,veronese_efficient_2013,liu_scalable_2016} and could potentially be leveraged to provide a solution to the described problem, efficiently in terms of required messages and a high degree of concurrency.
 	Intel SGX provides a TEE in which arbitrary code can be run and the correct execution can be attested by Intel to other users also running Intel SGX.
 	In a network of untrusting peers, trust can therefore be guaranteed by Intel, which is a very strong base to build a consensus algorithm on.
 
@@ -137,7 +145,7 @@
 		\item An implementation of the Raft consensus algorithm inside of a TEE.
 		\item A thorough design of a DCR engine, with a potentially totally distributed graph state\footnote{By event.}, supporting concurrent executions only limited by the semantics of DCR.
 		Furthermore, the design accomplishes consensus on executions in less than $O(n)$ messages, where $n$ is the number of peers in the network.
-		\item A proof-of-concept implementation of the former two.
+		\item A proof-of-concept implementation of the TEE Raft algorithm inside of the designed DCR engine
 		\item A transformation of any crash-stop tolerant distributed protocol to a byzantine fault tolerant one, using Intel SGX.
 		\item A description of a generalised version of the DCR engine design supporting smart contracts.
 	\end{itemize}
@@ -145,7 +153,7 @@
 	\subsection{Problem}
 
 	We formulate the problem of byzantine fault tolerant PSMR with a DCR graph as the \textit{state}, and allow for peers to collect the state and change the state through the execution of DCR events.
-	In order to achieve fault tolerance, the system must distribute the DCR graphs on several peers, so that if one peer fails, other peers can take over correct execution of the DCR graph.
+	In order to achieve fault tolerance, the system must distribute the DCR graphs on several peers, so that if one peer fails, other peers can take over running the DCR graph.
 	The trivial method of ensuring fault tolerance, is to make all peers responsible for the entire state of the system, but means that changes in the graph would then have to be synchronized with all peers.
 	For a solution to this problem to be scalable in large networks, a message complexity below $O(n)$ is desirable, where $n$ is the number of peers.
 	Alternatively, the DCR graph would have to be split into parts distributed among peers, but this introduces further issues, as a partial state solution would need intermittent synchronisation, when several actions might affect the same parts of the state.
@@ -188,9 +196,9 @@ In order to attain a complete understanding of the problem at hand, three subjec
 				\item[Included attribute] If the \textit{included} attribute is true, the event is said to be \textit{included}.
 				If the \textit{included} attribute of an event is false, the event is said to be \textit{excluded} and it cannot be executed.
 				The \textit{included} attribute is denoted by the outline of the event: \ev{A} when included and \ev[000]{A} when excluded.
-				\item[Pending attribute] If any event in a workflow has a \textit{pending} attribute which is true and that event is included, we expected further executions of events in the workflow and say that the workflow is in an unfinished state.
+				\item[Pending attribute] If any event in a workflow has a \textit{pending} attribute which is true and that event is included, we say that the workflow is in an unfinished state.
 				Every time an event is executed, its \textit{pending} attribute is set to false.
-				This means that setting the \textit{pending} attribute of an included event to true is specifying that this event must be executed or excluded at some point to leave the workflow in a finished state.
+				This means that setting the \textit{pending} attribute of an included event to true is specifying that this event must be executed or excluded at some point for the workflow to be in a finished state.
 				The \textit{pending} attribute is shown as an exclamation point: \ev[011]{A}
 			\end{description}
 
@@ -227,7 +235,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 
 			\subsubsection*{Enabledness}
 
-			We use the notion of \textit{enabledness} to describe whether an event is executable in the state of a given graph or not.
+			We use the notion of \textit{enabledness} to describe whether an event is executable in the state of a graph or not.
 			An event is \textit{enabled} if it can be executed, and \textit{disabled} if it cannot.
 			An event's enabledness is strictly controlled by the state of its constraining events, and its included variable:
 			\begin{itemize}
@@ -986,6 +994,14 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	Since events can affect each other and this system is in an asynchronous setting, where messages can be delayed arbitrarily, having multiple leaders can potentially lead to situations where leaders disagree on which order events have been executed in, possibly resulting in disagreement on the state of the workflow.
 	The semantics for discerning when ordering is needed and how that ordering is applied is described in Section~\ref{subsec:execution-ordering}.
 
+	With a method of ordering executions between clusters peers can progress the graph, in the sense that events can be executed safely.
+	But since each peer only knows the state of the event which it is responsible for, what has transpired in the graph is implicitly distributed.
+	Since the algorithm does at this point guarantees that any event can only execute, when the semantics and the state of the graph permits it, collecting the global history is only interesting from a documentation perspective.
+	Suppose that a peer is responsible for an event which is not affected by any successful executions. 
+	Such a peer will have no way of knowing if anything in the graph has been executed at all.
+	Additionally, it is useful to know the entire history of the graph, when evaluating whether or not the graph has served its purpose.
+	For these reasons, we present the \textit{CheapShot} algorithm for collecting the global history of a DCR graph in Section~\ref{subsec:global-history-collection}.
+
 	Given a method of ordering event executions, ensuring that the system can sustain faults means that each event needs to not only be stored by a leader, but rather a number of peers, called a \textit{cluster}, only one of which is the leader at any given time.
 	Clusters being responsible for events rather than single peers means that executions and locks need to be synchronized for each individual cluster.
 	Due to the fact that these clusters can be seen as completely individual networks of peers, any consensus algorithm can be used to solve the problem of synchronizing executions and locks as executions and locks are simply SMR requests on that cluster.
@@ -995,13 +1011,6 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	The reason for choosing Raft is that it is widely used commercially, relatively simple, and able to achieve consensus in very few messages.
 	Additionally Raft only handles crash faults and is therefore an ideal candidate for the transformation of byzantine faults to crashes.
 	The consensus algorithm applied in the clusters is described in Section~\ref{subsec:cluster-consensus}.
-
-	With a method of ordering executions between clusters, and a method for achieving consensus on a state change in a cluster, peers can progress the graph, in the sense that events can be executed safely.
-	But since each peer only knows the state of the event its cluster stores, what has transpired in the graph is implicitly distributed.
-	Since the algorithm does at this point guarantees that any event can only execute, when the semantics and the state of the graph permits it, collecting the global history is only interesting from a documentation perspective.
-	Suppose that a peer is a member of a cluster of an event which is not affected by any successful executions. Such a peer will have no way of knowing if anything in the graph has been executed at all.
-	Additionally, it is useful to know the entire history of the graph, when evaluating whether or not the graph has served its purpose.
-	For these reasons, we present the \textit{CheapShot} algorithm for collecting the global history of a DCR graph in Section~\ref{subsec:global-history-collection}.
 
 	\subsection{Execution ordering}
 	\label{subsec:execution-ordering}
@@ -1166,7 +1175,6 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	An example of this is the graph $\ev{A} \erel \ev{B} \crel \ev{C} \crel \ev{D}$, where the collection of the global history could return an empty sequence for \texttt{A}, \texttt{B} and \texttt{C}, but a sequence of $\{\texttt{C}, \texttt{D}\}$ from \texttt{D}.
 	It is unknown whether an execution of \text{A} or an execution of \texttt{B} allowed the execution of \texttt{C} and then \texttt{D}.
 	To solve this, any execution not present in the sequence returned by the event itself is considered invalid and therefore that execution is deleted from the sequence of all events, as well as all following executions in that sequence.
-	In the above example, this would mean that the execution of \texttt{B} in the history of \texttt{C} would be deleted, along with the execution of \texttt{C} as the execution of \texttt{B} happened-before the execution of \texttt{A}.
 	The reason for this procedure is that if these executions are not omitted, a consistent cut is no longer guaranteed.
 
 	\begin{figure}[ht]
@@ -1290,18 +1298,18 @@ while there are unmarked nodes do
 
 	\begin{table}[ht]
     	\centering
-        	\makebox[\textwidth][c]{\begin{tabular}{l p{1.7cm} p{1.5cm} l p{1.7cm}}
-            \toprule
-        	\textbf{Algorithm} 								& \textbf{Fault tolerance (liveness)} & \textbf{Crash recovery} & \textbf{Messages/execution}  & \textbf{Fault tolerance} \\
-            \midrule
-        	PBFT~\cite{castro_practical_1999}               & $f = \lfloor \frac{n-1}{3} \rfloor$ & $(2f+1)^2$              & $(2f+1)+(2f+1)^2$            & Byzantine 				     \\
-        	MinBFT~\cite{veronese_efficient_2013}           & $f = \lfloor \frac{n-1}{2} \rfloor$ & $(f+1)^2$               & $2(f+1)+(f+1)^2$             & Byzantine 				     \\
-        	FastBFT~\cite{liu_scalable_2016}           		& $f = \lfloor \frac{n-1}{2} \rfloor$ & $(f+1)^2$               & $4(f+1)$                     & Byzantine 				     \\
-        	Chandra-Toueg~\cite{chandra_unreliable_1996}    & $f = \lfloor \frac{n-1}{2} \rfloor$ & $0$                     & $4(f+1)+(f+1)^2$             & Crash                         \\
-        	Paxos~\cite{lamport_part-time_1998}  			& $f = \lfloor \frac{n-1}{2} \rfloor$ & $0$                     & $4(f+1) + 2$                 & Crash                         \\
-        	Raft~\cite{ongaro_search_2014}               	& $f = \lfloor \frac{n-1}{2} \rfloor$ & $2(f+1)$                & $2(f+1)$                     & Crash                         \\
-            \bottomrule
-        	\end{tabular}}
+        	\makebox[\textwidth][c]{\begin{tabular}{l p{2.1cm} p{1.5cm} l p{1.7cm}}
+        \toprule
+    	\textbf{Algorithm} 								& \textbf{FT: liveness} & \textbf{Recovery} & \textbf{Msgs/execution}  & \textbf{FT} \\
+        \midrule
+    	PBFT               	& $f = \lfloor \frac{n-1}{3} \rfloor$ & $(2f+1)^2$              & $(2f+1)+(2f+1)^2$            & Byzantine 				     \\
+    	MinBFT           	& $f = \lfloor \frac{n-1}{2} \rfloor$ & $2(f+1)^2$              & $2(f+1)+(f+1)^2$             & Byzantine 				     \\
+    	FastBFT           	& $f = \lfloor \frac{n-1}{2} \rfloor$ & $(f+1)$               	& $4(f+1)$                     & Byzantine 				     \\
+    	Chandra-Toueg    	& $f = \lfloor \frac{n-1}{2} \rfloor$ & $0$                     & $4(f+1)+(f+1)^2$             & Crash                         \\
+    	Paxos  				& $f = \lfloor \frac{n-1}{2} \rfloor$ & $0$                     & $4(f+1)$                 & Crash                         \\
+    	Raft               	& $f = \lfloor \frac{n-1}{2} \rfloor$ & $2(f+1)$                & $2(f+1)$                     & Crash                         \\
+        \bottomrule
+	\end{tabular}}
     	\caption{Comparison of different consensus algorithms.}
     	\label{tab:comparison-consensus-algorithms}
 	\end{table}
