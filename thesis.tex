@@ -62,7 +62,6 @@
 % - forklar låsning af egen event og hvornår
 % - at vi ikke låser på conditions
 % - manglende states i netværks tilstandsgrafen
-% - mærkeligt static & dynamic concurrency eksempel
 % - adversary model mangler udbygning (meget stærkere)
 % - løsnings table
 % - konklusion
@@ -314,7 +313,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 				\caption{From top to bottom:
 				(1) An example of a DCR graph where \ev{A} and \ev{B} are not concurrent.
 				(2) An example of a DCR graph where \ev{A} and \ev{B} are statically independent.
-				(3) An example of a DCR graph where \ev{A} and \ev{B} are dynamically, but not statically independent.
+				(3) An example of a DCR graph where \ev{A} and \ev{B} are dynamically, but not statically independent (Note that this is only applicable if from a starting state where \ev{A} is not executed).
 				(4) An example of a DCR graph where \ev{A} and \ev{B} are statically independent, but the approximation will contain them as a dependent pair\label{fig:concurrency-all}.}
 			\end{figure}
 
@@ -1921,8 +1920,8 @@ enclave {
 	Beyond that, the presented solution to the PSMR problem goes beyond any existing solution in terms of the combination of a low number of messages required for updating the state of $e$, $O(m \cdot |E_{aff}(G,e) \cup L(e)|)$ and the high fault tolerance of $f = \lfloor\frac{n-1}{2}\rfloor$.
 
 	\newpage
+	\bibliographystyle{ieeetr}
 	\bibliography{bibliography}{}
-	\bibliographystyle{plain}
 
 	\newpage
 
