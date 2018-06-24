@@ -1071,7 +1071,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	\begin{description}
 		\item[Effect] Consider a graph of two events: \ev{A} and \ev{B}, with an effect originating from \texttt{A}, targeting \texttt{B}.
 		If \texttt{A} is executed, ordering of that execution must be ensured on \texttt{B}.
-		\item[Effect-Condition] Consider a graph of three events: \ev{A}, \ev{B} and \ev{C}, with an effect originating from \texttt{A}, targeting \texttt{B} and a constraint originating from \texttt{B}, targeting \texttt{C}.
+		\item[Effect-Constraint] Consider a graph of three events: \ev{A}, \ev{B} and \ev{C}, with an effect originating from \texttt{A}, targeting \texttt{B} and a constraint originating from \texttt{B}, targeting \texttt{C}.
 		If \texttt{A} is executed, ordering of that execution must be ensured on \texttt{B} and \texttt{C}.
 	\end{description}
 	Both of these cases can be covered by ordering in $N_{out}(N_{out}(e)) \cup N_{out}(e) \cup e$ or $N_{in}(e) \cup N_{out}(e) \cup e$.
@@ -1117,7 +1117,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	In a graph, $G(E,V)$, we define the set of locked events, $L$, on the execution of an event, $e$, as $L(e)$.
 	An event can only be locked by a single event at any time and is unlocked when a lock either leads to an execution or when an execution is aborted due to all locks not being attainable.
 
-	For the implementation described in this thesis, the simpler rules of ordering is implemented, namely always locking on \textbf{Effects} and on \textbf{Effect-Conditions} as described earlier, which should be sufficient as it covers all situations where synchronisation is needed.
+	For the implementation described in this thesis, the simpler rules of ordering is implemented, namely always locking on \textbf{Effects} and on \textbf{Effect-Constraints} as described earlier, which should be sufficient as it covers all situations where synchronisation is needed.
 	Furthermore, all locking is performed by the executing event, as we postulate that the costs of an additional round-trip is considerably more expensive in practice, than a redundant lock.
 
 	\subsection{Global history collection}
