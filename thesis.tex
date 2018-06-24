@@ -996,7 +996,7 @@ In order to attain a complete understanding of the problem at hand, three subjec
 	With a method of ordering executions between clusters peers can progress the graph, in the sense that events can be executed safely.
 	But since each peer only knows the state of the event which it is responsible for, what has transpired in the graph is implicitly distributed.
 	Since the algorithm does at this point guarantees that any event can only execute, when the semantics and the state of the graph permits it, collecting the global history is only interesting from a documentation perspective.
-	Suppose that a peer is responsible for an event which is not affected by any successful executions. 
+	Suppose that a peer is responsible for an event which is not affected by any successful executions.
 	Such a peer will have no way of knowing if anything in the graph has been executed at all.
 	Additionally, it is useful to know the entire history of the graph, when evaluating whether or not the graph has served its purpose.
 	For these reasons, we present the \textit{CheapShot} algorithm for collecting the global history of a DCR graph in Section~\ref{subsec:global-history-collection}.
@@ -1147,26 +1147,26 @@ In order to attain a complete understanding of the problem at hand, three subjec
 
 	A consistent cut requires that all process events obey the happened-before rules within the cut, meaning:
 	\begin{itemize}
-		\item If a process event, \textit{a}, happened-before another process event, \textit{b}, and \textit{b} is included in the cut, then so is \textit{a}.
+		\item If a process event $a$ happened-before another process event $b$, and $b$ is included in the cut, then so is $a$.
 		\item If a message is received within the cut, the sending of that message must also be within the cut.
 	\end{itemize}
 
 	One way to achieve a consistent cut, is to implement Chandra and Lamport's Snapshot algorithm~\cite{chandy_distributed_1985}.
 	This would require incorporation of the snapshot algorithm into the consensus algorithm, significantly increasing its complexity.
-	Additionally, the snapshot algorithm requires flooding of the entire network, which results in $O(v)$  messages, where $v$ is the number of event pairs with at least one relation between them in the DCR graph.
+	Additionally, the snapshot algorithm requires flooding of the entire network, which results in $O(r)$  messages, where $r$ is the number of event pairs with at least one relation between them in the DCR graph.
 	Instead, we present an alternative solution, where the client requiring the global history requests the execution log from each event cluster.
-	The algorithm we present for collecting the global history, does so without locking or pausing the network and in $O(e)$ messages, where $e$ is the number of events in the DCR graph.
+	The algorithm we present for collecting the global history does so without locking or pausing the network and in $O(e)$ messages, where $e$ is the number of events in the DCR graph.
 
-	As a consistent cut only makes sense in connected graphs, it holds that $v = e-1$ in the case where $v$ is minimal, but as each event can have a relation to each event in the graph, $v$ can maximally be $e^2$, meaning that the message complexity of the proposed solution is significantly better than that of Chandra and Lamport's Snapshot algorithm, since the proposed solution would always require $O(e)$ messages.
+	As a consistent cut only makes sense in connected graphs, it holds that $r = e-1$ in the case where $r$ is minimal, but as each event can have relations to all other events in the graph, $r$ can maximally be $e^2$, meaning that the message complexity of the proposed solution is significantly better than that of Chandra and Lamport's Snapshot algorithm, since the proposed solution always requires $O(e)$ messages.
 	After receiving an answer from each cluster, the client is able to merge the local executions sequences into a consistent cut, using the following algorithm.
 
 	Given the observed executions of each event in the DCR graph, it is always possible to reduce the cut until consistency is at some point attained.
-	In happened-before terms, an execution being committed locally and another event being notified of that execution, corresponds to sending a message (committing locally) and it being received (committing externally).
-	Therefore if any event observes the execution of another event and that execution is not present in the sequence returned by the latter event, it must be disregarded from the cut as it violates HB2.
+	In happened-before terms, an execution being committed locally and another event being notified of that execution corresponds to sending a message (committing locally) and it being received (committing externally).
+	Therefore if any event observes the execution of another event, and that execution is not present in the sequence returned by the latter event, it must be disregarded from the cut as it violates HB2.
 	Since this could lead to violation of HB1, each execution recorded after the disregarded execution is also disregarded.
 
 	Consider a simple graph of two events with a condition between them: $\ev{A} \crel \ev{B}$.
-	A global history collection is started, by a client requesting it from every cluster, and assume that \texttt{A} is the first event to send its execution sequence $\{\}$, after which \texttt{A} executes.
+	A global history collection is started by a client requesting it from every cluster. Assume that \texttt{A} is the first event to send its execution sequence $\{\}$, after which \texttt{A} executes.
 	Following \texttt{A}'s execution, \texttt{B} has been enabled, and upon receiving this information, \texttt{B} executes.
 	\texttt{B} then receives the execution sequence request and responds with a sequence of $\{\texttt{A}, \texttt{B}\}$.
 	In this specific example, nothing is lost by event \texttt{A}'s returned execution sequence not including the execution of \texttt{A}, as all executions are observed by \texttt{B}.
